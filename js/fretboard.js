@@ -208,12 +208,19 @@ function updateNotes(state) {
       const key = `s${s}-f${f}`;
       const { g, text } = noteElements.get(key);
       const { midiNote, pitchClassSemitone } = theory.noteAt(tuning, s, f);
-      const label = theory.spellPitchClass(pitchClassSemitone, keyContext);
 
       const isRoot = rootSemitone !== null && pitchClassSemitone === rootSemitone;
       const isDiatonic = diatonicSemitones.has(pitchClassSemitone);
       const semitoneFromRoot = rootSemitone !== null ? mod12(pitchClassSemitone - rootSemitone) : null;
       const isFocalChordTone = isDiatonic && activeBrightSet.has(semitoneFromRoot);
+
+      const noteName = theory.spellPitchClass(pitchClassSemitone, keyContext);
+      let label = noteName; // base layer: note name, always shown for non-diatonic notes
+      if (isDiatonic && state.labelMode === "degrees") {
+        label = theory.getDegreeLabel(semitoneFromRoot, state.scaleId);
+      } else if (isDiatonic && state.labelMode === "intervals") {
+        label = theory.getIntervalLabel(semitoneFromRoot);
+      }
 
       g.classList.toggle("is-root", isRoot);
       g.classList.toggle("is-diatonic", isDiatonic);

@@ -241,6 +241,17 @@ footer#credits a {
   font-weight: 700;
 }
 
+.label-mode-buttons {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.label-mode-buttons button[aria-pressed="true"] {
+  background: var(--color-fg);
+  color: #14171c;
+  font-weight: 700;
+}
+
 .accidental-toggle {
   display: flex;
   align-items: center;

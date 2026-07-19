@@ -194,6 +194,41 @@ export function initScaleControls() {
   container.appendChild(select);
 }
 
+const LABEL_MODES = [
+  { value: "notes", label: "Notes" },
+  { value: "degrees", label: "Degrees" },
+  { value: "intervals", label: "Intervals" },
+];
+
+export function initLabelModeControls() {
+  const container = document.getElementById("label-mode-controls");
+  container.textContent = "";
+
+  const row = el("div", { class: "label-mode-buttons", role: "group", "aria-label": "Label mode" });
+  for (const mode of LABEL_MODES) {
+    const button = el("button", {
+      type: "button",
+      "data-mode": mode.value,
+      text: mode.label,
+      "aria-pressed": String(state.getState().labelMode === mode.value),
+    });
+    button.addEventListener("click", () => {
+      state.setLabelMode(mode.value);
+      syncLabelModeButtons();
+      rerender();
+    });
+    row.appendChild(button);
+  }
+  container.appendChild(row);
+}
+
+function syncLabelModeButtons() {
+  const current = state.getState().labelMode;
+  for (const button of document.querySelectorAll(".label-mode-buttons button")) {
+    button.setAttribute("aria-pressed", String(button.dataset.mode === current));
+  }
+}
+
 function mod12(n) {
   return ((n % 12) + 12) % 12;
 }
@@ -247,6 +282,7 @@ export function initControls() {
   initTuningControls();
   initRootControls();
   initScaleControls();
+  initLabelModeControls();
   fretboard.onAfterRender(updateChordInfo);
   updateChordInfo();
 }

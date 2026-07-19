@@ -222,10 +222,10 @@ Per contracts/theory-api.md's binding rule: `getDiatonicSemitones`, `computeDefa
 
 **Depends on**: US5 (labels apply on top of degree-role coloring). **theory.js dependencies used here**: `getDegreeLabel()` (T020), `getIntervalLabel()` (T022) — already tested/implemented.
 
-- [ ] T071 [US6] Build the label-mode selector (Notes/Degrees/Intervals) in `js/controls.js`
-- [ ] T072 [US6] Compute `displayLabel` per active mode in `js/fretboard.js`: Notes via `spellPitchClass()` (T014), Degrees via `getDegreeLabel()` (T020), Intervals via `getIntervalLabel()` (T022); non-diatonic notes always show their letter name (depends on T071, T063)
-- [ ] T073 [US6] Confirm the root is distinguished by color-role + secondary border/shape indicator in every label mode, in `js/fretboard.js` (depends on T072)
-- [ ] T074 [US6] Manually validate against quickstart.md Section 5 (base layer always visible; Degrees/Intervals correctness; root distinction in every mode)
+- [X] T071 [US6] Build the label-mode selector (Notes/Degrees/Intervals) in `js/controls.js`
+- [X] T072 [US6] Compute `displayLabel` per active mode in `js/fretboard.js`: Notes via `spellPitchClass()` (T014), Degrees via `getDegreeLabel()` (T020), Intervals via `getIntervalLabel()` (T022); non-diatonic notes always show their letter name (depends on T071, T063)
+- [X] T073 [US6] Confirm the root is distinguished by color-role + secondary border/shape indicator in every label mode, in `js/fretboard.js` (depends on T072)
+- [X] T074 [US6] Manually validate against quickstart.md Section 5 (base layer always visible; Degrees/Intervals correctness; root distinction in every mode)
 
 **Checkpoint**: US1–US6 independently functional.
 
