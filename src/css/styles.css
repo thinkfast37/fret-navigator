@@ -427,6 +427,15 @@ footer#credits a {
   gap: 0.4rem;
 }
 
+/* Visible label heading every control (UAT round 1 section E1). */
+.control-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-neutral-text);
+}
+
 /* Custom-tuning modal (UAT round 1 section D1): the always-visible panel is
    now a dialog opened from the tuning selector, not inline in the controls. */
 .modal-overlay {

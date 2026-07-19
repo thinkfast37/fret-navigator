@@ -21,6 +21,12 @@ function el(tag, attrs = {}, children = []) {
   return node;
 }
 
+// Implements E1 (UAT round 1): a visible label heading every control, on top
+// of whatever aria-label already exists on the interactive element itself.
+function controlLabel(text) {
+  return el("span", { class: "control-label", text });
+}
+
 function buildTuningSelect() {
   const select = el("select", { id: "tuning-select", "aria-label": "Tuning" });
 
@@ -138,6 +144,7 @@ export function initTuningControls() {
 
   const select = buildTuningSelect();
   const editButton = el("button", { type: "button", id: "custom-tuning-edit", text: "Edit" });
+  container.appendChild(controlLabel("Tuning"));
   container.appendChild(select);
   container.appendChild(editButton);
 
@@ -194,6 +201,7 @@ export function initTuningControls() {
 export function initRootControls() {
   const container = document.getElementById("root-controls");
   container.textContent = "";
+  container.appendChild(controlLabel("Root"));
 
   const buttonRow = el("div", { class: "root-buttons", role: "group", "aria-label": "Root note" });
   for (const root of theory.ROOTS) {
@@ -226,6 +234,7 @@ const SCALE_CATEGORY_ORDER = ["Church Modes", "Pentatonic", "Blues", "Other"];
 export function initScaleControls() {
   const container = document.getElementById("scale-controls");
   container.textContent = "";
+  container.appendChild(controlLabel("Scale / Mode"));
 
   const select = el("select", { id: "scale-select", "aria-label": "Scale or mode" });
   select.appendChild(el("option", { value: "", text: "(No scale)" }));
@@ -256,6 +265,7 @@ const LABEL_MODES = [
 export function initLabelModeControls() {
   const container = document.getElementById("label-mode-controls");
   container.textContent = "";
+  container.appendChild(controlLabel("Label Mode"));
 
   const row = el("div", { class: "label-mode-buttons", role: "group", "aria-label": "Label mode" });
   for (const mode of LABEL_MODES) {
@@ -334,6 +344,7 @@ export function syncFretRangeControls() {
 export function initFretRangeControls() {
   const container = document.getElementById("fret-range-controls");
   container.textContent = "";
+  container.appendChild(controlLabel("Visible Frets"));
 
   const fill = el("div", { class: "fret-range-fill", id: "fret-range-fill" });
   const leftHandle = el("div", {
@@ -455,6 +466,7 @@ export function updateChordInfo() {
 
   const activeBrightSet = fretboard.computeActiveBrightSet(appState);
 
+  container.appendChild(controlLabel("Chord Tones"));
   const toggleRow = el("div", { class: "chord-tone-toggles", role: "group", "aria-label": "Chord tones" });
   for (const role of theory.DEGREE_ROLES) {
     const semitone = role.semitoneFromRoot;
@@ -503,6 +515,7 @@ export function updateChordInfo() {
 export function initCapoControls() {
   const container = document.getElementById("capo-controls");
   container.textContent = "";
+  container.appendChild(controlLabel("Capo"));
 
   const select = el("select", { id: "capo-select", "aria-label": "Capo fret" });
   select.appendChild(el("option", { value: "0", text: "No capo" }));
@@ -516,6 +529,7 @@ export function initCapoControls() {
   });
   container.appendChild(select);
 
+  container.appendChild(controlLabel("Fret Reference"));
   const modeRow = el("div", {
     class: "capo-label-mode-buttons",
     role: "group",

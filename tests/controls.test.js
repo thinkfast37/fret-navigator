@@ -47,6 +47,41 @@ describe("initControls bootstrap", () => {
   });
 });
 
+describe("control labels (UAT round 1 section E1)", () => {
+  test("every control container shows a visible label above its interactive element", () => {
+    const expected = {
+      "tuning-controls": "Tuning",
+      "root-controls": "Root",
+      "scale-controls": "Scale / Mode",
+      "label-mode-controls": "Label Mode",
+      "fret-range-controls": "Visible Frets",
+    };
+    for (const [id, text] of Object.entries(expected)) {
+      const label = document.querySelector(`#${id} .control-label`);
+      assert.ok(label, `${id} should have a .control-label`);
+      assert.equal(label.textContent, text);
+    }
+
+    const capoLabels = [...document.querySelectorAll("#capo-controls .control-label")].map((l) => l.textContent);
+    assert.deepEqual(capoLabels, ["Capo", "Fret Reference"]);
+  });
+
+  test("the chord-tone toggle row shows a 'Chord Tones' label once a root and scale are selected", () => {
+    document.querySelector('.root-buttons button[data-root="C"]').click();
+    const scaleSelect = document.getElementById("scale-select");
+    scaleSelect.value = "ionian";
+    fire(scaleSelect, "change");
+
+    const label = document.querySelector("#chord-info .control-label");
+    assert.ok(label);
+    assert.equal(label.textContent, "Chord Tones");
+  });
+
+  test("the custom-tuning modal heading reads 'Custom Tuning'", () => {
+    assert.equal(document.getElementById("custom-tuning-modal-heading").textContent, "Custom Tuning");
+  });
+});
+
 describe("initTuningControls (Story 2, FR-005/FR-006)", () => {
   test("builds a tuning select grouped Standard/D-Family/G-Family/C-Family + Custom", () => {
     const select = document.getElementById("tuning-select");
