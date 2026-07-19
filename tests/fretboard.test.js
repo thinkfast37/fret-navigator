@@ -69,9 +69,9 @@ describe("getEffectiveRootSemitone", () => {
     assert.equal(fretboard.getEffectiveRootSemitone(baseState({ root: "C" })), 0);
   });
 
-  test("US9 binding rule: returns the display root under capo + Relative mode", () => {
+  test("regression (UAT round 1 section A): stays the literal selected root under capo + Relative mode, never shifts", () => {
     const s = baseState({ root: "C", capoFret: 3, capoLabelMode: "relative" });
-    assert.equal(fretboard.getEffectiveRootSemitone(s), 9); // C(0) - 3 -> A(9)
+    assert.equal(fretboard.getEffectiveRootSemitone(s), 0); // stays C(0), never shifts to A(9)
   });
 
   test("US9 Acceptance Scenario 6: capo 0 makes Absolute/Relative identical", () => {
@@ -373,16 +373,60 @@ describe("render (US9: capo mechanics)", () => {
     assert.equal(noteEl(aStringIndex, 5).textContent, "D");
   });
 
-  test("US9 Scenario 7: toggling Absolute<->Relative recalculates the diatonic COLOR set, not just labels", () => {
-    // C# (semitone 1) is not diatonic to C major (absolute) but IS diatonic
-    // to A major (the display root under capo-3 + relative).
+  test("US9 Scenario 7 (corrected, UAT round 1 section A): toggling Absolute<->Relative leaves the diatonic COLOR set, chord-tone identity, and degree/interval labels unchanged - only note-name text differs", () => {
+    fretboard.render(baseState({ root: "C", scaleId: "ionian", capoFret: 3, capoLabelMode: "absolute", focalDegreeSemitone: 0 }));
+    const absoluteSnapshot = [...document.querySelectorAll(".note")].map((el) => ({
+      isDiatonic: el.classList.contains("is-diatonic"),
+      isRoot: el.classList.contains("is-root"),
+      isBright: el.classList.contains("is-bright"),
+      role: [...el.classList].find((c) => c.startsWith("role-")) || null,
+    }));
+
+    fretboard.render(baseState({ root: "C", scaleId: "ionian", capoFret: 3, capoLabelMode: "relative", focalDegreeSemitone: 0 }));
+    const relativeSnapshot = [...document.querySelectorAll(".note")].map((el) => ({
+      isDiatonic: el.classList.contains("is-diatonic"),
+      isRoot: el.classList.contains("is-root"),
+      isBright: el.classList.contains("is-bright"),
+      role: [...el.classList].find((c) => c.startsWith("role-")) || null,
+    }));
+
+    assert.deepEqual(absoluteSnapshot, relativeSnapshot);
+
+    // But the note-NAME text (the A string at the capo, fret 3) still
+    // legitimately differs: "C" in Absolute vs "A" in Relative.
     fretboard.render(baseState({ root: "C", scaleId: "ionian", capoFret: 3, capoLabelMode: "absolute" }));
-    const absoluteIsDiatonic = noteEl(0, 1).classList.contains("is-diatonic");
-
+    const absoluteLabel = noteEl(4, 3).textContent;
     fretboard.render(baseState({ root: "C", scaleId: "ionian", capoFret: 3, capoLabelMode: "relative" }));
-    const relativeIsDiatonic = noteEl(0, 1).classList.contains("is-diatonic");
+    const relativeLabel = noteEl(4, 3).textContent;
+    assert.notEqual(absoluteLabel, relativeLabel);
+  });
 
-    assert.notEqual(absoluteIsDiatonic, relativeIsDiatonic);
+  test("regression (UAT round 1 section A): capo 3 + Relative mode with root=C never highlights F# as diatonic (would only be true if the root silently shifted to A)", () => {
+    fretboard.render(baseState({ root: "C", scaleId: "ionian", capoFret: 3, capoLabelMode: "relative" }));
+    const fSharp = [...document.querySelectorAll(".note")].find(
+      (el) => el.dataset.pitchClassSemitone === "6"
+    );
+    assert.ok(!fSharp.classList.contains("is-diatonic"));
+  });
+
+  test("regression (UAT round 1 section A): audio always plays true physical pitch regardless of label mode", async () => {
+    const absolute = baseState({ root: "C", scaleId: "ionian", capoFret: 3, capoLabelMode: "absolute" });
+    fretboard.render(absolute);
+    const midiAbsolute = Number(noteEl(4, 3).dataset.midiNote);
+
+    const relative = baseState({ root: "C", scaleId: "ionian", capoFret: 3, capoLabelMode: "relative" });
+    fretboard.render(relative);
+    const midiRelative = Number(noteEl(4, 3).dataset.midiNote);
+
+    // Same physical fret position -> identical true sounding pitch in both
+    // label modes, even though the displayed note NAME differs ("C" vs "A").
+    assert.equal(midiAbsolute, midiRelative);
+
+    const before = instrumentPlayCalls.length;
+    noteEl(4, 3).dispatchEvent(new dom.window.Event("click", { bubbles: true }));
+    await flush();
+    assert.equal(instrumentPlayCalls[instrumentPlayCalls.length - 1], midiRelative);
+    assert.equal(instrumentPlayCalls.length, before + 1);
   });
 
   test("US9 Scenario 6: capo 0 makes Absolute and Relative produce identical labels everywhere", () => {

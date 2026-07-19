@@ -1,9 +1,5 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-
-function mod12(n) {
-  return ((n % 12) + 12) % 12;
-}
 import {
   TUNINGS,
   SCALES,
@@ -18,7 +14,6 @@ import {
   getTriadQuality,
   isToggleableChordTone,
   identifyChordQuality,
-  getDisplayRootSemitone,
   getRelativeLabelSemitone,
   isFretPlayable,
   rootLetterToSemitone,
@@ -298,18 +293,6 @@ describe("identifyChordQuality", () => {
 
 // ---- Capo computation (T031, T033, T035) ----
 
-describe("getDisplayRootSemitone", () => {
-  test("unchanged when capoFret===0 or mode is absolute", () => {
-    assert.equal(getDisplayRootSemitone(0, 0, "relative"), 0);
-    assert.equal(getDisplayRootSemitone(4, 3, "absolute"), 4);
-  });
-
-  test("(trueRoot - capoFret + 12) mod 12 when capo>0 and relative", () => {
-    assert.equal(getDisplayRootSemitone(0, 3, "relative"), 9); // C with capo3 relative -> A
-    assert.equal(getDisplayRootSemitone(9, 3, "relative"), 6);
-  });
-});
-
 describe("getRelativeLabelSemitone", () => {
   test("physicalFret - capoFret, equals physicalFret when capoFret===0", () => {
     assert.equal(getRelativeLabelSemitone(5, 3), 2);
@@ -334,49 +317,31 @@ describe("isFretPlayable", () => {
   });
 });
 
-// ---- Binding rule integration test (T037) ----
+// ---- Root stability regression test (UAT round 1 section A) ----
+// Capo + Relative mode must NEVER substitute a different root into any of
+// theory.js's diatonic/degree-role/focal/chord-tone computation - only
+// note-NAME text (getRelativeLabelSemitone, tested above) varies with capo.
+// This replaces the earlier (incorrect) getDisplayRootSemitone binding rule.
 
-describe("getDisplayRootSemitone binding rule", () => {
-  test("diatonic/triad/chord-tone/chord-quality all shift with displayRootSemitone under capo+relative", () => {
+describe("root stability under capo + Relative mode (regression, UAT round 1 section A)", () => {
+  test("getDiatonicSemitones/computeDefaultTriad/isToggleableChordTone/identifyChordQuality never take a capo-shifted root", () => {
     const trueRoot = 0; // C
     const scaleId = "ionian";
-    const capoFret = 3;
-    const displayRoot = getDisplayRootSemitone(trueRoot, capoFret, "relative"); // -> 9 (A)
-    assert.equal(displayRoot, 9);
 
-    const trueDiatonic = getDiatonicSemitones(trueRoot, scaleId);
-    const displayDiatonic = getDiatonicSemitones(displayRoot, scaleId);
-    assert.notDeepEqual(trueDiatonic, displayDiatonic);
+    // These four functions have no capoFret/pitchReferenceMode parameter at
+    // all - calling them with the literal selected root produces identical
+    // output whether or not a capo happens to be active elsewhere in state.
+    const diatonic = getDiatonicSemitones(trueRoot, scaleId);
+    assert.deepEqual(diatonic, new Set([0, 2, 4, 5, 7, 9, 11])); // C major, not A major
 
-    const trueTriad = computeDefaultTriad(0, trueRoot, scaleId);
-    const displayTriad = computeDefaultTriad(0, displayRoot, scaleId);
-    assert.deepEqual(trueTriad, displayTriad); // relative-domain output; shift happens via root in absolute use
+    const triad = computeDefaultTriad(0, trueRoot, scaleId);
+    assert.deepEqual(triad, [0, 4, 7]); // C E G, not A C# E
 
-    const absoluteFSharp = 6;
-    assert.notEqual(
-      isToggleableChordTone(mod12(absoluteFSharp - trueRoot), trueRoot, scaleId),
-      isToggleableChordTone(mod12(absoluteFSharp - displayRoot), displayRoot, scaleId)
-    ); // F# not diatonic to C major, but IS diatonic to A major
+    // F# (6) is not diatonic to C major and must stay non-toggleable
+    // regardless of any capo/Relative-mode context a caller might be in.
+    assert.equal(isToggleableChordTone(6, trueRoot, scaleId), false);
 
-    // Same major-triad SHAPE, re-anchored to each root's own absolute position:
-    // quality identification stays correct as long as the bright set and root
-    // parameter are consistently paired (the binding rule's actual guarantee).
-    const trueBrightSet = [0, 4, 7].map((i) => mod12(trueRoot + i));
-    const displayBrightSet = [0, 4, 7].map((i) => mod12(displayRoot + i));
-    assert.equal(identifyChordQuality(trueBrightSet, trueRoot), "Major");
-    assert.equal(identifyChordQuality(displayBrightSet, displayRoot), "Major");
-  });
-
-  test("identical to true-root results when capoFret===0 or mode is absolute", () => {
-    const trueRoot = 4; // E
-    const scaleId = "dorian";
-    const displayRootNoCapo = getDisplayRootSemitone(trueRoot, 0, "relative");
-    const displayRootAbsolute = getDisplayRootSemitone(trueRoot, 5, "absolute");
-    assert.equal(displayRootNoCapo, trueRoot);
-    assert.equal(displayRootAbsolute, trueRoot);
-
-    assert.deepEqual(getDiatonicSemitones(trueRoot, scaleId), getDiatonicSemitones(displayRootNoCapo, scaleId));
-    assert.equal(isToggleableChordTone(2, trueRoot, scaleId), isToggleableChordTone(2, displayRootNoCapo, scaleId));
-    assert.equal(identifyChordQuality([4, 7, 11], trueRoot), identifyChordQuality([4, 7, 11], displayRootNoCapo));
+    const brightSet = [0, 4, 7];
+    assert.equal(identifyChordQuality(brightSet, trueRoot), "Major");
   });
 });

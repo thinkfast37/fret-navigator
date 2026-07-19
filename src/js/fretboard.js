@@ -37,15 +37,15 @@ function mod12(n) {
   return ((n % 12) + 12) % 12;
 }
 
-// The getDisplayRootSemitone binding rule (contracts/theory-api.md): every
-// diatonic/degree-role/focal/chord-tone computation must key off this value,
-// never the raw Story-3-selected root, whenever Relative mode + an active
-// capo apply. Returns null when no root is selected yet.
-// Implements Story 9, FR-037/FR-038 (getDisplayRootSemitone binding rule)
+// The literal Story-3-selected root's semitone. Every diatonic/degree-role/
+// focal/chord-tone computation keys off this value UNCHANGED regardless of
+// capo position or Absolute/Relative mode (Story 9 Acceptance Scenario 7,
+// corrected in UAT round 1 section A) - only note-NAME text (via
+// getRelativeLabelSemitone) varies with capo + Relative mode. Returns null
+// when no root is selected yet.
 export function getEffectiveRootSemitone(appState) {
   if (!appState.root) return null;
-  const trueRootSemitone = theory.rootLetterToSemitone(appState.root);
-  return theory.getDisplayRootSemitone(trueRootSemitone, appState.capoFret, appState.capoLabelMode);
+  return theory.rootLetterToSemitone(appState.root);
 }
 
 // Default focal triad merged with user chord-tone overrides -> Set of
@@ -215,11 +215,9 @@ function updateNotes(state) {
   const tuning = resolveTuning(state);
   const keyContext = effectiveKeyContext(state);
 
-  // Binding rule (contracts/theory-api.md): diatonic set, degree-role
-  // assignment, focal triad, and chord-tone gating all key off the display
-  // root, never the raw Story-3-selected root, whenever Relative mode + an
-  // active capo apply. At capoFret=0 or in Absolute mode this always equals
-  // the true root, so routing through it unconditionally is always correct.
+  // Diatonic set, degree-role assignment, focal triad, and chord-tone
+  // gating all key off the literal selected root, unaffected by capo
+  // position or Absolute/Relative mode (Story 9 Acceptance Scenario 7).
   const rootSemitone = getEffectiveRootSemitone(state);
   const diatonicSemitones =
     rootSemitone !== null && state.scaleId

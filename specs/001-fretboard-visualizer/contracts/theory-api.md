@@ -68,27 +68,13 @@ arguments.
 
 ## Capo computation
 
-### `getDisplayRootSemitone(trueRootSemitone, capoFret, pitchReferenceMode) -> number`
-- **Input**: the Story 3-selected root's semitone, current capo fret, and current
-  Absolute/Relative mode.
-- **Output**: `trueRootSemitone` when `capoFret === 0` or `pitchReferenceMode === "absolute"`;
-  otherwise `(trueRootSemitone - capoFret + 12) mod 12`.
-- **Contract**: this is the ONLY root semitone that `getDiatonicSemitones`, `getDegreeRole`,
-  `getDegreeLabel`, `getIntervalLabel`, and all focal-point/chord-tone computation may use
-  when Relative mode + an active capo apply. The literal Story-3 root selection is preserved
-  unchanged in the UI and in Key Context's `root` field — only internal calculation redirects
-  through this function's output. When `capoFret === 0`, output always equals
-  `trueRootSemitone`, guaranteeing identical highlighting/labels with no capo (Story 9
-  Acceptance Scenario 6).
-
-**Binding rule**: `getDiatonicSemitones`, `computeDefaultTriad`, `isToggleableChordTone`, and
-`identifyChordQuality` all take a `root` parameter above. That parameter MUST be
-`getDisplayRootSemitone`'s output, never the raw Story-3-selected root directly, whenever
-Relative mode + an active capo apply — otherwise diatonic highlighting and focal-point/chord-tone
-computation silently stay anchored to the true root even though Story 9 Acceptance Scenario 7
-requires them to shift. When capo is 0 or Absolute mode is active, `getDisplayRootSemitone`
-already returns the true root unchanged, so calling these four functions with its output is
-always correct — callers should route through it unconditionally rather than branching.
+**Root stability rule**: `getDiatonicSemitones`, `computeDefaultTriad`, `isToggleableChordTone`,
+`identifyChordQuality`, `getDegreeRole`, `getDegreeLabel`, and `getIntervalLabel` always take the
+literal Story-3-selected root's semitone (via `rootLetterToSemitone`) as their `root`/root-derived
+input — regardless of capo position or Absolute/Relative mode. Capo and label mode never
+substitute a different root into any of these functions (UAT round 1 section A; corrects the
+earlier `getDisplayRootSemitone` binding rule, which is removed). The ONLY thing that varies with
+capo + Relative mode is the note-NAME text, via `getRelativeLabelSemitone` below.
 
 ### `getRelativeLabelSemitone(physicalFret, capoFret) -> number`
 - **Output**: `physicalFret - capoFret`, the semitone offset added to a string's ORIGINAL
@@ -113,6 +99,7 @@ Every function above must be covered by `tests/theory.test.js` for at minimum: o
 (`fret=0`), the 12-fret octave wraparound, enharmonic equivalents, every `Tuning` in `TUNINGS`,
 and edge frets (0, 12, 24) — per the constitution's Principle I hard-gate requirement.
 
-Include a capo + Relative-mode test case that verifies `getDiatonicSemitones`, `computeDefaultTriad`,
-`isToggleableChordTone`, and `identifyChordQuality` all shift correctly when called with
-`getDisplayRootSemitone`'s output.
+Include a capo + Relative-mode regression test case that verifies `getDiatonicSemitones`,
+`computeDefaultTriad`, `isToggleableChordTone`, and `identifyChordQuality` all stay anchored to
+the literal selected root — i.e. produce IDENTICAL results with an active capo in Relative mode
+as with no capo at all — per the root stability rule above.

@@ -48,8 +48,7 @@ Derived, not stored directly — computed from `{ root, accidentalPreference, sc
 | `root` | string (`C,D,E,F,G,A,B`) | Selected root letter (FR-008). |
 | `accidentalPreference` | `"sharp" \| "flat"` | Enharmonic spelling toggle (FR-009); only meaningful for roots with an enharmonic pair. |
 | `scaleId` | string | FK into `Scale` reference data. |
-| `displayRootSemitone` | `0..11` | Derived via `getDisplayRootSemitone`. THIS, not the raw selected root, is what `diatonicSemitones`, degree-role assignment, degree labels, interval labels, and focal-point/chord-tone computation all key off of when Relative mode + an active capo apply. The Story-3 root selector still displays the user's literal selection unchanged — only internal calculation redirects to `displayRootSemitone`. |
-| `diatonicSemitones` | `Set<0..11>` | `displayRootSemitone`'s semitone + each `scale.semitoneOffsets`, mod 12 — the exact "in scale" set (FR-011, FR-012), computed against the display root, not necessarily the literal selected root. |
+| `diatonicSemitones` | `Set<0..11>` | The literal selected root's semitone + each `scale.semitoneOffsets`, mod 12 — the exact "in scale" set (FR-011, FR-012). Unaffected by capo position or Absolute/Relative mode (UAT round 1 section A) — `diatonicSemitones`, degree-role assignment, degree labels, interval labels, and focal-point/chord-tone computation all key off the literal selected root at all times. |
 
 ### Note (one per string × fret × current tuning/capo)
 Computed per render, not persisted individually.

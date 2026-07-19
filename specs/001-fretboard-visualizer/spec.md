@@ -511,9 +511,11 @@ capo positions the way they're actually taught and played.
    specified (freely draggable, defaulting to "N").
 
 7. **Given** a capo is active and a key/scale is selected, **When** the user toggles
-   Absolute↔Relative mode, **Then** the diatonic color highlighting (Story 5) recalculates
-   against the display root (not just the label text) — the visible highlighted note set
-   will change, and this is expected behavior, not a rendering bug.
+   Absolute↔Relative mode, **Then** the diatonic color highlighting, degree labels, interval
+   labels, and chord-tone identity (Story 5) remain completely unchanged — the selected root
+   never shifts for these purposes, regardless of capo position or label mode. Only the
+   note-NAME text (via the as-if-uncapoed shape convention) differs between the two modes.
+   The highlighted note set staying fixed is expected behavior, not a rendering bug.
 
 ---
 

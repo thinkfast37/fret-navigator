@@ -250,12 +250,6 @@ export function identifyChordQuality(brightSetSemitones, root) {
 
 // ---- Capo computation ----
 
-// Implements Story 9, FR-037 (binding rule): display root for Absolute/Relative labeling
-export function getDisplayRootSemitone(trueRootSemitone, capoFret, pitchReferenceMode) {
-  if (capoFret === 0 || pitchReferenceMode === "absolute") return trueRootSemitone;
-  return mod12(trueRootSemitone - capoFret);
-}
-
 // Implements Story 9, FR-037: Relative-mode fret offset from the capo position
 export function getRelativeLabelSemitone(physicalFret, capoFret) {
   return physicalFret - capoFret;
