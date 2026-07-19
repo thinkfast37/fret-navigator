@@ -233,90 +233,159 @@ function syncLabelModeButtons() {
   }
 }
 
+function clampFret(v) {
+  return Math.max(0, Math.min(24, Math.round(v)));
+}
+
 // Implements Story 7/9, FR-025/FR-035/FR-036: slider DOM sync incl. capo lock/release
-// Keeps the slider's DOM in sync with state on every render, including
-// renders triggered by the capo control (T089's lock/release) rather than
-// by the slider itself.
+// Keeps the single dual-handle slider's DOM in sync with state on every
+// render, including renders triggered by the capo control's lock/release
+// rather than by the slider itself.
 export function syncFretRangeControls() {
-  const leftInput = document.getElementById("fret-range-left");
-  if (!leftInput) return; // not built yet
-  const rightInput = document.getElementById("fret-range-right");
-  const leftLabel = document.getElementById("fret-range-left-label");
-  const rightLabel = document.getElementById("fret-range-right-label");
+  const leftHandle = document.getElementById("fret-range-left");
+  if (!leftHandle) return; // not built yet
+  const rightHandle = document.getElementById("fret-range-right");
+  const fill = document.getElementById("fret-range-fill");
 
   const appState = state.getState();
   const { lowerBound, upperBound } = appState.fretRange;
   const capoLocked = appState.capoFret > 0;
 
-  leftInput.value = String(lowerBound);
-  rightInput.value = String(upperBound);
-  rightInput.min = leftInput.value;
-  leftInput.max = capoLocked ? String(appState.capoFret) : rightInput.value;
-  leftInput.min = capoLocked ? String(appState.capoFret) : "0";
-  leftInput.disabled = capoLocked;
+  const leftPct = (lowerBound / 24) * 100;
+  const rightPct = (upperBound / 24) * 100;
+  const leftText = capoLocked ? "Capo" : lowerBound === 0 ? "N" : String(lowerBound);
+  const rightText = String(upperBound);
 
-  leftLabel.textContent = capoLocked ? "Capo" : lowerBound === 0 ? "N" : String(lowerBound);
-  rightLabel.textContent = String(upperBound);
+  leftHandle.style.left = `${leftPct}%`;
+  rightHandle.style.left = `${rightPct}%`;
+  fill.style.left = `${leftPct}%`;
+  fill.style.width = `${Math.max(0, rightPct - leftPct)}%`;
+
+  leftHandle.textContent = leftText;
+  rightHandle.textContent = rightText;
+
+  leftHandle.setAttribute("aria-valuemin", capoLocked ? String(appState.capoFret) : "0");
+  leftHandle.setAttribute("aria-valuemax", String(upperBound));
+  leftHandle.setAttribute("aria-valuenow", String(lowerBound));
+  leftHandle.setAttribute("aria-valuetext", leftText);
+  leftHandle.setAttribute("aria-disabled", String(capoLocked));
+  leftHandle.tabIndex = capoLocked ? -1 : 0;
+  leftHandle.classList.toggle("is-locked", capoLocked);
+
+  rightHandle.setAttribute("aria-valuemin", String(lowerBound));
+  rightHandle.setAttribute("aria-valuemax", "24");
+  rightHandle.setAttribute("aria-valuenow", String(upperBound));
+  rightHandle.setAttribute("aria-valuetext", rightText);
 }
 
-// Implements Story 7, FR-025/FR-026/FR-027: dual-handle fret-range slider + reset
+// Implements Story 7, FR-025/FR-026/FR-027: single dual-handle fret-range slider + reset
+// Consolidates what was previously two independent <input type="range">
+// controls (UAT round 1 section B1) into one slider with two draggable
+// handles, each large enough to display its fret number directly inside it.
 export function initFretRangeControls() {
   const container = document.getElementById("fret-range-controls");
   container.textContent = "";
 
-  const { lowerBound, upperBound } = state.getState().fretRange;
-
-  const leftLabel = el("span", { class: "fret-range-label", id: "fret-range-left-label" });
-  const rightLabel = el("span", { class: "fret-range-label", id: "fret-range-right-label" });
-
-  const leftInput = el("input", {
-    type: "range",
+  const fill = el("div", { class: "fret-range-fill", id: "fret-range-fill" });
+  const leftHandle = el("div", {
     id: "fret-range-left",
-    min: "0",
-    max: "24",
-    value: String(lowerBound),
+    class: "fret-range-thumb",
+    role: "slider",
+    tabindex: "0",
     "aria-label": "Lower visible fret bound",
+    "aria-valuemin": "0",
+    "aria-valuemax": "24",
   });
-  const rightInput = el("input", {
-    type: "range",
+  const rightHandle = el("div", {
     id: "fret-range-right",
-    min: "0",
-    max: "24",
-    value: String(upperBound),
+    class: "fret-range-thumb",
+    role: "slider",
+    tabindex: "0",
     "aria-label": "Upper visible fret bound",
+    "aria-valuemin": "0",
+    "aria-valuemax": "24",
   });
 
+  const track = el("div", { class: "fret-range-track" }, [fill, leftHandle, rightHandle]);
+  const slider = el("div", { class: "fret-range-slider" }, [track]);
   const resetButton = el("button", { type: "button", id: "fret-range-reset", text: "Reset range" });
 
-  leftInput.addEventListener("input", () => {
-    if (state.getState().capoFret > 0) return; // locked to capo (FR-035)
-    state.setFretRange(Number(leftInput.value), Number(rightInput.value));
+  function applyBounds(lower, upper) {
+    state.setFretRange(lower, upper);
     rerender();
-  });
+  }
 
-  rightInput.addEventListener("input", () => {
-    state.setFretRange(Number(leftInput.value), Number(rightInput.value));
-    rerender();
-  });
+  function fractionToFret(clientX) {
+    const rect = track.getBoundingClientRect();
+    const width = rect.width || 1;
+    return clampFret(((clientX - rect.left) / width) * 24);
+  }
+
+  function beginDrag(which) {
+    const onMove = (event) => {
+      const { lowerBound, upperBound } = state.getState().fretRange;
+      const value = fractionToFret(event.clientX);
+      if (which === "left") {
+        if (state.getState().capoFret > 0) return; // locked to capo (FR-035)
+        applyBounds(Math.min(value, upperBound), upperBound);
+      } else {
+        applyBounds(lowerBound, Math.max(value, lowerBound));
+      }
+    };
+    const onUp = () => {
+      document.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerup", onUp);
+    };
+    document.addEventListener("pointermove", onMove);
+    document.addEventListener("pointerup", onUp);
+  }
+
+  leftHandle.addEventListener("pointerdown", () => beginDrag("left"));
+  rightHandle.addEventListener("pointerdown", () => beginDrag("right"));
+
+  function handleKey(which, event) {
+    const appState = state.getState();
+    if (which === "left" && appState.capoFret > 0) return; // locked to capo (FR-035)
+    const { lowerBound, upperBound } = appState.fretRange;
+    const step =
+      event.key === "ArrowRight" || event.key === "ArrowUp"
+        ? 1
+        : event.key === "ArrowLeft" || event.key === "ArrowDown"
+        ? -1
+        : event.key === "PageUp"
+        ? 5
+        : event.key === "PageDown"
+        ? -5
+        : null;
+
+    if (which === "left") {
+      let next;
+      if (step !== null) next = lowerBound + step;
+      else if (event.key === "Home") next = 0;
+      else if (event.key === "End") next = upperBound;
+      else return;
+      event.preventDefault();
+      applyBounds(clampFret(Math.min(next, upperBound)), upperBound);
+    } else {
+      let next;
+      if (step !== null) next = upperBound + step;
+      else if (event.key === "Home") next = lowerBound;
+      else if (event.key === "End") next = 24;
+      else return;
+      event.preventDefault();
+      applyBounds(lowerBound, clampFret(Math.max(next, lowerBound)));
+    }
+  }
+
+  leftHandle.addEventListener("keydown", (event) => handleKey("left", event));
+  rightHandle.addEventListener("keydown", (event) => handleKey("right", event));
 
   resetButton.addEventListener("click", () => {
     state.setFretRange(0, 24);
     rerender();
   });
 
-  const leftGroup = el("div", { class: "fret-range-handle" }, [
-    el("label", { for: "fret-range-left", text: "Left: " }),
-    leftLabel,
-    leftInput,
-  ]);
-  const rightGroup = el("div", { class: "fret-range-handle" }, [
-    el("label", { for: "fret-range-right", text: "Right: " }),
-    rightLabel,
-    rightInput,
-  ]);
-
-  container.appendChild(leftGroup);
-  container.appendChild(rightGroup);
+  container.appendChild(slider);
   container.appendChild(resetButton);
 
   syncFretRangeControls();

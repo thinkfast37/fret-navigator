@@ -122,34 +122,51 @@ describe("initLabelModeControls (Story 6, FR-023)", () => {
   });
 });
 
+function fireKey(el, key) {
+  el.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key, bubbles: true }));
+}
+
 describe("initFretRangeControls / syncFretRangeControls (Story 7, FR-025/FR-026/FR-027)", () => {
-  test("US7 Scenario 1: default range renders N / 24", () => {
+  test("is a single consolidated slider control with exactly two handles (UAT round 1 section B1)", () => {
+    assert.equal(document.querySelectorAll(".fret-range-slider").length, 1);
+    assert.equal(document.querySelectorAll(".fret-range-thumb").length, 2);
+  });
+
+  test("US7 Scenario 1: default range renders N / 24 inside the handles themselves", () => {
     document.getElementById("fret-range-reset").click();
-    assert.equal(document.getElementById("fret-range-left-label").textContent, "N");
-    assert.equal(document.getElementById("fret-range-right-label").textContent, "24");
+    assert.equal(document.getElementById("fret-range-left").textContent, "N");
+    assert.equal(document.getElementById("fret-range-right").textContent, "24");
   });
 
-  test("US7 Scenario 2: dragging the left handle to 5 updates state and its label", () => {
+  test("US7 Scenario 2: moving the left handle right by 5 (PageUp) updates state and its label", () => {
     const left = document.getElementById("fret-range-left");
-    left.value = "5";
-    fire(left, "input");
+    fireKey(left, "PageUp");
     assert.equal(state.getState().fretRange.lowerBound, 5);
-    assert.equal(document.getElementById("fret-range-left-label").textContent, "5");
+    assert.equal(left.textContent, "5");
   });
 
-  test("US7 Scenario 3: dragging the right handle to 12 updates state and its label", () => {
+  test("US7 Scenario 3: moving the right handle down to 12 (ArrowDown x12) updates state and its label", () => {
     const right = document.getElementById("fret-range-right");
-    right.value = "12";
-    fire(right, "input");
+    for (let i = 0; i < 12; i++) fireKey(right, "ArrowDown");
     assert.equal(state.getState().fretRange.upperBound, 12);
-    assert.equal(document.getElementById("fret-range-right-label").textContent, "12");
+    assert.equal(right.textContent, "12");
+  });
+
+  test("the left handle cannot be moved past the right handle's position", () => {
+    document.getElementById("fret-range-reset").click();
+    const right = document.getElementById("fret-range-right");
+    for (let i = 0; i < 22; i++) fireKey(right, "ArrowDown"); // right -> 2
+    const left = document.getElementById("fret-range-left");
+    for (let i = 0; i < 10; i++) fireKey(left, "ArrowRight"); // would overshoot past 2
+    assert.ok(state.getState().fretRange.lowerBound <= state.getState().fretRange.upperBound);
+    assert.equal(state.getState().fretRange.lowerBound, 2);
   });
 
   test("US7 Scenario 6: the reset control restores N-24 from any adjusted range", () => {
     document.getElementById("fret-range-reset").click();
     assert.deepEqual(state.getState().fretRange, { lowerBound: 0, upperBound: 24 });
-    assert.equal(document.getElementById("fret-range-left-label").textContent, "N");
-    assert.equal(document.getElementById("fret-range-right-label").textContent, "24");
+    assert.equal(document.getElementById("fret-range-left").textContent, "N");
+    assert.equal(document.getElementById("fret-range-right").textContent, "24");
   });
 });
 
@@ -202,16 +219,16 @@ describe("initCapoControls (Story 9, FR-033/FR-037)", () => {
     select.value = "3";
     fire(select, "change");
     assert.equal(state.getState().capoFret, 3);
-    assert.equal(document.getElementById("fret-range-left").disabled, true);
-    assert.equal(document.getElementById("fret-range-left-label").textContent, "Capo");
+    assert.equal(document.getElementById("fret-range-left").getAttribute("aria-disabled"), "true");
+    assert.equal(document.getElementById("fret-range-left").textContent, "Capo");
   });
 
   test("US9 Scenario 6: setting capo back to 0 releases the left handle to N", () => {
     const select = document.getElementById("capo-select");
     select.value = "0";
     fire(select, "change");
-    assert.equal(document.getElementById("fret-range-left").disabled, false);
-    assert.equal(document.getElementById("fret-range-left-label").textContent, "N");
+    assert.equal(document.getElementById("fret-range-left").getAttribute("aria-disabled"), "false");
+    assert.equal(document.getElementById("fret-range-left").textContent, "N");
   });
 
   test("US9 Scenario 3: the Absolute/Relative buttons toggle capoLabelMode", () => {

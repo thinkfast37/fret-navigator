@@ -119,6 +119,13 @@ footer#credits a {
   stroke: none;
 }
 
+/* Non-diatonic notes render as plain text only - no background shape or
+   circle whatsoever (UAT round 1 section B2). The root is always exempted
+   so it stays highlighted even before a scale is selected (FR-008). */
+.note:not(.is-diatonic):not(.is-root) .note-marker {
+  display: none;
+}
+
 .note-label {
   fill: var(--color-neutral-text);
   font-size: 12px;
@@ -227,16 +234,59 @@ footer#credits a {
   font-weight: 700;
 }
 
-.fret-range-handle {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
+/* Single dual-handle fret-range slider (UAT round 1 section B1): one track,
+   two draggable thumbs, each large enough to show its fret number inside. */
+.fret-range-slider {
+  width: 220px;
+  padding: 1.1rem;
 }
 
-.fret-range-label {
+.fret-range-track {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  background: var(--color-neutral);
+  border-radius: 2px;
+}
+
+.fret-range-fill {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: var(--color-fg);
+  border-radius: 2px;
+}
+
+.fret-range-thumb {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
   min-width: 2.2rem;
-  font-variant-numeric: tabular-nums;
+  height: 2.2rem;
+  padding: 0 0.3rem;
+  border-radius: 50%;
+  background: var(--color-fg);
+  color: #14171c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  border: 2px solid var(--color-bg);
+}
+
+.fret-range-thumb:focus-visible {
+  outline: 2px solid #ffd54a;
+  outline-offset: 2px;
+}
+
+.fret-range-thumb.is-locked {
+  background: var(--color-neutral-text);
+  cursor: not-allowed;
 }
 
 .chord-summary {
