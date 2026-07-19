@@ -12,6 +12,7 @@ const dom = new JSDOM(
     <div id="fret-range-controls"></div>
     <div id="capo-controls"></div>
     <div id="chord-info"></div>
+    <div id="custom-tuning-modal-root"></div>
     <svg id="fretboard"></svg>
   </body></html>`,
   { url: "http://localhost/" }
@@ -62,16 +63,37 @@ describe("initTuningControls (Story 2, FR-005/FR-006)", () => {
     assert.equal(Number(document.getElementById("note-s5-f0").dataset.midiNote), 38);
   });
 
-  test("US2 Scenario 5: selecting Custom Tuning reveals inputs and applies edits", () => {
+  test("US2 Scenario 5 (UAT round 1 section D1): selecting Custom Tuning opens the modal, prepopulated, and applies edits", () => {
     const select = document.getElementById("tuning-select");
     select.value = "custom";
     fire(select, "change");
-    const customInputs = document.getElementById("custom-tuning-inputs");
-    assert.equal(customInputs.hidden, false);
+    const overlay = document.getElementById("custom-tuning-modal-overlay");
+    assert.equal(overlay.hidden, false);
+    // Prepopulated from the previously-active preset (standard: string 1 = E).
+    assert.equal(document.getElementById("custom-pitch-0").value, "E");
 
     document.getElementById("custom-pitch-0").value = "D";
     fire(document.getElementById("custom-pitch-0"), "change");
     assert.equal(state.getState().tuning.customOpenPitchClasses[0], "D");
+  });
+
+  test("D1: the modal closes via its Close button, and the Edit button reopens it prepopulated with the current custom values", () => {
+    document.getElementById("custom-tuning-modal-close").click();
+    const overlay = document.getElementById("custom-tuning-modal-overlay");
+    assert.equal(overlay.hidden, true);
+
+    const editButton = document.getElementById("custom-tuning-edit");
+    assert.equal(editButton.hidden, false);
+    editButton.click();
+    assert.equal(overlay.hidden, false);
+    assert.equal(document.getElementById("custom-pitch-0").value, "D"); // edited value from the prior test persisted
+  });
+
+  test("D1: the Edit button stays hidden while a named preset (not Custom) is selected", () => {
+    const select = document.getElementById("tuning-select");
+    select.value = "drop-d";
+    fire(select, "change");
+    assert.equal(document.getElementById("custom-tuning-edit").hidden, true);
   });
 });
 

@@ -39,26 +39,44 @@ function buildTuningSelect() {
   return select;
 }
 
-function buildCustomTuningInputs() {
-  const container = el("div", { id: "custom-tuning-inputs", hidden: "true" });
-  const stringLabels = [
-    "String 1 (high E)",
-    "String 2",
-    "String 3",
-    "String 4",
-    "String 5",
-    "String 6 (low E)",
-  ];
+const CUSTOM_TUNING_STRING_LABELS = [
+  "String 1 (high E)",
+  "String 2",
+  "String 3",
+  "String 4",
+  "String 5",
+  "String 6 (low E)",
+];
+
+// Implements Story 2, FR-005/FR-006 + UAT round 1 section D1: the previously
+// always-visible custom-tuning panel is now a modal, opened by selecting
+// "Custom Tuning" or clicking the "Edit" button shown only in custom mode.
+function buildCustomTuningModal() {
+  const overlay = el("div", { id: "custom-tuning-modal-overlay", class: "modal-overlay", hidden: "true" });
+  const modal = el("div", {
+    id: "custom-tuning-modal",
+    class: "modal",
+    role: "dialog",
+    "aria-modal": "true",
+    "aria-labelledby": "custom-tuning-modal-heading",
+  });
+
+  modal.appendChild(el("h2", { id: "custom-tuning-modal-heading", text: "Custom Tuning" }));
 
   for (let i = 0; i < 6; i++) {
     const row = el("div", { class: "custom-tuning-row" });
-    row.appendChild(el("label", { for: `custom-pitch-${i}`, text: stringLabels[i] }));
+    row.appendChild(el("label", { for: `custom-pitch-${i}`, text: CUSTOM_TUNING_STRING_LABELS[i] }));
 
     const pitchSelect = el("select", { id: `custom-pitch-${i}`, "data-string-index": i });
     for (const pc of CHROMATIC_PITCH_CLASSES) {
       pitchSelect.appendChild(el("option", { value: pc, text: pc }));
     }
 
+    const octaveLabel = el("label", {
+      for: `custom-octave-${i}`,
+      class: "custom-octave-label",
+      text: "Octave",
+    });
     const octaveInput = el("input", {
       type: "number",
       id: `custom-octave-${i}`,
@@ -66,15 +84,20 @@ function buildCustomTuningInputs() {
       min: "0",
       max: "8",
       value: "3",
-      "aria-label": `${stringLabels[i]} octave`,
+      "aria-label": `${CUSTOM_TUNING_STRING_LABELS[i]} octave`,
     });
 
     row.appendChild(pitchSelect);
+    row.appendChild(octaveLabel);
     row.appendChild(octaveInput);
-    container.appendChild(row);
+    modal.appendChild(row);
   }
 
-  return container;
+  const closeButton = el("button", { type: "button", id: "custom-tuning-modal-close", text: "Close" });
+  modal.appendChild(closeButton);
+  overlay.appendChild(modal);
+
+  return { overlay, closeButton };
 }
 
 function readCustomTuningFromInputs() {
@@ -96,33 +119,70 @@ function applyStateToCustomInputs() {
   }
 }
 
-// Implements Story 2, FR-005/FR-006: tuning selector + custom per-string inputs
+// Prepopulate the modal from whatever tuning was active just before switching
+// to Custom: existing custom values if there are any, otherwise a copy of
+// the previously-selected named preset's own pitches (UAT round 1 section D1).
+function resolveInitialCustomTuning() {
+  const { tuning } = state.getState();
+  if (tuning.presetId === "custom" && tuning.customOpenPitchClasses) {
+    return { pitchClasses: [...tuning.customOpenPitchClasses], octaves: [...tuning.customOpenOctaves] };
+  }
+  const preset = theory.TUNINGS.find((t) => t.id === tuning.presetId) || theory.TUNINGS[0];
+  return { pitchClasses: [...preset.openPitchClasses], octaves: [...preset.openOctaves] };
+}
+
+// Implements Story 2, FR-005/FR-006: tuning selector + custom-tuning modal
 export function initTuningControls() {
   const container = document.getElementById("tuning-controls");
   container.textContent = "";
 
   const select = buildTuningSelect();
-  const customInputs = buildCustomTuningInputs();
+  const editButton = el("button", { type: "button", id: "custom-tuning-edit", text: "Edit" });
   container.appendChild(select);
-  container.appendChild(customInputs);
+  container.appendChild(editButton);
+
+  const modalRoot = document.getElementById("custom-tuning-modal-root");
+  modalRoot.textContent = "";
+  const { overlay, closeButton } = buildCustomTuningModal();
+  modalRoot.appendChild(overlay);
 
   select.value = state.getState().tuning.presetId;
-  customInputs.hidden = select.value !== "custom";
-  applyStateToCustomInputs();
+  editButton.hidden = select.value !== "custom";
+
+  function openModal() {
+    applyStateToCustomInputs();
+    overlay.hidden = false;
+  }
+  function closeModal() {
+    overlay.hidden = true;
+  }
 
   select.addEventListener("change", () => {
     const presetId = select.value;
-    customInputs.hidden = presetId !== "custom";
     if (presetId === "custom") {
-      const { pitchClasses, octaves } = readCustomTuningFromInputs();
+      const { pitchClasses, octaves } = resolveInitialCustomTuning();
       state.setTuning("custom", pitchClasses, octaves);
+      editButton.hidden = false;
+      rerender();
+      openModal();
     } else {
       state.setTuning(presetId);
+      editButton.hidden = true;
+      rerender();
     }
-    rerender();
   });
 
-  customInputs.addEventListener("change", () => {
+  editButton.addEventListener("click", openModal);
+  closeButton.addEventListener("click", closeModal);
+  overlay.addEventListener("click", (event) => {
+    if (event.target === overlay) closeModal();
+  });
+  overlay.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeModal();
+  });
+
+  overlay.addEventListener("change", (event) => {
+    if (!event.target.matches("select, input")) return;
     const { pitchClasses, octaves } = readCustomTuningFromInputs();
     state.setTuning("custom", pitchClasses, octaves);
     rerender();

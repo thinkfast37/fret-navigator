@@ -15,6 +15,7 @@ const dom = new JSDOM(
     <div id="fret-range-controls"></div>
     <div id="capo-controls"></div>
     <div id="chord-info"></div>
+    <div id="custom-tuning-modal-root"></div>
     <svg id="fretboard"></svg>
     <div id="audio-error-banner" hidden></div>
   </body></html>`,
