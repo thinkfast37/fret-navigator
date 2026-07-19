@@ -51,60 +51,60 @@ tests/theory.test.js
 
 ### Reference data
 
-- [ ] T005 Write unit tests for the `TUNINGS` reference-data export in `tests/theory.test.js`: all ~17 named tunings (D-Family ×8, G-Family ×5, C-Family ×4) plus `"standard"`, each with correct `group`, 6-element `openPitchClasses`/`openOctaves` arrays, per data-model.md's Tuning shape and spec User Story 2's exact tuning list
-- [ ] T006 Implement the `TUNINGS` export in `js/theory.js` to satisfy T005 (depends on T005 failing first)
-- [ ] T007 Write unit tests for the `SCALES` reference-data export in `tests/theory.test.js`: all 13 scales/modes, correct `category` grouping (Church Modes/Pentatonic/Blues/Other), and `degreeFormula`/`semitoneOffsets` matching Story 4's tables exactly (e.g. Dorian → `["1","2","b3","4","5","6","b7"]` / `[0,2,3,5,7,9,10]`)
-- [ ] T008 Implement the `SCALES` export in `js/theory.js` to satisfy T007 (depends on T007)
-- [ ] T009 Write unit tests for the `DEGREE_ROLES` reference-data export in `tests/theory.test.js`: all 12 chromatic positions (`1, b2, 2, b3, 3, 4, #4/b5, 5, b6, 6, b7, 7`) with correct `roleLabel` and stable `colorRoleId`
-- [ ] T010 Implement the `DEGREE_ROLES` export in `js/theory.js` to satisfy T009 (depends on T009)
+- [X] T005 Write unit tests for the `TUNINGS` reference-data export in `tests/theory.test.js`: all ~17 named tunings (D-Family ×8, G-Family ×5, C-Family ×4) plus `"standard"`, each with correct `group`, 6-element `openPitchClasses`/`openOctaves` arrays, per data-model.md's Tuning shape and spec User Story 2's exact tuning list
+- [X] T006 Implement the `TUNINGS` export in `js/theory.js` to satisfy T005 (depends on T005 failing first)
+- [X] T007 Write unit tests for the `SCALES` reference-data export in `tests/theory.test.js`: all 13 scales/modes, correct `category` grouping (Church Modes/Pentatonic/Blues/Other), and `degreeFormula`/`semitoneOffsets` matching Story 4's tables exactly (e.g. Dorian → `["1","2","b3","4","5","6","b7"]` / `[0,2,3,5,7,9,10]`)
+- [X] T008 Implement the `SCALES` export in `js/theory.js` to satisfy T007 (depends on T007)
+- [X] T009 Write unit tests for the `DEGREE_ROLES` reference-data export in `tests/theory.test.js`: all 12 chromatic positions (`1, b2, 2, b3, 3, 4, #4/b5, 5, b6, 6, b7, 7`) with correct `roleLabel` and stable `colorRoleId`
+- [X] T010 Implement the `DEGREE_ROLES` export in `js/theory.js` to satisfy T009 (depends on T009)
 
 ### Pitch computation
 
-- [ ] T011 Write unit tests for `noteAt(tuning, stringIndex, fret)` in `tests/theory.test.js`: open strings (`fret=0`), the 12-fret octave wraparound, every tuning in `TUNINGS`, and edge frets 0/12/24 — per the constitution's Principle I hard-gate list
-- [ ] T012 Implement `noteAt()` in `js/theory.js` to satisfy T011 (depends on T011, T006)
-- [ ] T013 Write unit tests for `spellPitchClass(semitone, keyContext)` in `tests/theory.test.js`: enharmonic equivalents (C#/Db, F#/Gb, etc.) spelled correctly per key context, not a fixed global sharp/flat default
-- [ ] T014 Implement `spellPitchClass()` in `js/theory.js` to satisfy T013 (depends on T013)
+- [X] T011 Write unit tests for `noteAt(tuning, stringIndex, fret)` in `tests/theory.test.js`: open strings (`fret=0`), the 12-fret octave wraparound, every tuning in `TUNINGS`, and edge frets 0/12/24 — per the constitution's Principle I hard-gate list
+- [X] T012 Implement `noteAt()` in `js/theory.js` to satisfy T011 (depends on T011, T006)
+- [X] T013 Write unit tests for `spellPitchClass(semitone, keyContext)` in `tests/theory.test.js`: enharmonic equivalents (C#/Db, F#/Gb, etc.) spelled correctly per key context, not a fixed global sharp/flat default
+- [X] T014 Implement `spellPitchClass()` in `js/theory.js` to satisfy T013 (depends on T013)
 
 ### Scale/degree computation
 
-- [ ] T015 Write unit tests for `getDiatonicSemitones(root, scaleId)` in `tests/theory.test.js`: exact semitone set (root + each `semitoneOffsets`, mod 12) for every scale × several roots, verifying "no more, no fewer" (FR-011)
-- [ ] T016 Implement `getDiatonicSemitones()` in `js/theory.js` to satisfy T015 (depends on T015, T008)
-- [ ] T017 Write unit tests for `getDegreeRole(semitoneFromRoot)` in `tests/theory.test.js`: all 12 positions return the fixed color-role descriptor independent of diatonic status
-- [ ] T018 Implement `getDegreeRole()` in `js/theory.js` to satisfy T017 (depends on T017, T010)
-- [ ] T019 Write unit tests for `getDegreeLabel(semitoneFromRoot, scaleId)` in `tests/theory.test.js`: exact Story 4 formula tokens (`"b3"`, `"#4"`, `"b7"`, etc.) for diatonic positions, and `null`/throw for non-diatonic input
-- [ ] T020 Implement `getDegreeLabel()` in `js/theory.js` to satisfy T019 (depends on T019, T008)
-- [ ] T021 Write unit tests for `getIntervalLabel(semitoneFromRoot)` in `tests/theory.test.js`: correct shorthand (`"R"`, `"M3"`, `"P5"`, `"m7"`, etc.) for all 12 positions
-- [ ] T022 Implement `getIntervalLabel()` in `js/theory.js` to satisfy T021 (depends on T021)
+- [X] T015 Write unit tests for `getDiatonicSemitones(root, scaleId)` in `tests/theory.test.js`: exact semitone set (root + each `semitoneOffsets`, mod 12) for every scale × several roots, verifying "no more, no fewer" (FR-011)
+- [X] T016 Implement `getDiatonicSemitones()` in `js/theory.js` to satisfy T015 (depends on T015, T008)
+- [X] T017 Write unit tests for `getDegreeRole(semitoneFromRoot)` in `tests/theory.test.js`: all 12 positions return the fixed color-role descriptor independent of diatonic status
+- [X] T018 Implement `getDegreeRole()` in `js/theory.js` to satisfy T017 (depends on T017, T010)
+- [X] T019 Write unit tests for `getDegreeLabel(semitoneFromRoot, scaleId)` in `tests/theory.test.js`: exact Story 4 formula tokens (`"b3"`, `"#4"`, `"b7"`, etc.) for diatonic positions, and `null`/throw for non-diatonic input
+- [X] T020 Implement `getDegreeLabel()` in `js/theory.js` to satisfy T019 (depends on T019, T008)
+- [X] T021 Write unit tests for `getIntervalLabel(semitoneFromRoot)` in `tests/theory.test.js`: correct shorthand (`"R"`, `"M3"`, `"P5"`, `"m7"`, etc.) for all 12 positions
+- [X] T022 Implement `getIntervalLabel()` in `js/theory.js` to satisfy T021 (depends on T021)
 
 ### Chord/focal-point computation
 
-- [ ] T023 Write unit tests for `computeDefaultTriad(focalSemitone, root, scaleId)` in `tests/theory.test.js`: stacking nearest diatonic thirds above several focal points across multiple scales, including at least one case producing each of major/minor/diminished/augmented
-- [ ] T024 Implement `computeDefaultTriad()` in `js/theory.js` to satisfy T023 (depends on T023, T016)
-- [ ] T025 Write unit tests for `getTriadQuality(triadSemitones)` in `tests/theory.test.js`: quality derived purely from interval structure for major/minor/diminished/augmented triads
-- [ ] T026 Implement `getTriadQuality()` in `js/theory.js` to satisfy T025 (depends on T025)
-- [ ] T027 Write unit tests for `isToggleableChordTone(semitoneFromRoot, root, scaleId)` in `tests/theory.test.js`: `true` only for semitones in `getDiatonicSemitones(root, scaleId)` — covers spec Story 5 Acceptance Scenarios 5–7 (Esus4 valid, F# blocked in C Major, F# unblocked in C Lydian)
-- [ ] T028 Implement `isToggleableChordTone()` in `js/theory.js` to satisfy T027 (depends on T027, T016)
-- [ ] T029 Write unit tests for `identifyChordQuality(brightSetSemitones, root)` in `tests/theory.test.js`: recognized shapes (e.g. minor triad → `"Minor"`) and `null` for sets that don't map to one canonical name (FR-021)
-- [ ] T030 Implement `identifyChordQuality()` in `js/theory.js` to satisfy T029 (depends on T029)
+- [X] T023 Write unit tests for `computeDefaultTriad(focalSemitone, root, scaleId)` in `tests/theory.test.js`: stacking nearest diatonic thirds above several focal points across multiple scales, including at least one case producing each of major/minor/diminished/augmented
+- [X] T024 Implement `computeDefaultTriad()` in `js/theory.js` to satisfy T023 (depends on T023, T016)
+- [X] T025 Write unit tests for `getTriadQuality(triadSemitones)` in `tests/theory.test.js`: quality derived purely from interval structure for major/minor/diminished/augmented triads
+- [X] T026 Implement `getTriadQuality()` in `js/theory.js` to satisfy T025 (depends on T025)
+- [X] T027 Write unit tests for `isToggleableChordTone(semitoneFromRoot, root, scaleId)` in `tests/theory.test.js`: `true` only for semitones in `getDiatonicSemitones(root, scaleId)` — covers spec Story 5 Acceptance Scenarios 5–7 (Esus4 valid, F# blocked in C Major, F# unblocked in C Lydian)
+- [X] T028 Implement `isToggleableChordTone()` in `js/theory.js` to satisfy T027 (depends on T027, T016)
+- [X] T029 Write unit tests for `identifyChordQuality(brightSetSemitones, root)` in `tests/theory.test.js`: recognized shapes (e.g. minor triad → `"Minor"`) and `null` for sets that don't map to one canonical name (FR-021)
+- [X] T030 Implement `identifyChordQuality()` in `js/theory.js` to satisfy T029 (depends on T029)
 
 ### Capo computation
 
-- [ ] T031 Write unit tests for `getDisplayRootSemitone(trueRootSemitone, capoFret, pitchReferenceMode)` in `tests/theory.test.js`: returns `trueRootSemitone` unchanged when `capoFret===0` or mode is `"absolute"`; returns `(trueRootSemitone - capoFret + 12) mod 12` when `capoFret>0` and mode is `"relative"` — per contracts/theory-api.md
-- [ ] T032 Implement `getDisplayRootSemitone()` in `js/theory.js` to satisfy T031 (depends on T031)
-- [ ] T033 Write unit tests for `getRelativeLabelSemitone(physicalFret, capoFret)` in `tests/theory.test.js`: returns `physicalFret - capoFret`, and equals `physicalFret` when `capoFret===0`
-- [ ] T034 Implement `getRelativeLabelSemitone()` in `js/theory.js` to satisfy T033 (depends on T033)
-- [ ] T035 Write unit tests for `isFretPlayable(fret, capoFret)` in `tests/theory.test.js`: `fret >= capoFret` across boundary values
-- [ ] T036 Implement `isFretPlayable()` in `js/theory.js` to satisfy T035 (depends on T035)
+- [X] T031 Write unit tests for `getDisplayRootSemitone(trueRootSemitone, capoFret, pitchReferenceMode)` in `tests/theory.test.js`: returns `trueRootSemitone` unchanged when `capoFret===0` or mode is `"absolute"`; returns `(trueRootSemitone - capoFret + 12) mod 12` when `capoFret>0` and mode is `"relative"` — per contracts/theory-api.md
+- [X] T032 Implement `getDisplayRootSemitone()` in `js/theory.js` to satisfy T031 (depends on T031)
+- [X] T033 Write unit tests for `getRelativeLabelSemitone(physicalFret, capoFret)` in `tests/theory.test.js`: returns `physicalFret - capoFret`, and equals `physicalFret` when `capoFret===0`
+- [X] T034 Implement `getRelativeLabelSemitone()` in `js/theory.js` to satisfy T033 (depends on T033)
+- [X] T035 Write unit tests for `isFretPlayable(fret, capoFret)` in `tests/theory.test.js`: `fret >= capoFret` across boundary values
+- [X] T036 Implement `isFretPlayable()` in `js/theory.js` to satisfy T035 (depends on T035)
 
 ### The `getDisplayRootSemitone` binding rule (explicit, separately-verifiable)
 
 Per contracts/theory-api.md's binding rule: `getDiatonicSemitones`, `computeDefaultTriad`, `isToggleableChordTone`, and `identifyChordQuality` MUST be called with `getDisplayRootSemitone`'s output — never the raw Story-3-selected root — whenever Relative mode + an active capo apply (spec Story 9 Acceptance Scenario 7). This is tested as its own case, not assumed to fall out of the four functions' individual tests above.
 
-- [ ] T037 Write the binding-rule integration test in `tests/theory.test.js`: with a fixed root/scale and `capoFret>0`/`pitchReferenceMode="relative"`, compute `displayRootSemitone = getDisplayRootSemitone(...)` and assert `getDiatonicSemitones(displayRootSemitone, scaleId)`, `computeDefaultTriad(focal, displayRootSemitone, scaleId)`, `isToggleableChordTone(semitone, displayRootSemitone, scaleId)`, and `identifyChordQuality(brightSet, displayRootSemitone)` all shift relative to their `capoFret=0` (or Absolute-mode) results — and assert all four are IDENTICAL to their true-root results when `capoFret===0` or mode is `"absolute"` (depends on T016, T024, T028, T030, T032 all being implemented — this test exercises finished functions, it does not implement new ones)
+- [X] T037 Write the binding-rule integration test in `tests/theory.test.js`: with a fixed root/scale and `capoFret>0`/`pitchReferenceMode="relative"`, compute `displayRootSemitone = getDisplayRootSemitone(...)` and assert `getDiatonicSemitones(displayRootSemitone, scaleId)`, `computeDefaultTriad(focal, displayRootSemitone, scaleId)`, `isToggleableChordTone(semitone, displayRootSemitone, scaleId)`, and `identifyChordQuality(brightSet, displayRootSemitone)` all shift relative to their `capoFret=0` (or Absolute-mode) results — and assert all four are IDENTICAL to their true-root results when `capoFret===0` or mode is `"absolute"` (depends on T016, T024, T028, T030, T032 all being implemented — this test exercises finished functions, it does not implement new ones)
 
 ### Checkpoint
 
-- [ ] T038 Run `node --test tests/theory.test.js`: confirm 100% pass across every function above (T005–T037), satisfying constitution Principle I's hard gate — no later-phase task may begin until this passes
+- [X] T038 Run `node --test tests/theory.test.js`: confirm 100% pass across every function above (T005–T037), satisfying constitution Principle I's hard gate — no later-phase task may begin until this passes
 
 ---
 
