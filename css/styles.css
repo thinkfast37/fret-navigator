@@ -197,6 +197,18 @@ footer#credits a {
   cursor: not-allowed;
 }
 
+.capo-label-mode-buttons {
+  display: flex;
+  gap: 0.3rem;
+  margin-top: 0.4rem;
+}
+
+.capo-label-mode-buttons button[aria-pressed="true"] {
+  background: var(--color-fg);
+  color: #14171c;
+  font-weight: 700;
+}
+
 .fret-range-handle {
   display: flex;
   align-items: center;
@@ -226,6 +238,16 @@ footer#credits a {
 
 .note.fret-hidden {
   display: none;
+}
+
+.note.is-muted {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+.note.is-muted .note-marker {
+  fill: var(--color-neutral) !important;
+  stroke: none !important;
 }
 
 /* ---- Controls ---- */

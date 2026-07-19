@@ -37,10 +37,20 @@ function mod12(n) {
   return ((n % 12) + 12) % 12;
 }
 
+// The getDisplayRootSemitone binding rule (contracts/theory-api.md): every
+// diatonic/degree-role/focal/chord-tone computation must key off this value,
+// never the raw Story-3-selected root, whenever Relative mode + an active
+// capo apply. Returns null when no root is selected yet.
+export function getEffectiveRootSemitone(appState) {
+  if (!appState.root) return null;
+  const trueRootSemitone = theory.rootLetterToSemitone(appState.root);
+  return theory.getDisplayRootSemitone(trueRootSemitone, appState.capoFret, appState.capoLabelMode);
+}
+
 // Default focal triad merged with user chord-tone overrides -> Set of
-// root-relative semitones (0=key root) currently in the "bright" set.
+// root-relative semitones (0=effective root) currently in the "bright" set.
 export function computeActiveBrightSet(appState) {
-  const rootSemitone = appState.root ? theory.rootLetterToSemitone(appState.root) : null;
+  const rootSemitone = getEffectiveRootSemitone(appState);
   if (rootSemitone === null || !appState.scaleId) return new Set();
 
   const defaultTriad = theory.computeDefaultTriad(
@@ -67,12 +77,15 @@ function svgEl(tag, attrs = {}) {
 // Every fret click/tap plays its true sounding pitch (FR-028). Only
 // diatonically-colored notes additionally become the new focal point
 // (FR-017) - non-diatonic notes still play audio, just don't affect focus.
+// Frets muted by an active capo (below it) are fully inert (FR-033).
 function onNoteActivated(g) {
+  if (g.dataset.isPlayable === "false") return;
+
   audio.play(Number(g.dataset.midiNote));
 
   if (!g.classList.contains("is-diatonic")) return;
   const appState = state.getState();
-  const rootSemitone = theory.rootLetterToSemitone(appState.root);
+  const rootSemitone = getEffectiveRootSemitone(appState);
   const pitchClassSemitone = Number(g.dataset.pitchClassSemitone);
   const semitoneFromRoot = mod12(pitchClassSemitone - rootSemitone);
   state.setFocalDegreeSemitone(semitoneFromRoot);
@@ -200,25 +213,43 @@ function updateNotes(state) {
   const tuning = resolveTuning(state);
   const keyContext = effectiveKeyContext(state);
 
-  const rootSemitone = state.root ? theory.rootLetterToSemitone(state.root) : null;
+  // Binding rule (contracts/theory-api.md): diatonic set, degree-role
+  // assignment, focal triad, and chord-tone gating all key off the display
+  // root, never the raw Story-3-selected root, whenever Relative mode + an
+  // active capo apply. At capoFret=0 or in Absolute mode this always equals
+  // the true root, so routing through it unconditionally is always correct.
+  const rootSemitone = getEffectiveRootSemitone(state);
   const diatonicSemitones =
     rootSemitone !== null && state.scaleId
       ? theory.getDiatonicSemitones(rootSemitone, state.scaleId)
       : new Set();
   const activeBrightSet = computeActiveBrightSet(state);
+  const isRelativeLabelMode = state.capoFret > 0 && state.capoLabelMode === "relative";
 
   for (let s = 0; s < STRING_COUNT; s++) {
     for (let f = 0; f <= FRET_COUNT; f++) {
       const key = `s${s}-f${f}`;
       const { g, text } = noteElements.get(key);
       const { midiNote, pitchClassSemitone } = theory.noteAt(tuning, s, f);
+      const isPlayable = theory.isFretPlayable(f, state.capoFret);
 
       const isRoot = rootSemitone !== null && pitchClassSemitone === rootSemitone;
       const isDiatonic = diatonicSemitones.has(pitchClassSemitone);
       const semitoneFromRoot = rootSemitone !== null ? mod12(pitchClassSemitone - rootSemitone) : null;
       const isFocalChordTone = isDiatonic && activeBrightSet.has(semitoneFromRoot);
 
-      const noteName = theory.spellPitchClass(pitchClassSemitone, keyContext);
+      // Relative-mode note NAMES are a distinct computation from the
+      // diatonic/degree-role layer above: the string's own static open
+      // pitch class + (fret - capoFret), never a capo-raised pitch.
+      let noteName;
+      if (isRelativeLabelMode) {
+        const openSemitone = theory.noteAt(tuning, s, 0).pitchClassSemitone;
+        const relativeSemitone = mod12(openSemitone + theory.getRelativeLabelSemitone(f, state.capoFret));
+        noteName = theory.spellPitchClass(relativeSemitone, keyContext);
+      } else {
+        noteName = theory.spellPitchClass(pitchClassSemitone, keyContext);
+      }
+
       let label = noteName; // base layer: note name, always shown for non-diatonic notes
       if (isDiatonic && state.labelMode === "degrees") {
         label = theory.getDegreeLabel(semitoneFromRoot, state.scaleId);
@@ -231,8 +262,9 @@ function updateNotes(state) {
       g.classList.toggle("is-root", isRoot);
       g.classList.toggle("is-diatonic", isDiatonic);
       g.classList.toggle("is-bright", isFocalChordTone);
+      g.classList.toggle("is-muted", !isPlayable);
       g.classList.toggle("fret-hidden", !isVisibleInRange);
-      g.setAttribute("tabindex", isVisibleInRange ? "0" : "-1");
+      g.setAttribute("tabindex", isVisibleInRange && isPlayable ? "0" : "-1");
 
       for (const roleId of ALL_ROLE_IDS) g.classList.remove(`role-${roleId}`);
       if (isDiatonic) {
@@ -243,10 +275,11 @@ function updateNotes(state) {
       text.textContent = label;
       g.setAttribute(
         "aria-label",
-        `${label}${isRoot ? ", root" : ""}${isFocalChordTone ? ", chord tone" : isDiatonic ? ", in scale" : ""}, fret ${f === 0 ? "open" : f}, string ${s + 1}`
+        `${label}${isRoot ? ", root" : ""}${isFocalChordTone ? ", chord tone" : isDiatonic ? ", in scale" : ""}${isPlayable ? "" : ", muted"}, fret ${f === 0 ? "open" : f}, string ${s + 1}`
       );
       g.dataset.midiNote = midiNote;
       g.dataset.pitchClassSemitone = pitchClassSemitone;
+      g.dataset.isPlayable = isPlayable;
     }
   }
 }

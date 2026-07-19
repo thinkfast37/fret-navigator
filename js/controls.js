@@ -229,6 +229,31 @@ function syncLabelModeButtons() {
   }
 }
 
+// Keeps the slider's DOM in sync with state on every render, including
+// renders triggered by the capo control (T089's lock/release) rather than
+// by the slider itself.
+export function syncFretRangeControls() {
+  const leftInput = document.getElementById("fret-range-left");
+  if (!leftInput) return; // not built yet
+  const rightInput = document.getElementById("fret-range-right");
+  const leftLabel = document.getElementById("fret-range-left-label");
+  const rightLabel = document.getElementById("fret-range-right-label");
+
+  const appState = state.getState();
+  const { lowerBound, upperBound } = appState.fretRange;
+  const capoLocked = appState.capoFret > 0;
+
+  leftInput.value = String(lowerBound);
+  rightInput.value = String(upperBound);
+  rightInput.min = leftInput.value;
+  leftInput.max = capoLocked ? String(appState.capoFret) : rightInput.value;
+  leftInput.min = capoLocked ? String(appState.capoFret) : "0";
+  leftInput.disabled = capoLocked;
+
+  leftLabel.textContent = capoLocked ? "Capo" : lowerBound === 0 ? "N" : String(lowerBound);
+  rightLabel.textContent = String(upperBound);
+}
+
 export function initFretRangeControls() {
   const container = document.getElementById("fret-range-controls");
   container.textContent = "";
@@ -257,45 +282,21 @@ export function initFretRangeControls() {
 
   const resetButton = el("button", { type: "button", id: "fret-range-reset", text: "Reset range" });
 
-  function updateLabels() {
-    const isCapoLocked = state.getState().capoFret > 0;
-    const left = Number(leftInput.value);
-    leftLabel.textContent = left === 0 && !isCapoLocked ? "N" : isCapoLocked ? "Capo" : String(left);
-    rightLabel.textContent = String(rightInput.value);
-  }
-
-  function syncConstraints() {
-    // Left cannot be dragged past right, and vice versa (FR-026) - at least one fret stays visible.
-    rightInput.min = leftInput.value;
-    leftInput.max = state.getState().capoFret > 0 ? String(state.getState().capoFret) : rightInput.value;
-  }
-
   leftInput.addEventListener("input", () => {
-    if (state.getState().capoFret > 0) return; // locked to capo, see T089
-    syncConstraints();
+    if (state.getState().capoFret > 0) return; // locked to capo (FR-035)
     state.setFretRange(Number(leftInput.value), Number(rightInput.value));
-    updateLabels();
     rerender();
   });
 
   rightInput.addEventListener("input", () => {
-    syncConstraints();
     state.setFretRange(Number(leftInput.value), Number(rightInput.value));
-    updateLabels();
     rerender();
   });
 
   resetButton.addEventListener("click", () => {
-    leftInput.value = "0";
-    rightInput.value = "24";
-    syncConstraints();
     state.setFretRange(0, 24);
-    updateLabels();
     rerender();
   });
-
-  syncConstraints();
-  updateLabels();
 
   const leftGroup = el("div", { class: "fret-range-handle" }, [
     el("label", { for: "fret-range-left", text: "Left: " }),
@@ -311,6 +312,8 @@ export function initFretRangeControls() {
   container.appendChild(leftGroup);
   container.appendChild(rightGroup);
   container.appendChild(resetButton);
+
+  syncFretRangeControls();
 }
 
 function mod12(n) {
@@ -322,7 +325,7 @@ export function updateChordInfo() {
   container.textContent = "";
 
   const appState = state.getState();
-  const rootSemitone = appState.root ? theory.rootLetterToSemitone(appState.root) : null;
+  const rootSemitone = fretboard.getEffectiveRootSemitone(appState);
   if (rootSemitone === null || !appState.scaleId) return;
 
   const activeBrightSet = fretboard.computeActiveBrightSet(appState);
@@ -362,12 +365,62 @@ export function updateChordInfo() {
   container.appendChild(summary);
 }
 
+export function initCapoControls() {
+  const container = document.getElementById("capo-controls");
+  container.textContent = "";
+
+  const select = el("select", { id: "capo-select", "aria-label": "Capo fret" });
+  select.appendChild(el("option", { value: "0", text: "No capo" }));
+  for (let fret = 1; fret <= 12; fret++) {
+    select.appendChild(el("option", { value: String(fret), text: `Fret ${fret}` }));
+  }
+  select.value = String(state.getState().capoFret);
+  select.addEventListener("change", () => {
+    state.setCapoFret(Number(select.value));
+    rerender();
+  });
+  container.appendChild(select);
+
+  const modeRow = el("div", {
+    class: "capo-label-mode-buttons",
+    role: "group",
+    "aria-label": "Absolute or Relative labeling",
+  });
+  for (const mode of [
+    { value: "absolute", label: "Absolute" },
+    { value: "relative", label: "Relative" },
+  ]) {
+    const button = el("button", {
+      type: "button",
+      "data-capo-mode": mode.value,
+      text: mode.label,
+      "aria-pressed": String(state.getState().capoLabelMode === mode.value),
+    });
+    button.addEventListener("click", () => {
+      state.setCapoLabelMode(mode.value);
+      syncCapoModeButtons();
+      rerender();
+    });
+    modeRow.appendChild(button);
+  }
+  container.appendChild(modeRow);
+}
+
+function syncCapoModeButtons() {
+  const current = state.getState().capoLabelMode;
+  for (const button of document.querySelectorAll(".capo-label-mode-buttons button")) {
+    button.setAttribute("aria-pressed", String(button.dataset.capoMode === current));
+  }
+}
+
 export function initControls() {
   initTuningControls();
   initRootControls();
   initScaleControls();
   initLabelModeControls();
   initFretRangeControls();
+  initCapoControls();
   fretboard.onAfterRender(updateChordInfo);
+  fretboard.onAfterRender(syncFretRangeControls);
   updateChordInfo();
 }
