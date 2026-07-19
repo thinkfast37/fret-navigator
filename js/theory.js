@@ -249,3 +249,9 @@ export function getRelativeLabelSemitone(physicalFret, capoFret) {
 export function isFretPlayable(fret, capoFret) {
   return fret >= capoFret;
 }
+
+// Shared natural-letter-to-semitone lookup, exposed so consuming layers never
+// duplicate this mapping (constitution Principle I: single canonical module).
+export function rootLetterToSemitone(letter) {
+  return NATURAL_LETTER_SEMITONES[letter];
+}

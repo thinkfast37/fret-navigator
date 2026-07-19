@@ -21,6 +21,7 @@ import {
   getDisplayRootSemitone,
   getRelativeLabelSemitone,
   isFretPlayable,
+  rootLetterToSemitone,
 } from "../js/theory.js";
 
 // ---- Reference data (T005, T007, T009) ----
@@ -313,6 +314,15 @@ describe("getRelativeLabelSemitone", () => {
   test("physicalFret - capoFret, equals physicalFret when capoFret===0", () => {
     assert.equal(getRelativeLabelSemitone(5, 3), 2);
     assert.equal(getRelativeLabelSemitone(7, 0), 7);
+  });
+});
+
+describe("rootLetterToSemitone", () => {
+  test("maps all 7 natural letters to their chromatic semitone", () => {
+    assert.deepEqual(
+      ["C", "D", "E", "F", "G", "A", "B"].map(rootLetterToSemitone),
+      [0, 2, 4, 5, 7, 9, 11]
+    );
   });
 });
 
