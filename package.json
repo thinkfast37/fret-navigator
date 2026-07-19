@@ -1,0 +1,8 @@
+{
+  "name": "fret-navigator",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/theory.test.js"
+  }
+}

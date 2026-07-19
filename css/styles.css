@@ -1,0 +1,61 @@
+:root {
+  --color-bg: #14171c;
+  --color-fg: #e8e8e8;
+  --color-neutral: #3a3f47;
+  --color-neutral-text: #d8d8d8;
+
+  /* Chromatic degree-role colors: one bright + one dark variant per role. */
+  --role-1-bright: #ff5252;
+  --role-1-dark: #7a2323;
+  --role-b2-bright: #ff8a3d;
+  --role-b2-dark: #7a4620;
+  --role-2-bright: #ffca3d;
+  --role-2-dark: #7a6120;
+  --role-b3-bright: #e3ff3d;
+  --role-b3-dark: #6e7a20;
+  --role-3-bright: #a3ff3d;
+  --role-3-dark: #4d7a20;
+  --role-4-bright: #3dff6b;
+  --role-4-dark: #1f7a3a;
+  --role-4s5b-bright: #3dffd0;
+  --role-4s5b-dark: #1f7a68;
+  --role-5-bright: #3dc7ff;
+  --role-5-dark: #1f5f7a;
+  --role-b6-bright: #3d8aff;
+  --role-b6-dark: #1f437a;
+  --role-6-bright: #6b3dff;
+  --role-6-dark: #351f7a;
+  --role-b7-bright: #c73dff;
+  --role-b7-dark: #601f7a;
+  --role-7-bright: #ff3dc7;
+  --role-7-dark: #7a1f60;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--color-bg);
+  color: var(--color-fg);
+}
+
+header {
+  padding: 1rem;
+}
+
+main {
+  padding: 0 1rem 1rem;
+}
+
+footer#credits {
+  padding: 1rem;
+  font-size: 0.8rem;
+  color: var(--color-neutral-text);
+}
+
+footer#credits a {
+  color: inherit;
+}

@@ -36,10 +36,10 @@ tests/theory.test.js
 
 **Purpose**: Repo scaffolding — no logic yet.
 
-- [ ] T001 Create the project tree exactly as specified in plan.md's Project Structure: `index.html`, `css/styles.css`, `js/theory.js`, `js/state.js`, `js/audio.js`, `js/fretboard.js`, `js/controls.js`, `js/main.js`, `tests/theory.test.js` (empty/stub files)
-- [ ] T002 [P] Create `index.html` shell: `<script type="module" src="js/main.js">`, the `soundfont-player` CDN `<script>` tag, an empty `<svg>` container for the fretboard, and empty control-placeholder containers (tuning, root, scale, label-mode, fret-range, capo) to be filled in by later stories
-- [ ] T003 [P] Create `css/styles.css` skeleton: CSS custom properties for the 12 chromatic degree-role color pairs (bright + dark variant each, per data-model.md's Chromatic Degree Role), base page layout, no component styling yet
-- [ ] T004 [P] Confirm `node --test tests/theory.test.js` runs cleanly against the empty stub (zero tests, zero failures) — establishes the hard-gate test command works before any theory.js work begins
+- [X] T001 Create the project tree exactly as specified in plan.md's Project Structure: `index.html`, `css/styles.css`, `js/theory.js`, `js/state.js`, `js/audio.js`, `js/fretboard.js`, `js/controls.js`, `js/main.js`, `tests/theory.test.js` (empty/stub files)
+- [X] T002 [P] Create `index.html` shell: `<script type="module" src="js/main.js">`, the `soundfont-player` CDN `<script>` tag, an empty `<svg>` container for the fretboard, and empty control-placeholder containers (tuning, root, scale, label-mode, fret-range, capo) to be filled in by later stories
+- [X] T003 [P] Create `css/styles.css` skeleton: CSS custom properties for the 12 chromatic degree-role color pairs (bright + dark variant each, per data-model.md's Chromatic Degree Role), base page layout, no component styling yet
+- [X] T004 [P] Confirm `node --test tests/theory.test.js` runs cleanly against the empty stub (zero tests, zero failures) — establishes the hard-gate test command works before any theory.js work begins
 
 ---
 

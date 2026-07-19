@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fret Navigator</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header>
+    <h1>Fret Navigator</h1>
+  </header>
+
+  <main>
+    <section id="controls" aria-label="Fretboard controls">
+      <div id="tuning-controls"></div>
+      <div id="root-controls"></div>
+      <div id="scale-controls"></div>
+      <div id="label-mode-controls"></div>
+      <div id="fret-range-controls"></div>
+      <div id="capo-controls"></div>
+      <div id="chord-info"></div>
+    </section>
+
+    <section id="fretboard-container" aria-label="Fretboard">
+      <svg id="fretboard" role="img" aria-label="Guitar fretboard"></svg>
+    </section>
+  </main>
+
+  <div id="audio-error-banner" role="alert" hidden></div>
+
+  <footer id="credits">
+    <p>
+      Guitar samples: FluidR3_GM SoundFont by Frank Wen, served via
+      <a href="https://github.com/gleitz/midi-js-soundfonts" target="_blank" rel="noopener noreferrer">gleitz/midi-js-soundfonts</a>,
+      licensed <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener noreferrer">CC BY 3.0</a>.
+    </p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/soundfont-player@0.12.0/dist/soundfont-player.min.js"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
