@@ -184,10 +184,10 @@ Per contracts/theory-api.md's binding rule: `getDiatonicSemitones`, `computeDefa
 
 **Depends on**: US3 (needs a root to compute against). **theory.js dependencies used here**: `SCALES` (T008), `getDiatonicSemitones()` (T016) — already tested/implemented.
 
-- [ ] T059 [US4] Build the scale/mode selector, grouped Church Modes/Pentatonic/Blues/Other, in `js/controls.js`, sourced from `theory.SCALES` (T008)
-- [ ] T060 [US4] Compute `Note.isDiatonic` per position via `getDiatonicSemitones()` (T016) in `js/fretboard.js`'s render pipeline; diatonic notes get a color cue, non-diatonic notes get none (base layer only) (depends on T059, T057)
-- [ ] T061 [US4] Confirm scale/mode change clears prior highlighting immediately — no residual DOM classes from the previous scale — in `js/fretboard.js` (depends on T060)
-- [ ] T062 [US4] Manually validate against quickstart.md Section 4 steps 2 and 6 (exact in-scale set per Story 4 tables; no stale highlighting on scale switch)
+- [X] T059 [US4] Build the scale/mode selector, grouped Church Modes/Pentatonic/Blues/Other, in `js/controls.js`, sourced from `theory.SCALES` (T008)
+- [X] T060 [US4] Compute `Note.isDiatonic` per position via `getDiatonicSemitones()` (T016) in `js/fretboard.js`'s render pipeline; diatonic notes get a color cue, non-diatonic notes get none (base layer only) (depends on T059, T057)
+- [X] T061 [US4] Confirm scale/mode change clears prior highlighting immediately — no residual DOM classes from the previous scale — in `js/fretboard.js` (depends on T060)
+- [X] T062 [US4] Manually validate against quickstart.md Section 4 steps 2 and 6 (exact in-scale set per Story 4 tables; no stale highlighting on scale switch)
 
 **Checkpoint**: US1–US4 independently functional.
 

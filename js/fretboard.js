@@ -149,6 +149,12 @@ function updateNotes(state) {
   const tuning = resolveTuning(state);
   const keyContext = effectiveKeyContext(state);
 
+  const rootSemitone = state.root ? theory.rootLetterToSemitone(state.root) : null;
+  const diatonicSemitones =
+    rootSemitone !== null && state.scaleId
+      ? theory.getDiatonicSemitones(rootSemitone, state.scaleId)
+      : new Set();
+
   for (let s = 0; s < STRING_COUNT; s++) {
     for (let f = 0; f <= FRET_COUNT; f++) {
       const key = `s${s}-f${f}`;
@@ -156,14 +162,15 @@ function updateNotes(state) {
       const { midiNote, pitchClassSemitone } = theory.noteAt(tuning, s, f);
       const label = theory.spellPitchClass(pitchClassSemitone, keyContext);
 
-      const rootSemitone = state.root ? theory.rootLetterToSemitone(state.root) : null;
       const isRoot = rootSemitone !== null && pitchClassSemitone === rootSemitone;
+      const isDiatonic = diatonicSemitones.has(pitchClassSemitone);
       g.classList.toggle("is-root", isRoot);
+      g.classList.toggle("is-diatonic", isDiatonic);
 
       text.textContent = label;
       g.setAttribute(
         "aria-label",
-        `${label}${isRoot ? ", root" : ""}, fret ${f === 0 ? "open" : f}, string ${s + 1}`
+        `${label}${isRoot ? ", root" : ""}${isDiatonic ? ", in scale" : ""}, fret ${f === 0 ? "open" : f}, string ${s + 1}`
       );
       g.dataset.midiNote = midiNote;
     }

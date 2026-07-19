@@ -169,7 +169,33 @@ function syncRootButtons() {
   }
 }
 
+const SCALE_CATEGORY_ORDER = ["Church Modes", "Pentatonic", "Blues", "Other"];
+
+export function initScaleControls() {
+  const container = document.getElementById("scale-controls");
+  container.textContent = "";
+
+  const select = el("select", { id: "scale-select", "aria-label": "Scale or mode" });
+  select.appendChild(el("option", { value: "", text: "(No scale)" }));
+  for (const category of SCALE_CATEGORY_ORDER) {
+    const optgroup = el("optgroup", { label: category });
+    for (const scale of theory.SCALES.filter((s) => s.category === category)) {
+      optgroup.appendChild(el("option", { value: scale.id, text: scale.label }));
+    }
+    select.appendChild(optgroup);
+  }
+  select.value = state.getState().scaleId || "";
+
+  select.addEventListener("change", () => {
+    state.setScaleId(select.value || null);
+    rerender();
+  });
+
+  container.appendChild(select);
+}
+
 export function initControls() {
   initTuningControls();
   initRootControls();
+  initScaleControls();
 }

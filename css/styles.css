@@ -116,6 +116,10 @@ footer#credits a {
   stroke-width: 2;
 }
 
+.note.is-diatonic .note-marker {
+  fill: var(--role-1-dark);
+}
+
 .note.is-root .note-marker {
   stroke: #ffd54a;
   stroke-width: 3;
