@@ -10,20 +10,20 @@
   --role-b2-bright: #ff8a3d;
   --role-b2-dark: #7a4620;
   --role-2-bright: #ffca3d;
-  --role-2-dark: #7a6120;
+  --role-2-dark: #70591d;
   --role-b3-bright: #e3ff3d;
-  --role-b3-dark: #6e7a20;
+  --role-b3-dark: #5a631a;
   --role-3-bright: #a3ff3d;
-  --role-3-dark: #4d7a20;
+  --role-3-dark: #41681b;
   --role-4-bright: #3dff6b;
-  --role-4-dark: #1f7a3a;
+  --role-4-dark: #1b6c33;
   --role-4s5b-bright: #3dffd0;
-  --role-4s5b-dark: #1f7a68;
+  --role-4s5b-dark: #1a6858;
   --role-5-bright: #3dc7ff;
   --role-5-dark: #1f5f7a;
   --role-b6-bright: #3d8aff;
   --role-b6-dark: #1f437a;
-  --role-6-bright: #6b3dff;
+  --role-6-bright: #8b68ff;
   --role-6-dark: #351f7a;
   --role-b7-bright: #c73dff;
   --role-b7-dark: #601f7a;
@@ -140,6 +140,24 @@ footer#credits a {
 }
 
 .note.is-root .note-label {
+  font-weight: 700;
+}
+
+/* Diatonic notes always carry a border (shape cue), not just a fill color,
+   so "in scale" vs "not in scale" is legible without color (FR-004, SC-003). */
+.note.is-diatonic .note-marker {
+  stroke: var(--color-fg);
+  stroke-width: 1.5;
+}
+
+.note.is-diatonic .note-label {
+  fill: var(--color-neutral-text);
+}
+
+/* Bright-variant fills are light; dark text keeps every role's label at or
+   above WCAG AA contrast (4.5:1) against its own background. */
+.note.is-bright .note-label {
+  fill: #14171c;
   font-weight: 700;
 }
 

@@ -296,11 +296,11 @@ Per contracts/theory-api.md's binding rule: `getDiatonicSemitones`, `computeDefa
 
 **Purpose**: Requirements that span every story rather than belonging to one.
 
-- [ ] T096 [P] Add a visible, always-accessible FluidR3_GM CC BY 3.0 credit line (footer or About section, not dismissible) satisfying FR-042, in `index.html`
-- [ ] T097 Full accessibility pass across `index.html`/`css/styles.css`/`js/fretboard.js`: keyboard navigability for every control and fret cell, WCAG AA contrast in every highlight state, and a colorblind-simulation check that shape/border alone conveys every color-coded state (SC-003)
-- [ ] T098 Handle remaining Edge Cases in `js/fretboard.js`/`js/audio.js`: custom tuning with duplicate/unplayably-extreme pitches still renders via raw pitch math with no rejection; a note triggered mid-tuning-change finishes playing before the new tuning applies to subsequent triggers
-- [ ] T099 Confirm zero further network requests after first successful load (SC-007): audio samples are fetched once and reused, not re-fetched per trigger
-- [ ] T100 Run the full `quickstart.md` end-to-end (all 9 sections, including Section 9's persistence checks against the `fret-navigator-settings` `localStorage` key) as the final acceptance pass
+- [X] T096 [P] Add a visible, always-accessible FluidR3_GM CC BY 3.0 credit line (footer or About section, not dismissible) satisfying FR-042, in `index.html`
+- [X] T097 Full accessibility pass across `index.html`/`css/styles.css`/`js/fretboard.js`: keyboard navigability for every control and fret cell, WCAG AA contrast in every highlight state, and a colorblind-simulation check that shape/border alone conveys every color-coded state (SC-003)
+- [X] T098 Handle remaining Edge Cases in `js/fretboard.js`/`js/audio.js`: custom tuning with duplicate/unplayably-extreme pitches still renders via raw pitch math with no rejection; a note triggered mid-tuning-change finishes playing before the new tuning applies to subsequent triggers
+- [X] T099 Confirm zero further network requests after first successful load (SC-007): audio samples are fetched once and reused, not re-fetched per trigger
+- [X] T100 Run the full `quickstart.md` end-to-end (all 9 sections, including Section 9's persistence checks against the `fret-navigator-settings` `localStorage` key) as the final acceptance pass
 
 ---
 
