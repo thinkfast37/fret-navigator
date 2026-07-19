@@ -116,6 +116,15 @@ footer#credits a {
   stroke-width: 2;
 }
 
+.note.is-root .note-marker {
+  stroke: #ffd54a;
+  stroke-width: 3;
+}
+
+.note.is-root .note-label {
+  font-weight: 700;
+}
+
 .note:focus-visible .note-marker {
   stroke: var(--color-fg);
   stroke-width: 3;
@@ -159,6 +168,25 @@ footer#credits a {
 
 .custom-tuning-row label {
   min-width: 9rem;
+}
+
+.root-buttons {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.root-buttons button[aria-pressed="true"] {
+  background: #ffd54a;
+  color: #14171c;
+  border-color: #ffd54a;
+  font-weight: 700;
+}
+
+.accidental-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.85rem;
 }
 
 select,

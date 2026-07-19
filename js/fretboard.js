@@ -156,10 +156,14 @@ function updateNotes(state) {
       const { midiNote, pitchClassSemitone } = theory.noteAt(tuning, s, f);
       const label = theory.spellPitchClass(pitchClassSemitone, keyContext);
 
+      const rootSemitone = state.root ? theory.rootLetterToSemitone(state.root) : null;
+      const isRoot = rootSemitone !== null && pitchClassSemitone === rootSemitone;
+      g.classList.toggle("is-root", isRoot);
+
       text.textContent = label;
       g.setAttribute(
         "aria-label",
-        `${label}, fret ${f === 0 ? "open" : f}, string ${s + 1}`
+        `${label}${isRoot ? ", root" : ""}, fret ${f === 0 ? "open" : f}, string ${s + 1}`
       );
       g.dataset.midiNote = midiNote;
     }

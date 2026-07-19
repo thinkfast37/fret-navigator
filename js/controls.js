@@ -128,6 +128,48 @@ export function initTuningControls() {
   });
 }
 
+const NATURAL_ROOTS = ["C", "D", "E", "F", "G", "A", "B"];
+
+export function initRootControls() {
+  const container = document.getElementById("root-controls");
+  container.textContent = "";
+
+  const buttonRow = el("div", { class: "root-buttons", role: "group", "aria-label": "Root note" });
+  for (const root of NATURAL_ROOTS) {
+    const button = el("button", {
+      type: "button",
+      "data-root": root,
+      text: root,
+      "aria-pressed": String(state.getState().root === root),
+    });
+    button.addEventListener("click", () => {
+      state.setRoot(root);
+      syncRootButtons();
+      rerender();
+    });
+    buttonRow.appendChild(button);
+  }
+  container.appendChild(buttonRow);
+
+  const toggleLabel = el("label", { class: "accidental-toggle", text: "Prefer flats " });
+  const toggleInput = el("input", { type: "checkbox", id: "accidental-toggle" });
+  toggleInput.checked = state.getState().accidentalPreference === "flat";
+  toggleInput.addEventListener("change", () => {
+    state.setAccidentalPreference(toggleInput.checked ? "flat" : "sharp");
+    rerender();
+  });
+  toggleLabel.appendChild(toggleInput);
+  container.appendChild(toggleLabel);
+}
+
+function syncRootButtons() {
+  const current = state.getState().root;
+  for (const button of document.querySelectorAll(".root-buttons button")) {
+    button.setAttribute("aria-pressed", String(button.dataset.root === current));
+  }
+}
+
 export function initControls() {
   initTuningControls();
+  initRootControls();
 }

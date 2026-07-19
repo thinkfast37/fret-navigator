@@ -167,10 +167,10 @@ Per contracts/theory-api.md's binding rule: `getDiatonicSemitones`, `computeDefa
 
 **Depends on**: US1. **theory.js dependencies used here**: `spellPitchClass()` (T014) — already tested/implemented.
 
-- [ ] T055 [US3] Build the root-note selector (C D E F G A B) in `js/controls.js`
-- [ ] T056 [US3] Build the sharp/flat enharmonic toggle, enabled only for roots with an enharmonic pair (Edge Case: disabled for natural-only roots), wired to `state.accidentalPreference`, in `js/controls.js` (depends on T055)
-- [ ] T057 [US3] Wire root/accidental changes → `fretboard.render(state)`: root highlight (`isRoot`) and relabeling via `spellPitchClass()` (T014), in `js/fretboard.js` (depends on T056, T042)
-- [ ] T058 [US3] Manually validate against quickstart.md Section 4 step 1 (root selection; F#/Gb toggle without pitch/position change)
+- [X] T055 [US3] Build the root-note selector (C D E F G A B) in `js/controls.js`
+- [X] T056 [US3] Build the sharp/flat enharmonic toggle, enabled only for roots with an enharmonic pair (Edge Case: disabled for natural-only roots), wired to `state.accidentalPreference`, in `js/controls.js` (depends on T055)
+- [X] T057 [US3] Wire root/accidental changes → `fretboard.render(state)`: root highlight (`isRoot`) and relabeling via `spellPitchClass()` (T014), in `js/fretboard.js` (depends on T056, T042)
+- [X] T058 [US3] Manually validate against quickstart.md Section 4 step 1 (root selection; F#/Gb toggle without pitch/position change)
 
 **Checkpoint**: US1–US3 independently functional.
 
