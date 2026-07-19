@@ -128,14 +128,14 @@ Per contracts/theory-api.md's binding rule: `getDiatonicSemitones`, `computeDefa
 
 **theory.js dependencies used here**: `noteAt()` (T012), `spellPitchClass()` (T014) — both already tested and implemented per Phase 2.
 
-- [ ] T042 [US1] Build the inline SVG fretboard skeleton in `js/fretboard.js`: one `<svg>` with one `<g>` per string×fret position (6 strings × 25 frets), string 1 (high-E) top row → string 6 (low-E) bottom row, stable `id`/`data-string`/`data-fret` attributes, using `noteAt()` (T012) for each position's pitch
-- [ ] T043 [US1] Render inlay fret markers in `js/fretboard.js`: single-dot at frets 3,5,7,9,15,17,19,21; double-dot at 12 and 24 (depends on T042)
-- [ ] T044 [US1] Render open-string notes distinctly, positioned left of fret 1 past the nut line, in `js/fretboard.js` (depends on T042)
-- [ ] T045 [US1] Render the persistent base note-name label (via `spellPitchClass()`, T014) at every position, in a neutral non-distracting style, in `js/fretboard.js` (depends on T042)
-- [ ] T046 [US1] Wire `js/main.js` to call `fretboard.render(state)` once after `state.load()`, using the default/restored state — first visible render (depends on T041, T042, T043, T044, T045)
-- [ ] T047 [US1] Add per-note `aria-label`s (e.g. `"E4, root, fret 0, string 1"`) and keyboard focusability to every SVG `<g>` in `js/fretboard.js` (depends on T042)
-- [ ] T048 [P] [US1] Style `css/styles.css`: base layer typography/contrast (WCAG AA), fret-marker dots, open-string visual distinction, nut line
-- [ ] T049 [US1] Manually validate against quickstart.md Section 2 (base fretboard: string order, markers, open strings)
+- [X] T042 [US1] Build the inline SVG fretboard skeleton in `js/fretboard.js`: one `<svg>` with one `<g>` per string×fret position (6 strings × 25 frets), string 1 (high-E) top row → string 6 (low-E) bottom row, stable `id`/`data-string`/`data-fret` attributes, using `noteAt()` (T012) for each position's pitch
+- [X] T043 [US1] Render inlay fret markers in `js/fretboard.js`: single-dot at frets 3,5,7,9,15,17,19,21; double-dot at 12 and 24 (depends on T042)
+- [X] T044 [US1] Render open-string notes distinctly, positioned left of fret 1 past the nut line, in `js/fretboard.js` (depends on T042)
+- [X] T045 [US1] Render the persistent base note-name label (via `spellPitchClass()`, T014) at every position, in a neutral non-distracting style, in `js/fretboard.js` (depends on T042)
+- [X] T046 [US1] Wire `js/main.js` to call `fretboard.render(state)` once after `state.load()`, using the default/restored state — first visible render (depends on T041, T042, T043, T044, T045)
+- [X] T047 [US1] Add per-note `aria-label`s (e.g. `"E4, root, fret 0, string 1"`) and keyboard focusability to every SVG `<g>` in `js/fretboard.js` (depends on T042)
+- [X] T048 [P] [US1] Style `css/styles.css`: base layer typography/contrast (WCAG AA), fret-marker dots, open-string visual distinction, nut line
+- [X] T049 [US1] Manually validate against quickstart.md Section 2 (base fretboard: string order, markers, open strings)
 
 **Checkpoint**: US1 is independently functional — a static, correctly-oriented, accessible reference fretboard.
 

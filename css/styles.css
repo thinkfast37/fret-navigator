@@ -59,3 +59,69 @@ footer#credits {
 footer#credits a {
   color: inherit;
 }
+
+/* ---- Fretboard base layer ---- */
+
+#fretboard-container {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+#fretboard {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-width: 700px;
+}
+
+.string-line {
+  stroke: var(--color-neutral-text);
+  stroke-width: 1.5;
+  opacity: 0.5;
+}
+
+.nut-line {
+  stroke: var(--color-fg);
+  stroke-width: 5;
+}
+
+.fret-line {
+  stroke: var(--color-neutral-text);
+  stroke-width: 1;
+  opacity: 0.35;
+}
+
+.inlay-dot {
+  fill: var(--color-neutral-text);
+  opacity: 0.25;
+}
+
+.note-marker {
+  fill: var(--color-neutral);
+  stroke: none;
+}
+
+.note-label {
+  fill: var(--color-neutral-text);
+  font-size: 12px;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+  user-select: none;
+}
+
+.note.open-string .note-marker {
+  fill: var(--color-bg);
+  stroke: var(--color-neutral-text);
+  stroke-width: 2;
+}
+
+.note:focus-visible .note-marker {
+  stroke: var(--color-fg);
+  stroke-width: 3;
+  outline: none;
+}
+
+.note {
+  cursor: pointer;
+}
