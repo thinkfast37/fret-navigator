@@ -149,11 +149,11 @@ Per contracts/theory-api.md's binding rule: `getDiatonicSemitones`, `computeDefa
 
 **Depends on**: US1 (renders into the same fretboard). **theory.js dependencies used here**: `TUNINGS` (T006), `noteAt()` (T012) — already tested/implemented.
 
-- [ ] T050 [US2] Build the tuning selector (D-Family/G-Family/C-Family groups + Standard) in `index.html`/`js/controls.js`, sourced from `theory.TUNINGS` (T006)
-- [ ] T051 [US2] Build Custom Tuning per-string pitch inputs in `js/controls.js` (depends on T050)
-- [ ] T052 [US2] Wire tuning selection/custom input → `state.setTuning()` → `fretboard.render(state)` full re-render, recalculating every position via `noteAt()` (T012) (depends on T050, T051, T042)
-- [ ] T053 [P] [US2] Style the tuning selector and custom-tuning inputs in `css/styles.css`
-- [ ] T054 [US2] Manually validate against quickstart.md Section 3 (Drop D retune, Custom Tuning)
+- [X] T050 [US2] Build the tuning selector (D-Family/G-Family/C-Family groups + Standard) in `index.html`/`js/controls.js`, sourced from `theory.TUNINGS` (T006)
+- [X] T051 [US2] Build Custom Tuning per-string pitch inputs in `js/controls.js` (depends on T050)
+- [X] T052 [US2] Wire tuning selection/custom input → `state.setTuning()` → `fretboard.render(state)` full re-render, recalculating every position via `noteAt()` (T012) (depends on T050, T051, T042)
+- [X] T053 [P] [US2] Style the tuning selector and custom-tuning inputs in `css/styles.css`
+- [X] T054 [US2] Manually validate against quickstart.md Section 3 (Drop D retune, Custom Tuning)
 
 **Checkpoint**: US1 + US2 both independently functional.
 
