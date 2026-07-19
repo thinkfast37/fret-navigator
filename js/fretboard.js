@@ -41,6 +41,7 @@ function mod12(n) {
 // diatonic/degree-role/focal/chord-tone computation must key off this value,
 // never the raw Story-3-selected root, whenever Relative mode + an active
 // capo apply. Returns null when no root is selected yet.
+// Implements Story 9, FR-037/FR-038 (getDisplayRootSemitone binding rule)
 export function getEffectiveRootSemitone(appState) {
   if (!appState.root) return null;
   const trueRootSemitone = theory.rootLetterToSemitone(appState.root);
@@ -49,6 +50,7 @@ export function getEffectiveRootSemitone(appState) {
 
 // Default focal triad merged with user chord-tone overrides -> Set of
 // root-relative semitones (0=effective root) currently in the "bright" set.
+// Implements Story 5, FR-018/FR-020: default triad merged with chord-tone overrides
 export function computeActiveBrightSet(appState) {
   const rootSemitone = getEffectiveRootSemitone(appState);
   if (rootSemitone === null || !appState.scaleId) return new Set();
@@ -286,6 +288,7 @@ function updateNotes(state) {
 
 const afterRenderHooks = [];
 
+// Implements Story 5/7, FR-021/FR-025: post-render hook so dependent UI stays in sync
 // Lets controls.js keep dependent UI (e.g. the chord-info panel) in sync with
 // every render, including ones triggered by fretboard.js's own note clicks,
 // without fretboard.js importing controls.js (avoids a circular import).
@@ -293,6 +296,7 @@ export function onAfterRender(fn) {
   afterRenderHooks.push(fn);
 }
 
+// Implements Story 1, FR-001/FR-002/FR-003/FR-004: pure state -> fretboard render
 export function render(appState) {
   if (!initialized) {
     buildSkeleton();

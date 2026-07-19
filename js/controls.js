@@ -96,6 +96,7 @@ function applyStateToCustomInputs() {
   }
 }
 
+// Implements Story 2, FR-005/FR-006: tuning selector + custom per-string inputs
 export function initTuningControls() {
   const container = document.getElementById("tuning-controls");
   container.textContent = "";
@@ -130,6 +131,7 @@ export function initTuningControls() {
 
 const NATURAL_ROOTS = ["C", "D", "E", "F", "G", "A", "B"];
 
+// Implements Story 3, FR-008/FR-009: root-note buttons + sharp/flat toggle
 export function initRootControls() {
   const container = document.getElementById("root-controls");
   container.textContent = "";
@@ -171,6 +173,7 @@ function syncRootButtons() {
 
 const SCALE_CATEGORY_ORDER = ["Church Modes", "Pentatonic", "Blues", "Other"];
 
+// Implements Story 4, FR-010: scale/mode selector grouped by category
 export function initScaleControls() {
   const container = document.getElementById("scale-controls");
   container.textContent = "";
@@ -200,6 +203,7 @@ const LABEL_MODES = [
   { value: "intervals", label: "Intervals" },
 ];
 
+// Implements Story 6, FR-023: Notes/Degrees/Intervals label-mode buttons
 export function initLabelModeControls() {
   const container = document.getElementById("label-mode-controls");
   container.textContent = "";
@@ -229,6 +233,7 @@ function syncLabelModeButtons() {
   }
 }
 
+// Implements Story 7/9, FR-025/FR-035/FR-036: slider DOM sync incl. capo lock/release
 // Keeps the slider's DOM in sync with state on every render, including
 // renders triggered by the capo control (T089's lock/release) rather than
 // by the slider itself.
@@ -254,6 +259,7 @@ export function syncFretRangeControls() {
   rightLabel.textContent = String(upperBound);
 }
 
+// Implements Story 7, FR-025/FR-026/FR-027: dual-handle fret-range slider + reset
 export function initFretRangeControls() {
   const container = document.getElementById("fret-range-controls");
   container.textContent = "";
@@ -320,6 +326,7 @@ function mod12(n) {
   return ((n % 12) + 12) % 12;
 }
 
+// Implements Story 5, FR-020/FR-021: chord-tone toggle UI + bright-set/quality display
 export function updateChordInfo() {
   const container = document.getElementById("chord-info");
   container.textContent = "";
@@ -365,6 +372,7 @@ export function updateChordInfo() {
   container.appendChild(summary);
 }
 
+// Implements Story 9, FR-033/FR-037: capo fret selector + Absolute/Relative toggle
 export function initCapoControls() {
   const container = document.getElementById("capo-controls");
   container.textContent = "";
@@ -413,6 +421,7 @@ function syncCapoModeButtons() {
   }
 }
 
+// Implements Story 1-9 wiring: bootstraps every control and its render hooks
 export function initControls() {
   initTuningControls();
   initRootControls();

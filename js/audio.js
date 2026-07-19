@@ -38,18 +38,22 @@ function loadInstrument() {
   return instrumentPromise;
 }
 
+// Implements Story 8, FR-041: registers the non-blocking sample-load-failure indicator
 // Registers a callback fired whenever the instrument fails to load, so the
 // UI layer can surface a non-blocking error indicator (FR-041).
 export function onLoadError(listener) {
   loadErrorListener = listener;
 }
 
+// Implements Story 8, FR-041: registers the successful-retry indicator-clear callback
 // Registers a callback fired once the instrument successfully loads, so a
 // previously-shown error indicator can be cleared on a successful retry.
 export function onLoadSuccess(listener) {
   loadSuccessListener = listener;
 }
 
+// Implements Story 8, FR-028/FR-029/FR-030/FR-031/FR-032: real-guitar-sample playback
+// at the correct absolute pitch, fetched once and reused, on user gesture only.
 // Must be called from within a user-gesture handler (click/keydown on a fret
 // cell). Each call is an independent voice - soundfont-player does not cut
 // off prior notes, so rapid sequential triggers play cleanly without

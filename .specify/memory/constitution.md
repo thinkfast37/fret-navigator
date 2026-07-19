@@ -1,6 +1,19 @@
 <!--
 SYNC IMPACT REPORT
 ==================
+Post-ratification note (2026-07-19): The v1.2.0 testing-coverage gap flagged below (Deferred
+TODOs) has been closed. `tests/state.test.js`, `tests/audio.test.js`, `tests/fretboard.test.js`,
+`tests/controls.test.js`, and `tests/main.test.js` now provide jsdom-based `node --test` coverage
+for `state.js`, `audio.js`, `fretboard.js`, `controls.js`, and `main.js` respectively (131 tests
+total across the full suite, all passing), matching every exported function and every relevant
+`spec.md` acceptance scenario per module. `audio.js` tests mock the Web Audio API and
+soundfont-player rather than exercising real audio output. `jsdom` was added as a devDependency
+(test-only tooling, never loaded by `index.html` or shipped to users — does not violate Principle
+V). `specs/001-fretboard-visualizer/plan.md`'s Constitution Check row IV and Complexity Tracking
+table have been updated accordingly to reflect PASS with no outstanding violations. No further
+constitution version bump is needed for this change — it closes a previously-flagged gap rather
+than altering a principle's text.
+==================
 Version change: 1.1.0 → 1.2.0
 Modified principles:
   - IV. Testing Standards — broadened the automated-test-coverage requirement from

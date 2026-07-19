@@ -34,6 +34,7 @@ const CHROMATIC_NAMES = {
 
 const INTERVAL_LABELS = ["R", "m2", "M2", "m3", "M3", "P4", "TT", "P5", "m6", "M6", "m7", "M7"];
 
+// Implements Story 2, FR-005: named tuning library (D/G/C-Family + Standard)
 export const TUNINGS = [
   { id: "standard", label: "Standard", group: "Standard",
     openPitchClasses: ["E", "B", "G", "D", "A", "E"], openOctaves: [4, 3, 3, 3, 2, 2] },
@@ -79,6 +80,7 @@ export const TUNINGS = [
     openPitchClasses: ["Eb", "C", "G", "C", "G", "C"], openOctaves: [4, 4, 3, 3, 2, 2] },
 ];
 
+// Implements Story 4, FR-010/FR-011: canonical scale/mode degree-formula table
 export const SCALES = [
   { id: "ionian", label: "Ionian (Major)", category: "Church Modes",
     degreeFormula: ["1", "2", "3", "4", "5", "6", "7"], semitoneOffsets: [0, 2, 4, 5, 7, 9, 11] },
@@ -114,6 +116,7 @@ export const SCALES = [
 const DEGREE_ROLE_LABELS = ["1", "b2", "2", "b3", "3", "4", "#4/b5", "5", "b6", "6", "b7", "7"];
 const DEGREE_ROLE_IDS = ["1", "b2", "2", "b3", "3", "4", "4s5b", "5", "b6", "6", "b7", "7"];
 
+// Implements Story 5, FR-014: fixed chromatic scale-degree color-role descriptors
 export const DEGREE_ROLES = DEGREE_ROLE_LABELS.map((roleLabel, semitoneFromRoot) => ({
   semitoneFromRoot,
   roleLabel,
@@ -132,6 +135,7 @@ function mod12(n) {
 
 // ---- Pitch computation ----
 
+// Implements Story 1/2, FR-001/FR-006: absolute pitch (MIDI + pitch class) at a string/fret
 export function noteAt(tuning, stringIndex, fret) {
   const pitchClass = tuning.openPitchClasses[stringIndex];
   const octave = tuning.openOctaves[stringIndex];
@@ -142,6 +146,7 @@ export function noteAt(tuning, stringIndex, fret) {
   return { midiNote, pitchClassSemitone };
 }
 
+// Implements Story 3, FR-007/FR-009: key-context-correct enharmonic spelling
 export function spellPitchClass(semitone, keyContext) {
   const { root, accidentalPreference, scaleId } = keyContext;
   const rootSemitone = NATURAL_LETTER_SEMITONES[root];
@@ -168,27 +173,32 @@ export function spellPitchClass(semitone, keyContext) {
 
 // ---- Scale/degree computation ----
 
+// Implements Story 4, FR-011: exact in-scale semitone set for a root+scale
 export function getDiatonicSemitones(root, scaleId) {
   const scale = getScale(scaleId);
   return new Set(scale.semitoneOffsets.map((offset) => mod12(root + offset)));
 }
 
+// Implements Story 5, FR-014: fixed color-role lookup for a chromatic position
 export function getDegreeRole(semitoneFromRoot) {
   return DEGREE_ROLES[mod12(semitoneFromRoot)];
 }
 
+// Implements Story 6, FR-013/FR-023: Story-4-formula degree label ("b3", "#4", etc.)
 export function getDegreeLabel(semitoneFromRoot, scaleId) {
   const scale = getScale(scaleId);
   const idx = scale.semitoneOffsets.indexOf(mod12(semitoneFromRoot));
   return idx === -1 ? null : scale.degreeFormula[idx];
 }
 
+// Implements Story 6, FR-023: interval shorthand label ("R", "M3", "P5", etc.)
 export function getIntervalLabel(semitoneFromRoot) {
   return INTERVAL_LABELS[mod12(semitoneFromRoot)];
 }
 
 // ---- Chord/focal-point computation ----
 
+// Implements Story 5, FR-018: default triad by stacking nearest diatonic thirds
 export function computeDefaultTriad(focalSemitone, root, scaleId) {
   const scale = getScale(scaleId);
   const offsets = scale.semitoneOffsets;
@@ -200,6 +210,7 @@ export function computeDefaultTriad(focalSemitone, root, scaleId) {
   return [mod12(focalSemitone), third, fifth];
 }
 
+// Implements Story 5, FR-018: triad quality derived from interval structure
 export function getTriadQuality(triadSemitones) {
   const [chordRoot, third, fifth] = triadSemitones;
   const thirdInterval = mod12(third - chordRoot);
@@ -211,6 +222,7 @@ export function getTriadQuality(triadSemitones) {
   return null;
 }
 
+// Implements Story 5, FR-020: gates chord-tone toggles to diatonic-only positions
 export function isToggleableChordTone(semitoneFromRoot, root, scaleId) {
   const absolute = mod12(root + semitoneFromRoot);
   return getDiatonicSemitones(root, scaleId).has(absolute);
@@ -225,6 +237,7 @@ const CHORD_SHAPES = [
   { intervals: [0, 2, 7], name: "Sus2" },
 ];
 
+// Implements Story 5, FR-021: recognized chord-quality label for a bright note set
 export function identifyChordQuality(brightSetSemitones, root) {
   const intervals = [...new Set(brightSetSemitones.map((s) => mod12(s - root)))].sort((a, b) => a - b);
   const match = CHORD_SHAPES.find(
@@ -237,19 +250,23 @@ export function identifyChordQuality(brightSetSemitones, root) {
 
 // ---- Capo computation ----
 
+// Implements Story 9, FR-037 (binding rule): display root for Absolute/Relative labeling
 export function getDisplayRootSemitone(trueRootSemitone, capoFret, pitchReferenceMode) {
   if (capoFret === 0 || pitchReferenceMode === "absolute") return trueRootSemitone;
   return mod12(trueRootSemitone - capoFret);
 }
 
+// Implements Story 9, FR-037: Relative-mode fret offset from the capo position
 export function getRelativeLabelSemitone(physicalFret, capoFret) {
   return physicalFret - capoFret;
 }
 
+// Implements Story 9, FR-033: frets below an active capo are unplayable
 export function isFretPlayable(fret, capoFret) {
   return fret >= capoFret;
 }
 
+// Implements Story 3, FR-008: natural-letter-to-semitone lookup for root selection
 // Shared natural-letter-to-semitone lookup, exposed so consuming layers never
 // duplicate this mapping (constitution Principle I: single canonical module).
 export function rootLetterToSemitone(letter) {

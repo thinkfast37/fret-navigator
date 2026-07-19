@@ -3,6 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/theory.test.js"
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "jsdom": "^29.1.1"
   }
 }

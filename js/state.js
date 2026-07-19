@@ -28,12 +28,14 @@ function defaultState() {
 
 let state = defaultState();
 
+// Implements Story 1 foundational state shape: single source-of-truth app state tuple
 export function getState() {
   return state;
 }
 
 // ---- Setters (each mutates in-memory state and persists) ----
 
+// Implements Story 2, FR-006: tuning change triggers full recalculation
 export function setTuning(presetId, customOpenPitchClasses = null, customOpenOctaves = null) {
   state.tuning = { presetId, customOpenPitchClasses, customOpenOctaves };
   save();
@@ -47,28 +49,33 @@ function resetFocalPointAndOverrides() {
   state.chordToneOverrides = [];
 }
 
+// Implements Story 3, FR-008; Edge Case (focal/override reset on root change)
 export function setRoot(root) {
   state.root = root;
   resetFocalPointAndOverrides();
   save();
 }
 
+// Implements Story 3, FR-009: sharp/flat spelling preference
 export function setAccidentalPreference(pref) {
   state.accidentalPreference = pref;
   save();
 }
 
+// Implements Story 4, FR-012; Edge Case (focal/override reset on scale change)
 export function setScaleId(scaleId) {
   state.scaleId = scaleId;
   resetFocalPointAndOverrides();
   save();
 }
 
+// Implements Story 5, FR-017: focal-point selection
 export function setFocalDegreeSemitone(semitone) {
   state.focalDegreeSemitone = semitone;
   save();
 }
 
+// Implements Story 5, FR-020: custom chord-tone bright-set override
 export function setChordToneOverride(semitone, on) {
   const existing = state.chordToneOverrides.find((o) => o.semitone === semitone);
   if (existing) {
@@ -79,11 +86,13 @@ export function setChordToneOverride(semitone, on) {
   save();
 }
 
+// Implements Story 6, FR-023: Notes/Degrees/Intervals label-mode selection
 export function setLabelMode(labelMode) {
   state.labelMode = labelMode;
   save();
 }
 
+// Implements Story 9, FR-033/FR-035/FR-036: capo position + fret-range handle lock
 export function setCapoFret(capoFret) {
   state.capoFret = capoFret;
   if (capoFret > 0) {
@@ -97,11 +106,13 @@ export function setCapoFret(capoFret) {
   save();
 }
 
+// Implements Story 9, FR-037: Absolute/Relative label-mode selection
 export function setCapoLabelMode(mode) {
   state.capoLabelMode = mode;
   save();
 }
 
+// Implements Story 7, FR-025/FR-026: fret-range slider bounds
 export function setFretRange(lowerBound, upperBound) {
   let lower = Math.max(0, Math.min(24, lowerBound));
   let upper = Math.max(0, Math.min(24, upperBound));
@@ -184,11 +195,13 @@ function migrate(data) {
 
 // ---- Persistence ----
 
+// Implements FR-039/FR-040: persist settings to localStorage with schemaVersion
 export function save() {
   const payload = { schemaVersion: SCHEMA_VERSION, ...state };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 }
 
+// Implements FR-039/FR-040: restore + validate + migrate persisted settings on load
 export function load() {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) {
