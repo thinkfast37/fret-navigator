@@ -114,6 +114,18 @@ footer#credits a {
   opacity: 0.25;
 }
 
+/* Fret-position numbers at top/bottom, standard marker frets only (UAT
+   round 1 sections C5/E, FR-046). */
+.fret-number {
+  fill: var(--color-neutral-text);
+  font-size: 11px;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+  user-select: none;
+  opacity: 0.7;
+}
+
 .note-marker {
   fill: var(--color-neutral);
   stroke: none;
@@ -211,15 +223,41 @@ footer#credits a {
   gap: 0.25rem;
 }
 
-.chord-tone-toggles button[aria-pressed="true"] {
-  background: #ffffff;
-  color: #14171c;
-  font-weight: 700;
-}
-
 .chord-tone-toggles button:disabled {
   opacity: 0.35;
   cursor: not-allowed;
+}
+
+/* Chord-tone toggle colors match the fretboard's own role colors (UAT round
+   1 section C4): dark variant when off, bright variant + dark text when on. */
+.chord-tone-toggles button.role-1 { background: var(--role-1-dark); }
+.chord-tone-toggles button.role-1.is-bright { background: var(--role-1-bright); }
+.chord-tone-toggles button.role-b2 { background: var(--role-b2-dark); }
+.chord-tone-toggles button.role-b2.is-bright { background: var(--role-b2-bright); }
+.chord-tone-toggles button.role-2 { background: var(--role-2-dark); }
+.chord-tone-toggles button.role-2.is-bright { background: var(--role-2-bright); }
+.chord-tone-toggles button.role-b3 { background: var(--role-b3-dark); }
+.chord-tone-toggles button.role-b3.is-bright { background: var(--role-b3-bright); }
+.chord-tone-toggles button.role-3 { background: var(--role-3-dark); }
+.chord-tone-toggles button.role-3.is-bright { background: var(--role-3-bright); }
+.chord-tone-toggles button.role-4 { background: var(--role-4-dark); }
+.chord-tone-toggles button.role-4.is-bright { background: var(--role-4-bright); }
+.chord-tone-toggles button.role-4s5b { background: var(--role-4s5b-dark); }
+.chord-tone-toggles button.role-4s5b.is-bright { background: var(--role-4s5b-bright); }
+.chord-tone-toggles button.role-5 { background: var(--role-5-dark); }
+.chord-tone-toggles button.role-5.is-bright { background: var(--role-5-bright); }
+.chord-tone-toggles button.role-b6 { background: var(--role-b6-dark); }
+.chord-tone-toggles button.role-b6.is-bright { background: var(--role-b6-bright); }
+.chord-tone-toggles button.role-6 { background: var(--role-6-dark); }
+.chord-tone-toggles button.role-6.is-bright { background: var(--role-6-bright); }
+.chord-tone-toggles button.role-b7 { background: var(--role-b7-dark); }
+.chord-tone-toggles button.role-b7.is-bright { background: var(--role-b7-bright); }
+.chord-tone-toggles button.role-7 { background: var(--role-7-dark); }
+.chord-tone-toggles button.role-7.is-bright { background: var(--role-7-bright); }
+
+.chord-tone-toggles button.is-bright {
+  color: #14171c;
+  font-weight: 700;
 }
 
 .capo-label-mode-buttons {

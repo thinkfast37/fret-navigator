@@ -12,6 +12,9 @@ arguments.
   `group`.
 - `SCALES: Scale[]` — all 13 scales/modes from the Story 4 tables, grouped by `category`.
 - `DEGREE_ROLES: ChromaticDegreeRole[]` — the 12 chromatic scale-degree roles.
+- `ROOTS: Root[]` *(added UAT round 1 section C3)* — all 12 canonical chromatic roots, in display
+  order (A, Ab, B, Bb, C, D, Db, E, Eb, F, F#, G), each with its `semitone` and fixed
+  circle-of-fifths `accidentalPreference`. Replaces the naturals-only 7-letter root model.
 
 ## Pitch computation
 
@@ -22,9 +25,20 @@ arguments.
   source of true sounding pitch used everywhere audio is triggered (FR-028, FR-029, FR-032).
 
 ### `spellPitchClass(semitone, keyContext) -> string`
-- **Input**: a semitone 0–11, and the current `{ root, accidentalPreference, scaleId }`.
+- **Input**: a semitone 0–11, and the current `{ root, accidentalPreference, scaleId }`, where
+  `root` is now any of the 12 canonical `ROOTS` labels (e.g. `"Db"`, `"F#"`), not naturals-only
+  (amended UAT round 1 section C3).
 - **Output**: the letter name (e.g. `"F#"` or `"Gb"`) spelled consistently with the active
   key/scale context (FR-007) — never a fixed global sharp/flat default.
+- **Contract**: the diatonic-spelling branch derives its starting natural letter from `root`'s
+  own first character (e.g. `"Db"[0] === "D"`, `"F#"[0] === "F"`) — every canonical root label is
+  exactly one natural letter optionally followed by a single accidental, so this is always
+  unambiguous and requires no separate root→letter lookup table.
+
+### `rootLetterToSemitone(rootLabel) -> number`
+- **Input**: any of the 12 canonical `ROOTS` labels (amended UAT round 1 section C3 — previously
+  naturals-only).
+- **Output**: that root's chromatic semitone (0–11).
 
 ## Scale/degree computation
 

@@ -4,6 +4,7 @@ import {
   TUNINGS,
   SCALES,
   DEGREE_ROLES,
+  ROOTS,
   noteAt,
   spellPitchClass,
   getDiatonicSemitones,
@@ -117,6 +118,31 @@ describe("DEGREE_ROLES reference data", () => {
   });
 });
 
+describe("ROOTS reference data (UAT round 1 section C3)", () => {
+  test("has all 12 canonical roots in exact alphabetical display order", () => {
+    assert.deepEqual(
+      ROOTS.map((r) => r.label),
+      ["A", "Ab", "B", "Bb", "C", "D", "Db", "E", "Eb", "F", "F#", "G"]
+    );
+  });
+
+  test("every semitone 0-11 is covered exactly once", () => {
+    const semitones = ROOTS.map((r) => r.semitone).sort((a, b) => a - b);
+    assert.deepEqual(semitones, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+  });
+
+  test("accidentalPreference follows circle-of-fifths convention (C G D A E B F# sharp; Db Ab Eb Bb F flat)", () => {
+    const sharpSide = ["C", "G", "D", "A", "E", "B", "F#"];
+    const flatSide = ["Db", "Ab", "Eb", "Bb", "F"];
+    for (const label of sharpSide) {
+      assert.equal(ROOTS.find((r) => r.label === label).accidentalPreference, "sharp", label);
+    }
+    for (const label of flatSide) {
+      assert.equal(ROOTS.find((r) => r.label === label).accidentalPreference, "flat", label);
+    }
+  });
+});
+
 // ---- Pitch computation (T011, T013) ----
 
 describe("noteAt", () => {
@@ -192,6 +218,30 @@ describe("spellPitchClass", () => {
       const rootSemitone = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[root];
       assert.equal(spellPitchClass(rootSemitone, key), root);
     }
+  });
+
+  test("UAT round 1 section C3: non-natural root (Db) spells its own major scale correctly, letter by letter", () => {
+    const dbMajorKey = { root: "Db", accidentalPreference: "flat", scaleId: "ionian" };
+    // Db major: Db Eb F Gb Ab Bb C
+    assert.equal(spellPitchClass(1, dbMajorKey), "Db");
+    assert.equal(spellPitchClass(3, dbMajorKey), "Eb");
+    assert.equal(spellPitchClass(5, dbMajorKey), "F");
+    assert.equal(spellPitchClass(6, dbMajorKey), "Gb");
+    assert.equal(spellPitchClass(8, dbMajorKey), "Ab");
+    assert.equal(spellPitchClass(10, dbMajorKey), "Bb");
+    assert.equal(spellPitchClass(0, dbMajorKey), "C");
+  });
+
+  test("UAT round 1 section C3: non-natural root (F#) spells its own major scale correctly, letter by letter", () => {
+    const fSharpMajorKey = { root: "F#", accidentalPreference: "sharp", scaleId: "ionian" };
+    // F# major: F# G# A# B C# D# E#(F)
+    assert.equal(spellPitchClass(6, fSharpMajorKey), "F#");
+    assert.equal(spellPitchClass(8, fSharpMajorKey), "G#");
+    assert.equal(spellPitchClass(10, fSharpMajorKey), "A#");
+    assert.equal(spellPitchClass(11, fSharpMajorKey), "B");
+    assert.equal(spellPitchClass(1, fSharpMajorKey), "C#");
+    assert.equal(spellPitchClass(3, fSharpMajorKey), "D#");
+    assert.equal(spellPitchClass(5, fSharpMajorKey), "E#");
   });
 });
 
@@ -305,6 +355,13 @@ describe("rootLetterToSemitone", () => {
     assert.deepEqual(
       ["C", "D", "E", "F", "G", "A", "B"].map(rootLetterToSemitone),
       [0, 2, 4, 5, 7, 9, 11]
+    );
+  });
+
+  test("UAT round 1 section C3: also maps all 12 canonical ROOTS labels, not naturals-only", () => {
+    assert.deepEqual(
+      ROOTS.map((r) => rootLetterToSemitone(r.label)),
+      ROOTS.map((r) => r.semitone)
     );
   });
 });

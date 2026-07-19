@@ -123,6 +123,24 @@ export const DEGREE_ROLES = DEGREE_ROLE_LABELS.map((roleLabel, semitoneFromRoot)
   colorRoleId: DEGREE_ROLE_IDS[semitoneFromRoot],
 }));
 
+// Implements Story 3, FR-008/FR-009 (UAT round 1 section C3): all 12 chromatic
+// roots, in display order, each with its fixed circle-of-fifths sharp/flat
+// spelling - replaces the earlier naturals-only 7-letter root + manual toggle.
+export const ROOTS = [
+  { label: "A", semitone: 9, accidentalPreference: "sharp" },
+  { label: "Ab", semitone: 8, accidentalPreference: "flat" },
+  { label: "B", semitone: 11, accidentalPreference: "sharp" },
+  { label: "Bb", semitone: 10, accidentalPreference: "flat" },
+  { label: "C", semitone: 0, accidentalPreference: "sharp" },
+  { label: "D", semitone: 2, accidentalPreference: "sharp" },
+  { label: "Db", semitone: 1, accidentalPreference: "flat" },
+  { label: "E", semitone: 4, accidentalPreference: "sharp" },
+  { label: "Eb", semitone: 3, accidentalPreference: "flat" },
+  { label: "F", semitone: 5, accidentalPreference: "flat" },
+  { label: "F#", semitone: 6, accidentalPreference: "sharp" },
+  { label: "G", semitone: 7, accidentalPreference: "sharp" },
+];
+
 function getScale(scaleId) {
   const scale = SCALES.find((s) => s.id === scaleId);
   if (!scale) throw new Error(`Unknown scaleId: ${scaleId}`);
@@ -146,16 +164,21 @@ export function noteAt(tuning, stringIndex, fret) {
   return { midiNote, pitchClassSemitone };
 }
 
-// Implements Story 3, FR-007/FR-009: key-context-correct enharmonic spelling
+// Implements Story 3, FR-007/FR-009: key-context-correct enharmonic spelling.
+// `root` is any of the 12 canonical ROOTS labels (UAT round 1 section C3);
+// its natural-letter component (always the first character, e.g. "Db"[0])
+// anchors scale-degree letter-spelling, since every canonical root label is
+// exactly one natural letter optionally followed by a single accidental.
 export function spellPitchClass(semitone, keyContext) {
   const { root, accidentalPreference, scaleId } = keyContext;
-  const rootSemitone = NATURAL_LETTER_SEMITONES[root];
+  const rootSemitone = PITCH_CLASS_SEMITONES[root];
+  const rootBaseLetter = root[0];
   const semitoneFromRoot = mod12(semitone - rootSemitone);
   const scale = getScale(scaleId);
   const idx = scale.semitoneOffsets.indexOf(semitoneFromRoot);
 
   if (idx !== -1) {
-    const rootLetterIndex = NATURAL_LETTERS.indexOf(root);
+    const rootLetterIndex = NATURAL_LETTERS.indexOf(rootBaseLetter);
     const degreeNumber = idx + 1; // 1-based scale-degree position
     const letterIndex = (rootLetterIndex + (degreeNumber - 1)) % 7;
     const letter = NATURAL_LETTERS[letterIndex];
@@ -260,9 +283,10 @@ export function isFretPlayable(fret, capoFret) {
   return fret >= capoFret;
 }
 
-// Implements Story 3, FR-008: natural-letter-to-semitone lookup for root selection
-// Shared natural-letter-to-semitone lookup, exposed so consuming layers never
+// Implements Story 3, FR-008: root-label-to-semitone lookup for root selection.
+// Accepts any of the 12 canonical ROOTS labels (UAT round 1 section C3;
+// previously naturals-only). Shared lookup, exposed so consuming layers never
 // duplicate this mapping (constitution Principle I: single canonical module).
-export function rootLetterToSemitone(letter) {
-  return NATURAL_LETTER_SEMITONES[letter];
+export function rootLetterToSemitone(label) {
+  return PITCH_CLASS_SEMITONES[label];
 }

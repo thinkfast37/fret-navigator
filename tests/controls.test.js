@@ -75,7 +75,16 @@ describe("initTuningControls (Story 2, FR-005/FR-006)", () => {
   });
 });
 
-describe("initRootControls (Story 3, FR-008/FR-009)", () => {
+describe("initRootControls (Story 3, FR-008/FR-009, UAT round 1 section C3)", () => {
+  test("builds all 12 canonical root buttons in alphabetical display order, no sharp/flat toggle", () => {
+    const buttons = [...document.querySelectorAll(".root-buttons button")];
+    assert.deepEqual(
+      buttons.map((b) => b.dataset.root),
+      ["A", "Ab", "B", "Bb", "C", "D", "Db", "E", "Eb", "F", "F#", "G"]
+    );
+    assert.equal(document.getElementById("accidental-toggle"), null);
+  });
+
   test("US3 Scenario 1: clicking a root button sets the root and updates aria-pressed", () => {
     const gButton = document.querySelector('.root-buttons button[data-root="G"]');
     gButton.click();
@@ -85,14 +94,11 @@ describe("initRootControls (Story 3, FR-008/FR-009)", () => {
     assert.equal(cButton.getAttribute("aria-pressed"), "false");
   });
 
-  test("US3 Scenario 2: the accidental checkbox toggles sharp/flat preference", () => {
-    const toggle = document.getElementById("accidental-toggle");
-    toggle.checked = true;
-    fire(toggle, "change");
+  test("US3 Scenario 2: clicking a flat-side root (Db) derives flat accidentalPreference automatically", () => {
+    const dbButton = document.querySelector('.root-buttons button[data-root="Db"]');
+    dbButton.click();
+    assert.equal(state.getState().root, "Db");
     assert.equal(state.getState().accidentalPreference, "flat");
-    toggle.checked = false;
-    fire(toggle, "change");
-    assert.equal(state.getState().accidentalPreference, "sharp");
   });
 });
 
@@ -210,6 +216,27 @@ describe("updateChordInfo (Story 5, FR-020/FR-021)", () => {
       (b) => Number(b.dataset.semitone) === 9
     );
     assert.equal(aToggleAfter.getAttribute("aria-pressed"), "true");
+  });
+
+  test("FR-045 (UAT round 1 section C4): toggle colors match fretboard role colors - bright role class when on, dark (no is-bright) when off, plain when disabled", () => {
+    const scaleSelect = document.getElementById("scale-select");
+    scaleSelect.value = "ionian";
+    fire(scaleSelect, "change");
+
+    const toggles = [...document.querySelectorAll(".chord-tone-toggles button")];
+    const rootToggle = toggles.find((b) => Number(b.dataset.semitone) === 0); // on (default C major triad)
+    const secondToggle = toggles.find((b) => Number(b.dataset.semitone) === 2); // diatonic, off
+    const fSharpToggle = toggles.find((b) => Number(b.dataset.semitone) === 6); // non-diatonic, disabled
+
+    assert.ok(rootToggle.classList.contains("role-1"));
+    assert.ok(rootToggle.classList.contains("is-bright"));
+
+    assert.ok(secondToggle.classList.contains("role-2"));
+    assert.ok(!secondToggle.classList.contains("is-bright"));
+
+    assert.ok(!fSharpToggle.classList.contains("role-4s5b"));
+    assert.ok(!fSharpToggle.classList.contains("is-bright"));
+    assert.equal(fSharpToggle.hasAttribute("disabled"), true);
   });
 });
 

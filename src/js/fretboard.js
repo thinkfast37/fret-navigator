@@ -17,20 +17,49 @@ const NOTE_RADIUS = 14;
 
 const SINGLE_DOT_FRETS = new Set([3, 5, 7, 9, 15, 17, 19, 21]);
 const DOUBLE_DOT_FRETS = new Set([12, 24]);
+const MARKER_FRETS = new Set([...SINGLE_DOT_FRETS, ...DOUBLE_DOT_FRETS]);
 
+// Total rendered size stays fixed regardless of the visible fret range
+// (FR-043, UAT round 1 section C1).
 const svgWidth = MARGIN * 2 + OPEN_COL_WIDTH + FRET_COUNT * FRET_COL_WIDTH;
 const svgHeight = MARGIN * 2 + STRING_COUNT * ROW_HEIGHT;
 
 let initialized = false;
+let backgroundGroup = null;
+let fretNumbersTopGroup = null;
+let fretNumbersBottomGroup = null;
 const noteElements = new Map(); // "s{stringIndex}-f{fret}" -> { g, circle, text }
-
-function fretX(fret) {
-  if (fret === 0) return MARGIN + OPEN_COL_WIDTH / 2;
-  return MARGIN + OPEN_COL_WIDTH + (fret - 0.5) * FRET_COL_WIDTH;
-}
 
 function stringY(stringIndex) {
   return MARGIN + stringIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
+}
+
+// Implements FR-043 (UAT round 1 section C1): recompute fret-wire/note x
+// positions from the CURRENT visible fret range on every render, so fret
+// spacing scales inversely with the number of visible frets while total
+// width stays fixed - overrides the original "visibility only" simplification.
+function computeLayout(fretRange) {
+  const { lowerBound, upperBound } = fretRange;
+  const showOpenColumn = lowerBound === 0;
+  const firstFret = showOpenColumn ? 1 : lowerBound;
+  const lastFret = Math.max(upperBound, firstFret - 1);
+  const visibleFrettedCount = Math.max(0, lastFret - firstFret + 1);
+  const openWidth = showOpenColumn ? OPEN_COL_WIDTH : 0;
+  const availableWidth = svgWidth - MARGIN * 2 - openWidth;
+  const colWidth = visibleFrettedCount > 0 ? availableWidth / visibleFrettedCount : availableWidth;
+
+  // wireX(f): x position of the fret-wire marking the END of fret f (f=0 is
+  // the nut when the open column is shown, or the boundary before the first
+  // visible fret otherwise). noteX(f): center of fret f's cell.
+  function wireX(f) {
+    return MARGIN + openWidth + (f - (firstFret - 1)) * colWidth;
+  }
+  function noteX(fret) {
+    if (fret === 0) return MARGIN + OPEN_COL_WIDTH / 2;
+    return wireX(fret - 1) + colWidth / 2;
+  }
+
+  return { showOpenColumn, firstFret, lastFret, wireX, noteX };
 }
 
 function mod12(n) {
@@ -105,60 +134,23 @@ function resolveTuning(state) {
   return theory.TUNINGS.find((t) => t.id === state.tuning.presetId);
 }
 
+// Runs once: static structure only (viewBox, empty background/fret-number
+// groups, and the 150 note elements + their event handlers). Geometry
+// (positions, wires, dots, fret numbers) is filled in per-render by
+// renderBackground()/renderFretNumbers()/updateNotes() since it now depends
+// on the current fret range (FR-043).
 function buildSkeleton() {
   const svg = document.getElementById("fretboard");
   svg.setAttribute("viewBox", `0 0 ${svgWidth} ${svgHeight}`);
   svg.textContent = "";
 
-  const background = svgEl("g", { class: "fretboard-background" });
-  svg.appendChild(background);
+  backgroundGroup = svgEl("g", { class: "fretboard-background" });
+  svg.appendChild(backgroundGroup);
 
-  // String lines
-  for (let s = 0; s < STRING_COUNT; s++) {
-    const y = stringY(s);
-    background.appendChild(
-      svgEl("line", {
-        class: "string-line",
-        x1: MARGIN + OPEN_COL_WIDTH,
-        y1: y,
-        x2: svgWidth - MARGIN,
-        y2: y,
-      })
-    );
-  }
-
-  // Nut line (boundary between open-string column and fret 1)
-  background.appendChild(
-    svgEl("line", {
-      class: "nut-line",
-      x1: MARGIN + OPEN_COL_WIDTH,
-      y1: MARGIN,
-      x2: MARGIN + OPEN_COL_WIDTH,
-      y2: svgHeight - MARGIN,
-    })
-  );
-
-  // Fret lines
-  for (let f = 1; f <= FRET_COUNT; f++) {
-    const x = MARGIN + OPEN_COL_WIDTH + f * FRET_COL_WIDTH;
-    background.appendChild(
-      svgEl("line", { class: "fret-line", x1: x, y1: MARGIN, x2: x, y2: svgHeight - MARGIN })
-    );
-  }
-
-  // Inlay markers, centered vertically between string rows
-  const midY = MARGIN + (STRING_COUNT * ROW_HEIGHT) / 2;
-  const thirdY1 = MARGIN + (STRING_COUNT * ROW_HEIGHT) / 3;
-  const thirdY2 = MARGIN + (2 * STRING_COUNT * ROW_HEIGHT) / 3;
-  for (let f = 1; f <= FRET_COUNT; f++) {
-    const cx = fretX(f);
-    if (DOUBLE_DOT_FRETS.has(f)) {
-      background.appendChild(svgEl("circle", { class: "inlay-dot", cx, cy: thirdY1, r: 5 }));
-      background.appendChild(svgEl("circle", { class: "inlay-dot", cx, cy: thirdY2, r: 5 }));
-    } else if (SINGLE_DOT_FRETS.has(f)) {
-      background.appendChild(svgEl("circle", { class: "inlay-dot", cx, cy: midY, r: 5 }));
-    }
-  }
+  fretNumbersTopGroup = svgEl("g", { class: "fret-numbers fret-numbers-top" });
+  fretNumbersBottomGroup = svgEl("g", { class: "fret-numbers fret-numbers-bottom" });
+  svg.appendChild(fretNumbersTopGroup);
+  svg.appendChild(fretNumbersBottomGroup);
 
   // Note groups: one per string x fret (0-24)
   const notesLayer = svgEl("g", { class: "notes-layer" });
@@ -175,17 +167,8 @@ function buildSkeleton() {
         tabindex: "0",
         role: "button",
       });
-      const circle = svgEl("circle", {
-        class: "note-marker",
-        cx: fretX(f),
-        cy: stringY(s),
-        r: NOTE_RADIUS,
-      });
-      const text = svgEl("text", {
-        class: "note-label",
-        x: fretX(f),
-        y: stringY(s),
-      });
+      const circle = svgEl("circle", { class: "note-marker", cx: 0, cy: 0, r: NOTE_RADIUS });
+      const text = svgEl("text", { class: "note-label", x: 0, y: 0 });
       g.appendChild(circle);
       g.appendChild(text);
       notesLayer.appendChild(g);
@@ -203,6 +186,88 @@ function buildSkeleton() {
   }
 }
 
+// Implements FR-043 (UAT round 1 section C1): rebuilds string lines, the
+// nut/fret wires, and inlay dots for the current visible range on every
+// render (their count and position change with the range).
+function renderBackground(layout) {
+  backgroundGroup.textContent = "";
+  const { showOpenColumn, firstFret, lastFret, wireX, noteX } = layout;
+
+  for (let s = 0; s < STRING_COUNT; s++) {
+    const y = stringY(s);
+    backgroundGroup.appendChild(
+      svgEl("line", {
+        class: "string-line",
+        x1: MARGIN + (showOpenColumn ? OPEN_COL_WIDTH : 0),
+        y1: y,
+        x2: svgWidth - MARGIN,
+        y2: y,
+      })
+    );
+  }
+
+  // Wires from the boundary before firstFret through lastFret. When the
+  // open column is shown, the boundary wire (f=0) is the thick nut line;
+  // otherwise it's a plain fret-line marking the edge of the visible range.
+  for (let f = firstFret - 1; f <= lastFret; f++) {
+    const x = wireX(f);
+    const isNut = showOpenColumn && f === 0;
+    backgroundGroup.appendChild(
+      svgEl("line", {
+        class: isNut ? "nut-line" : "fret-line",
+        x1: x,
+        y1: MARGIN,
+        x2: x,
+        y2: svgHeight - MARGIN,
+      })
+    );
+  }
+
+  // Inlay markers, centered vertically between string rows, only for
+  // standard marker frets currently within the visible range.
+  const midY = MARGIN + (STRING_COUNT * ROW_HEIGHT) / 2;
+  const thirdY1 = MARGIN + (STRING_COUNT * ROW_HEIGHT) / 3;
+  const thirdY2 = MARGIN + (2 * STRING_COUNT * ROW_HEIGHT) / 3;
+  for (let f = firstFret; f <= lastFret; f++) {
+    if (!MARKER_FRETS.has(f)) continue;
+    const cx = noteX(f);
+    if (DOUBLE_DOT_FRETS.has(f)) {
+      backgroundGroup.appendChild(svgEl("circle", { class: "inlay-dot", cx, cy: thirdY1, r: 5 }));
+      backgroundGroup.appendChild(svgEl("circle", { class: "inlay-dot", cx, cy: thirdY2, r: 5 }));
+    } else {
+      backgroundGroup.appendChild(svgEl("circle", { class: "inlay-dot", cx, cy: midY, r: 5 }));
+    }
+  }
+}
+
+// Implements FR-046 (UAT round 1 sections C5/E): fret-position-number labels
+// at standard marker positions, top and bottom, following the same
+// Absolute/Relative convention as note names (physicalFret - capoFret in
+// Relative mode, via the same arithmetic as getRelativeLabelSemitone, with
+// no note-name conversion step).
+function renderFretNumbers(appState, layout) {
+  fretNumbersTopGroup.textContent = "";
+  fretNumbersBottomGroup.textContent = "";
+  const { firstFret, lastFret, noteX } = layout;
+  const isRelative = appState.capoFret > 0 && appState.capoLabelMode === "relative";
+  const topY = MARGIN - 10;
+  const bottomY = svgHeight - MARGIN + 12;
+
+  for (let f = firstFret; f <= lastFret; f++) {
+    if (!MARKER_FRETS.has(f)) continue;
+    const displayNumber = isRelative ? theory.getRelativeLabelSemitone(f, appState.capoFret) : f;
+    const cx = noteX(f);
+
+    const topText = svgEl("text", { class: "fret-number", x: cx, y: topY });
+    topText.textContent = String(displayNumber);
+    fretNumbersTopGroup.appendChild(topText);
+
+    const bottomText = svgEl("text", { class: "fret-number", x: cx, y: bottomY });
+    bottomText.textContent = String(displayNumber);
+    fretNumbersBottomGroup.appendChild(bottomText);
+  }
+}
+
 function effectiveKeyContext(state) {
   return {
     root: state.root || "C",
@@ -211,7 +276,7 @@ function effectiveKeyContext(state) {
   };
 }
 
-function updateNotes(state) {
+function updateNotes(state, layout) {
   const tuning = resolveTuning(state);
   const keyContext = effectiveKeyContext(state);
 
@@ -229,9 +294,18 @@ function updateNotes(state) {
   for (let s = 0; s < STRING_COUNT; s++) {
     for (let f = 0; f <= FRET_COUNT; f++) {
       const key = `s${s}-f${f}`;
-      const { g, text } = noteElements.get(key);
+      const { g, circle, text } = noteElements.get(key);
       const { midiNote, pitchClassSemitone } = theory.noteAt(tuning, s, f);
       const isPlayable = theory.isFretPlayable(f, state.capoFret);
+
+      // Implements FR-043 (UAT round 1 section C1): reposition per render
+      // from the current range's layout, since fret spacing is now dynamic.
+      const cx = layout.noteX(f);
+      const cy = stringY(s);
+      circle.setAttribute("cx", cx);
+      circle.setAttribute("cy", cy);
+      text.setAttribute("x", cx);
+      text.setAttribute("y", cy);
 
       const isRoot = rootSemitone !== null && pitchClassSemitone === rootSemitone;
       const isDiatonic = diatonicSemitones.has(pitchClassSemitone);
@@ -294,12 +368,15 @@ export function onAfterRender(fn) {
   afterRenderHooks.push(fn);
 }
 
-// Implements Story 1, FR-001/FR-002/FR-003/FR-004: pure state -> fretboard render
+// Implements Story 1, FR-001/FR-002/FR-003/FR-004, FR-043, FR-046: pure state -> fretboard render
 export function render(appState) {
   if (!initialized) {
     buildSkeleton();
     initialized = true;
   }
-  updateNotes(appState);
+  const layout = computeLayout(appState.fretRange);
+  renderBackground(layout);
+  renderFretNumbers(appState, layout);
+  updateNotes(appState, layout);
   for (const fn of afterRenderHooks) fn(appState);
 }

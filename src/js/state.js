@@ -1,12 +1,14 @@
 // App state shape, defaults, and localStorage load/save/migrate.
 // Owns the `fret-navigator-settings` localStorage key exclusively (FR-039, FR-040).
 
-import { getDiatonicSemitones, rootLetterToSemitone } from "./theory.js";
+import { getDiatonicSemitones, rootLetterToSemitone, ROOTS } from "./theory.js";
 
 const STORAGE_KEY = "fret-navigator-settings";
 const SCHEMA_VERSION = 1;
 
-const NATURAL_ROOTS = ["C", "D", "E", "F", "G", "A", "B"];
+// UAT round 1 section C3: all 12 canonical roots, not naturals-only.
+const VALID_ROOTS = ROOTS.map((r) => r.label);
+const ROOT_ACCIDENTAL_PREFERENCE = Object.fromEntries(ROOTS.map((r) => [r.label, r.accidentalPreference]));
 const LABEL_MODES = ["notes", "degrees", "intervals"];
 const ACCIDENTAL_PREFERENCES = ["sharp", "flat"];
 const CAPO_LABEL_MODES = ["absolute", "relative"];
@@ -49,16 +51,14 @@ function resetFocalPointAndOverrides() {
   state.chordToneOverrides = [];
 }
 
-// Implements Story 3, FR-008; Edge Case (focal/override reset on root change)
+// Implements Story 3, FR-008/FR-009; Edge Case (focal/override reset on root change)
+// accidentalPreference is derived automatically from the selected root's
+// circle-of-fifths convention (UAT round 1 section C3) - there is no
+// independent user-facing sharp/flat toggle anymore.
 export function setRoot(root) {
   state.root = root;
+  state.accidentalPreference = ROOT_ACCIDENTAL_PREFERENCE[root];
   resetFocalPointAndOverrides();
-  save();
-}
-
-// Implements Story 3, FR-009: sharp/flat spelling preference
-export function setAccidentalPreference(pref) {
-  state.accidentalPreference = pref;
   save();
 }
 
@@ -92,17 +92,20 @@ export function setLabelMode(labelMode) {
   save();
 }
 
-// Implements Story 9, FR-033/FR-035/FR-036: capo position + fret-range handle lock
+// Implements Story 9, FR-033/FR-035/FR-036, FR-044 (UAT round 1 section C2):
+// capo position + fret-range handle lock. The left handle snaps to the new
+// capo fret; the right handle shifts by that same delta so the previously
+// -visible WIDTH is preserved, clamped to a maximum of 24 (capoFret's own
+// 0-12 range guarantees the clamped value never falls below the new left
+// handle, so no separate floor is needed).
 export function setCapoFret(capoFret) {
+  const { lowerBound, upperBound } = state.fretRange;
+  const delta = capoFret - lowerBound;
   state.capoFret = capoFret;
-  if (capoFret > 0) {
-    state.fretRange.lowerBound = capoFret;
-    if (state.fretRange.upperBound < capoFret) {
-      state.fretRange.upperBound = capoFret;
-    }
-  } else {
-    state.fretRange.lowerBound = 0;
-  }
+  state.fretRange = {
+    lowerBound: capoFret,
+    upperBound: Math.min(24, upperBound + delta),
+  };
   save();
 }
 
@@ -174,7 +177,7 @@ function isValidStoredState(data) {
   if (typeof data !== "object" || data === null) return false;
   if (data.schemaVersion !== SCHEMA_VERSION) return false;
   if (!isValidTuning(data.tuning)) return false;
-  if (data.root !== null && !NATURAL_ROOTS.includes(data.root)) return false;
+  if (data.root !== null && !VALID_ROOTS.includes(data.root)) return false;
   if (!ACCIDENTAL_PREFERENCES.includes(data.accidentalPreference)) return false;
   if (data.scaleId !== null && typeof data.scaleId !== "string") return false;
   if (!Number.isInteger(data.focalDegreeSemitone) || data.focalDegreeSemitone < 0 || data.focalDegreeSemitone > 11) return false;

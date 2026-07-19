@@ -39,14 +39,26 @@ All 13 scales/modes from Story 4's four tables are represented as `Scale` record
 | `roleLabel` | string | Canonical degree name for that position: `1, b2, 2, b3, 3, 4, #4/b5, 5, b6, 6, b7, 7` (Story 5 Color & Degree Model). |
 | `colorRoleId` | string | Stable id used to look up bright/dark CSS variants in `css/styles.css`. |
 
+### Root *(added UAT round 1 section C3 — replaces the naturals-only 7-letter root)*
+| Field | Type | Notes |
+|---|---|---|
+| `label` | string | One of the 12 canonical root labels, e.g. `"Db"`, `"F#"`, `"C"`. |
+| `semitone` | `0..11` | The root's chromatic pitch class. |
+| `accidentalPreference` | `"sharp" \| "flat"` | Fixed by circle-of-fifths convention for this root (C, G, D, A, E, B, F# = sharp; Db, Ab, Eb, Bb, F = flat) — not user-settable. |
+
+All 12 `Root` records are represented, displayed in the selector in this exact alphabetical
+order: A, Ab, B, Bb, C, D, Db, E, Eb, F, F#, G (FR-008). Selecting a root sets Key Context's
+`root` AND automatically derives `accidentalPreference` from this table (FR-009) — there is no
+independent user-facing accidental toggle.
+
 ## Runtime/computed entities (produced by `theory.js`, consumed by `fretboard.js`)
 
 ### Key Context
 Derived, not stored directly — computed from `{ root, accidentalPreference, scale }`.
 | Field | Type | Notes |
 |---|---|---|
-| `root` | string (`C,D,E,F,G,A,B`) | Selected root letter (FR-008). |
-| `accidentalPreference` | `"sharp" \| "flat"` | Enharmonic spelling toggle (FR-009); only meaningful for roots with an enharmonic pair. |
+| `root` | string (one of the 12 `Root.label` values) | Selected root pitch class (FR-008; amended UAT round 1 section C3 — previously naturals-only). |
+| `accidentalPreference` | `"sharp" \| "flat"` | Derived automatically from `root` via the `Root` reference table's circle-of-fifths convention (FR-009); no longer an independent user toggle (UAT round 1 section C3 removes the "Prefer flats" checkbox). |
 | `scaleId` | string | FK into `Scale` reference data. |
 | `diatonicSemitones` | `Set<0..11>` | The literal selected root's semitone + each `scale.semitoneOffsets`, mod 12 — the exact "in scale" set (FR-011, FR-012). Unaffected by capo position or Absolute/Relative mode (UAT round 1 section A) — `diatonicSemitones`, degree-role assignment, degree labels, interval labels, and focal-point/chord-tone computation all key off the literal selected root at all times. |
 
@@ -81,6 +93,13 @@ Computed per render, not persisted individually.
 | `upperBound` | `0..24` | Right-handle position; always shown as its fret number. |
 | Invariant | — | `lowerBound <= upperBound` at all times (FR-026); when a capo is active, `lowerBound === capoFret` and is not user-adjustable (FR-035). |
 
+`Fret Range` now also drives the fretboard's rendered horizontal geometry (FR-043, UAT round 1
+section C1): fret spacing is recomputed each render as the fixed total drawable width divided by
+`(upperBound - firstVisibleFret + 1)`, so a narrower range spreads its frets out rather than
+shrinking. This is a layout-only recomputation — it never touches `Note.midiNote` or Key Context.
+When the capo fret changes, `lowerBound` snaps to it and `upperBound` shifts by the same delta to
+preserve the previously-visible width, clamped to a maximum of 24 (FR-044, section C2).
+
 ### Capo
 | Field | Type | Notes |
 |---|---|---|
@@ -104,7 +123,8 @@ Scale ───┼──> Key Context ──> Note[] (6 strings × 25 frets) ─
 Capo ────┘        │
                    └──> Focal Point / Chord-Tone Set ──> Note[].isFocalChordTone / displayLabel
 
-Fret Range ──> Note[] (visibility only — does not affect Key Context or Note.midiNote)
+Fret Range ──> Note[] visibility AND rendered fret-spacing geometry (section C1) — still never
+                affects Key Context or Note.midiNote
 
 App Settings (localStorage) ══ serializes ══> { Tuning selection, Key Context, Focal Point,
                                                   Label Mode, Fret Range, Capo }

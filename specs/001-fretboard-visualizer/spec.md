@@ -96,19 +96,33 @@ a custom one), so that I can see how note positions shift across alternate tunin
 
 ### User Story 3 - Select root note and enharmonic spelling (Priority: P1)
 
-As a guitarist, I want to choose a root note and whether it displays as sharp
-or flat, so that the fretboard matches the key signature I'm thinking in.
+As a guitarist, I want to choose a root note from all 12 chromatic pitch
+classes, each spelled with its one fixed canonical sharp/flat convention,
+so that the fretboard matches the key signature I'm thinking in.
+
+> **Amended (UAT round 1, section C3)**: The root selector originally offered
+> only the 7 natural letters plus a manual "Prefer flats" sharp/flat toggle.
+> UAT testing found this insufficient (guitarists routinely need roots like
+> Db or F#) and the manual toggle redundant once every root has one
+> unambiguous canonical spelling by circle-of-fifths convention. The
+> selector now offers all 12 chromatic roots directly; there is no
+> user-facing sharp/flat toggle.
 
 **Why this priority**: Root-note selection is the anchor for every scale, mode, degree-coloring, and interval-label feature that follows; it must exist before those features have meaning.
 
-**Independent Test**: Can be fully tested by selecting each of the 7 note letters and toggling sharp/flat on ones with enharmonic equivalents, confirming the root highlight and label spelling update without altering pitch — delivers value as a standalone key-reference tool.
+**Independent Test**: Can be fully tested by selecting each of the 12 root options and confirming the root highlight updates to the correct pitch class, with its spelling matching the fixed circle-of-fifths convention — delivers value as a standalone key-reference tool.
 
 **Acceptance Scenarios**:
-1. **Given** the app is loaded, **When** I select a note letter (C D E F G A B),
-   **Then** the fretboard highlights that note as the root/tonic everywhere it appears.
-2. **Given** a root note has an enharmonic equivalent, **When** I toggle
-   sharp vs. flat, **Then** all affected note labels switch spelling
-   (e.g. F# vs Gb) without changing pitch or highlighted positions.
+1. **Given** the app is loaded, **When** I select a root from the 12 available
+   options (displayed alphabetically: A, Ab, B, Bb, C, D, Db, E, Eb, F, F#, G),
+   **Then** the fretboard highlights that pitch class as the root/tonic
+   everywhere it appears.
+2. **Given** any root is selected, **When** the fretboard renders, **Then**
+   the root's own label and every other non-diatonic note's sharp/flat
+   spelling follow the same fixed circle-of-fifths convention (C G D A E B
+   F# spelled sharp-side; Db Ab Eb Bb F spelled flat-side) automatically —
+   there is no manual sharp/flat toggle, and pitch is never affected by
+   spelling choice.
 
 ---
 
@@ -526,7 +540,7 @@ capo positions the way they're actually taught and played.
 - What happens when a capo is placed at a fret at or beyond the current right-handle position of the fret-range slider (Story 7)? The right handle must move to remain at or above the capo position so the visible range never collapses to zero frets.
 - What happens when the user narrows the fret-range slider to exclude the current focal point's chord tones? Highlighting logic still applies to underlying note data; only the visible/rendered frets are limited — no recalculation error should occur for out-of-view notes.
 - What happens when rapid tuning changes are made while a note is still audibly playing? The in-flight note finishes per Story 8's Acceptance Scenario 4 (no improper cutoff), and subsequent triggers use the newly selected tuning.
-- What happens when the enharmonic sharp/flat toggle (Story 3) is applied to a root note with no meaningful enharmonic equivalent (e.g. a root already selected as a natural note button rather than a sharp/flat pair)? The toggle control is only enabled for roots that have a sharp/flat pair.
+- ~~What happens when the enharmonic sharp/flat toggle (Story 3) is applied to a root note with no meaningful enharmonic equivalent?~~ Moot per UAT round 1 section C3: the manual toggle is removed; every one of the 12 root options has exactly one fixed canonical spelling.
 - What happens when a required audio sample fails to load (e.g., a network hiccup on first visit before samples are cached)? The app shows a visible, non-blocking error indicator (e.g. toast/banner) and continues to allow all other interaction; the fret that failed to load simply produces no sound until the sample can be fetched successfully on a later attempt.
 
 ## Requirements *(mandatory)*
@@ -540,8 +554,8 @@ capo positions the way they're actually taught and played.
 - **FR-005**: System MUST provide a tuning selector offering named tuning groups ("D-Family," "G-Family," "C-Family") with the exact tunings enumerated in User Story 2, plus a "Custom Tuning" option allowing independent per-string pitch assignment.
 - **FR-006**: System MUST recalculate every string's pitch and every fretted note's label immediately upon any tuning change, whether from a named preset or a custom assignment.
 - **FR-007**: System MUST derive enharmonic spelling (sharp vs. flat letter names) from the active key/scale context rather than a fixed global convention, for every tuning.
-- **FR-008**: System MUST allow selection of a root note from the 7 natural letters (C D E F G A B) and highlight that note as the root/tonic in every occurrence on the fretboard.
-- **FR-009**: System MUST provide a sharp/flat toggle for root notes with an enharmonic equivalent, switching displayed spelling (e.g. F# vs. Gb) across all affected labels without changing pitch or highlighted positions.
+- **FR-008**: System MUST allow selection of a root note from all 12 chromatic pitch classes — displayed alphabetically as A, Ab, B, Bb, C, D, Db, E, Eb, F, F#, G — and highlight that pitch class as the root/tonic in every occurrence on the fretboard. *(Amended UAT round 1 section C3: previously 7 natural letters only.)*
+- **FR-009**: System MUST determine each root's sharp/flat spelling automatically via a fixed circle-of-fifths convention (C, G, D, A, E, B, F# spelled sharp-side; Db, Ab, Eb, Bb, F spelled flat-side), applied consistently to the root's own label and to every other non-diatonic note's spelling, with NO user-facing sharp/flat toggle. *(Amended UAT round 1 section C3: replaces the removed manual "Prefer flats" toggle.)*
 - **FR-010**: System MUST provide selection of any scale or mode from the canonical degree-formula tables in User Story 4 (7 Church Modes, 2 Pentatonic, 2 Blues, 2 Other), grouped in the selector as Church Modes, Pentatonic, Blues, and Other.
 - **FR-011**: System MUST treat the degree-formula tables in User Story 4 as the single source of truth for scale/mode data, computing in-scale notes as exactly the root plus each listed semitone offset — no more, no fewer.
 - **FR-012**: System MUST update the highlighted "in scale" note set immediately, with no stale highlighting, whenever the root, scale, or mode selection changes.
@@ -576,13 +590,20 @@ capo positions the way they're actually taught and played.
 - **FR-041**: System MUST display a visible, non-blocking error indicator (e.g. toast/banner) when a required audio sample fails to load, without blocking any other interaction, and MUST allow the affected note to be retried (e.g. on a subsequent tap) rather than permanently failing.
 - **FR-042**: System MUST display a visible, always-accessible credit line attributing the FluidR3_GM sample source under its CC BY 3.0 license (e.g. in a footer or About section), satisfying the attribution condition of Story 8's sourcing constraints.
 
+**The following requirements were added in UAT round 1 (`docs/story-drafts/002-mvp-uat-improvements.md`), sections C1–C5:**
+
+- **FR-043** *(section C1)*: System MUST keep the fretboard's total rendered height and width fixed regardless of the visible fret range, and MUST scale fret spacing inversely with the number of currently visible frets — fewer visible frets render more spread out, filling the same fixed width — overriding the original "visibility only, no re-layout" simplification (frets outside the range are still excluded from pitch/diatonic recomputation, only their on-screen geometry changes).
+- **FR-044** *(section C2)*: System MUST, when the capo fret changes, snap the fret-range slider's left handle to the new capo fret and shift the right handle by that same delta so the previously-visible fret-range WIDTH is preserved, clamping the right handle to a maximum of 24 regardless of the computed delta.
+- **FR-045** *(section C4)*: System MUST color each scale-degree chord-tone toggle button to match its corresponding fretboard color role: the active/"on" state uses that role's bright variant, the diatonic-but-inactive/"off" state uses that role's dark variant, and non-diatonic (disabled) toggles remain visually disabled as already specified by FR-020.
+- **FR-046** *(sections C5/E)*: System MUST display fret-position number labels at standard marker positions at both the visual top and bottom of the fretboard, following the same Absolute/Relative convention as note names — in Relative mode showing `(physicalFret − capoFret)`, in Absolute mode showing the true physical fret number — using the same arithmetic as `getRelativeLabelSemitone` without the note-name conversion step.
+
 ### Key Entities
 
 - **Note**: A pitch at a specific string/fret position; carries a pitch class, absolute octave/MIDI value, and (when applicable) an enharmonic spelling, a scale-degree role, and diatonic/non-diatonic status relative to the active key.
 - **String**: One of the 6 physical guitar strings (1 = high-E through 6 = low-E); carries an open pitch determined by the active tuning.
 - **Tuning**: A named or custom set of 6 open-string pitches; belongs to a tuning group (D-Family, G-Family, C-Family, or Custom) when named.
 - **Scale/Mode**: A named degree formula (from the canonical tables in Story 4) defining which semitone offsets from a root are diatonic; belongs to a category (Church Modes, Pentatonic, Blues, Other).
-- **Key Context**: The combination of root note, enharmonic spelling preference, and active scale/mode that determines every note's diatonic status, degree role, and label spelling.
+- **Key Context**: The combination of root note (one of the 12 canonical chromatic roots, each with a fixed circle-of-fifths sharp/flat spelling — UAT round 1 section C3) and active scale/mode that determines every note's diatonic status, degree role, and label spelling.
 - **Focal Point**: The currently selected scale-degree acting as the reference for chord-tone (bright set) computation; defaults to the root and resets on key/scale change.
 - **Chord-Tone Set**: The user-adjustable set of diatonic degrees currently marked "bright" relative to the focal point, along with an optional recognized chord-quality label.
 - **Label Mode**: The current note-label rendering choice — Notes, Degrees, or Intervals — applied to diatonic notes on top of the persistent base layer.

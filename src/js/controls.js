@@ -129,39 +129,28 @@ export function initTuningControls() {
   });
 }
 
-const NATURAL_ROOTS = ["C", "D", "E", "F", "G", "A", "B"];
-
-// Implements Story 3, FR-008/FR-009: root-note buttons + sharp/flat toggle
+// Implements Story 3, FR-008/FR-009 (UAT round 1 section C3): 12-root buttons,
+// each with one fixed circle-of-fifths spelling - no sharp/flat toggle.
 export function initRootControls() {
   const container = document.getElementById("root-controls");
   container.textContent = "";
 
   const buttonRow = el("div", { class: "root-buttons", role: "group", "aria-label": "Root note" });
-  for (const root of NATURAL_ROOTS) {
+  for (const root of theory.ROOTS) {
     const button = el("button", {
       type: "button",
-      "data-root": root,
-      text: root,
-      "aria-pressed": String(state.getState().root === root),
+      "data-root": root.label,
+      text: root.label,
+      "aria-pressed": String(state.getState().root === root.label),
     });
     button.addEventListener("click", () => {
-      state.setRoot(root);
+      state.setRoot(root.label);
       syncRootButtons();
       rerender();
     });
     buttonRow.appendChild(button);
   }
   container.appendChild(buttonRow);
-
-  const toggleLabel = el("label", { class: "accidental-toggle", text: "Prefer flats " });
-  const toggleInput = el("input", { type: "checkbox", id: "accidental-toggle" });
-  toggleInput.checked = state.getState().accidentalPreference === "flat";
-  toggleInput.addEventListener("change", () => {
-    state.setAccidentalPreference(toggleInput.checked ? "flat" : "sharp");
-    rerender();
-  });
-  toggleLabel.appendChild(toggleInput);
-  container.appendChild(toggleLabel);
 }
 
 function syncRootButtons() {
@@ -410,13 +399,22 @@ export function updateChordInfo() {
   for (const role of theory.DEGREE_ROLES) {
     const semitone = role.semitoneFromRoot;
     const toggleable = theory.isToggleableChordTone(semitone, rootSemitone, appState.scaleId);
+    const isBright = activeBrightSet.has(semitone);
     const button = el("button", {
       type: "button",
       text: role.roleLabel,
       "data-semitone": semitone,
-      "aria-pressed": String(activeBrightSet.has(semitone)),
+      "aria-pressed": String(isBright),
     });
-    if (!toggleable) button.setAttribute("disabled", "true");
+    // Implements FR-045 (UAT round 1 section C4): toggle colors match the
+    // fretboard's own role colors - bright variant when on, dark variant
+    // when off; non-diatonic (non-toggleable) stays plain/disabled.
+    if (!toggleable) {
+      button.setAttribute("disabled", "true");
+    } else {
+      button.classList.add(`role-${role.colorRoleId}`);
+      button.classList.toggle("is-bright", isBright);
+    }
     button.addEventListener("click", () => {
       const isOn = fretboard.computeActiveBrightSet(state.getState()).has(semitone);
       state.setChordToneOverride(semitone, !isOn);

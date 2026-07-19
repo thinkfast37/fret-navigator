@@ -311,6 +311,57 @@ describe("render (US7: fret-range visibility)", () => {
     assert.equal(noteEl(0, 4).getAttribute("tabindex"), "-1");
     assert.equal(noteEl(0, 6).getAttribute("tabindex"), "0");
   });
+
+  function markerCx(s, f) {
+    return Number(noteEl(s, f).querySelector(".note-marker").getAttribute("cx"));
+  }
+
+  test("FR-043 (UAT round 1 section C1): fret spacing scales inversely with the number of visible frets, total width stays fixed", () => {
+    fretboard.render(baseState({ fretRange: { lowerBound: 0, upperBound: 24 } }));
+    const fullRangeSvg = document.getElementById("fretboard");
+    const fullRangeViewBox = fullRangeSvg.getAttribute("viewBox");
+    const wideSpacing = markerCx(0, 2) - markerCx(0, 1);
+
+    fretboard.render(baseState({ fretRange: { lowerBound: 0, upperBound: 5 } }));
+    const narrowRangeViewBox = document.getElementById("fretboard").getAttribute("viewBox");
+    const narrowSpacing = markerCx(0, 2) - markerCx(0, 1);
+
+    // Total SVG size (viewBox) never changes with the visible range.
+    assert.equal(narrowRangeViewBox, fullRangeViewBox);
+    // But a narrower visible range spreads its frets out more (section C1).
+    assert.ok(narrowSpacing > wideSpacing, `expected narrow spacing (${narrowSpacing}) > wide spacing (${wideSpacing})`);
+  });
+
+  test("FR-043: a fully out-of-view fret is still assigned a finite position (never crashes) even though it's hidden", () => {
+    fretboard.render(baseState({ fretRange: { lowerBound: 5, upperBound: 10 } }));
+    assert.ok(Number.isFinite(markerCx(0, 20)));
+  });
+});
+
+describe("render (FR-046, UAT round 1 sections C5/E: fret-position numbers)", () => {
+  test("shows fret-number labels only at standard marker positions within the visible range, top and bottom", () => {
+    fretboard.render(baseState({ fretRange: { lowerBound: 0, upperBound: 24 } }));
+    const topTexts = [...document.querySelectorAll(".fret-numbers-top .fret-number")].map((el) => el.textContent);
+    const bottomTexts = [...document.querySelectorAll(".fret-numbers-bottom .fret-number")].map((el) => el.textContent);
+    assert.deepEqual(topTexts, ["3", "5", "7", "9", "12", "15", "17", "19", "21", "24"]);
+    assert.deepEqual(bottomTexts, topTexts);
+  });
+
+  test("marker frets outside the visible range are not labeled", () => {
+    fretboard.render(baseState({ fretRange: { lowerBound: 0, upperBound: 10 } }));
+    const topTexts = [...document.querySelectorAll(".fret-numbers-top .fret-number")].map((el) => el.textContent);
+    assert.deepEqual(topTexts, ["3", "5", "7", "9"]);
+  });
+
+  test("Absolute mode shows the true physical fret number; Relative mode shows physicalFret - capoFret", () => {
+    fretboard.render(baseState({ capoFret: 3, capoLabelMode: "absolute", fretRange: { lowerBound: 3, upperBound: 24 } }));
+    const absoluteTexts = [...document.querySelectorAll(".fret-numbers-top .fret-number")].map((el) => el.textContent);
+    assert.deepEqual(absoluteTexts, ["3", "5", "7", "9", "12", "15", "17", "19", "21", "24"]);
+
+    fretboard.render(baseState({ capoFret: 3, capoLabelMode: "relative", fretRange: { lowerBound: 3, upperBound: 24 } }));
+    const relativeTexts = [...document.querySelectorAll(".fret-numbers-top .fret-number")].map((el) => el.textContent);
+    assert.deepEqual(relativeTexts, ["0", "2", "4", "6", "9", "12", "14", "16", "18", "21"]);
+  });
 });
 
 describe("render (US8: audio playback wiring)", () => {

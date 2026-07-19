@@ -49,9 +49,11 @@ describe("setTuning", () => {
 });
 
 describe("setRoot", () => {
-  test("US3 Scenario 1: sets the selected root note", () => {
-    state.setRoot("G");
-    assert.equal(state.getState().root, "G");
+  test("US3 Scenario 1: sets the selected root note (all 12 canonical roots, UAT round 1 section C3)", () => {
+    for (const root of ["A", "Ab", "B", "Bb", "C", "D", "Db", "E", "Eb", "F", "F#", "G"]) {
+      state.setRoot(root);
+      assert.equal(state.getState().root, root);
+    }
   });
 
   test("Edge Case: changing root resets focal point to root and clears chord-tone overrides", () => {
@@ -66,14 +68,16 @@ describe("setRoot", () => {
     assert.equal(state.getState().focalDegreeSemitone, 0);
     assert.deepEqual(state.getState().chordToneOverrides, []);
   });
-});
 
-describe("setAccidentalPreference", () => {
-  test("US3 Scenario 2: toggles sharp/flat spelling preference", () => {
-    state.setAccidentalPreference("flat");
-    assert.equal(state.getState().accidentalPreference, "flat");
-    state.setAccidentalPreference("sharp");
-    assert.equal(state.getState().accidentalPreference, "sharp");
+  test("US3 Scenario 2 (UAT round 1 section C3): accidentalPreference is derived automatically from the root's circle-of-fifths side, not user-toggled", () => {
+    for (const root of ["C", "G", "D", "A", "E", "B", "F#"]) {
+      state.setRoot(root);
+      assert.equal(state.getState().accidentalPreference, "sharp", `${root} should be sharp-side`);
+    }
+    for (const root of ["Db", "Ab", "Eb", "Bb", "F"]) {
+      state.setRoot(root);
+      assert.equal(state.getState().accidentalPreference, "flat", `${root} should be flat-side`);
+    }
   });
 });
 
@@ -127,11 +131,18 @@ describe("setCapoFret", () => {
     assert.equal(state.getState().fretRange.lowerBound, 3);
   });
 
-  test("Edge Case: capo beyond the current right handle moves the right handle up to match", () => {
-    state.setFretRange(0, 2);
-    state.setCapoFret(5);
+  test("FR-044 (UAT round 1 section C2): right handle shifts by the same delta as the left handle's snap, preserving the previously-visible width", () => {
+    state.setFretRange(0, 2); // width 2
+    state.setCapoFret(5); // left snaps 0 -> 5 (delta +5); right shifts 2 -> 7
     assert.equal(state.getState().fretRange.lowerBound, 5);
-    assert.equal(state.getState().fretRange.upperBound, 5);
+    assert.equal(state.getState().fretRange.upperBound, 7);
+  });
+
+  test("FR-044: the shifted right handle is clamped to a maximum of 24 regardless of the computed delta", () => {
+    state.setFretRange(10, 24); // width 14
+    state.setCapoFret(12); // delta +2 -> 24+2=26, clamped to 24
+    assert.equal(state.getState().fretRange.lowerBound, 12);
+    assert.equal(state.getState().fretRange.upperBound, 24);
   });
 
   test("US9 Scenario 6: releasing capo to 0 restores the lower bound to the nut", () => {
