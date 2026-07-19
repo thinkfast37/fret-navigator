@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "serve": "scripts/serve.sh"
   },
   "devDependencies": {
     "jsdom": "^29.1.1"
