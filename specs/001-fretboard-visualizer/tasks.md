@@ -243,7 +243,8 @@ Per contracts/theory-api.md's binding rule: `getDiatonicSemitones`, `computeDefa
 - [ ] T076 [US7] Implement drag handling + constraints (left ≤ right, minimum 1 fret visible) in `js/controls.js`, labeling the left handle `"N"` at the nut or the fret number otherwise, and the right handle always with its fret number (depends on T075)
 - [ ] T077 [P] [US7] Wire `fretRange` state (`lowerBound`/`upperBound`, default `0`/`24`) in `js/state.js` (depends on T039)
 - [ ] T078 [US7] Hide/show frets outside `[lowerBound, upperBound]` in `js/fretboard.js` — visibility only, no recomputation of pitch/diatonic/focal data (depends on T075, T076, T077, T042)
-- [ ] T079 [US7] Manually validate against quickstart.md Section 6 (default N–24; drag left to 5; drag right to 12; combined range; drag-past-other-handle constraint)
+- [ ] T078a [US7] Build a reset control (button near the slider) in `index.html`/`js/controls.js` that resets both handles to their default positions (left="N", right=24) and updates `fretRange` state accordingly (FR-027), regardless of the current range (depends on T075, T076, T077)
+- [ ] T079 [US7] Manually validate against quickstart.md Section 6 (default N–24; drag left to 5; drag right to 12; combined range; drag-past-other-handle constraint; reset control returns to N–24 from any adjusted range)
 
 **Checkpoint**: US1–US7 independently functional.
 

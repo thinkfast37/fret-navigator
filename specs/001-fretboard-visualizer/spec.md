@@ -340,6 +340,9 @@ which frets are in view.
 - The left handle cannot be dragged past (to the right of) the right
   handle's current position, and vice versa — the visible range must
   always contain at least one fret.
+- A reset control (e.g. a button near the slider) is always present and,
+  when activated, returns both handles to their default positions
+  (left="N", right=24) regardless of the current range.
 
 **Acceptance Scenarios**:
 
@@ -363,16 +366,14 @@ which frets are in view.
    past the other's current position, **Then** the drag is constrained
    so the range never inverts or collapses to zero frets.
 
-6. **Given** any adjusted range, **When** I reset (if a reset control
-   exists) or reload, **Then** the range returns to the default
-   N–24 full view.
+6. **Given** any adjusted range, **When** the user activates the reset
+   control, **Then** the range returns to the default N–24 full view.
 
    > **Clarification (2026-07-19)**: Per the persistence decision above
-   > (FR-039/FR-040), a plain page reload now restores the last-used
-   > fret range from `localStorage` rather than resetting it — this
-   > scenario's "reset" behavior applies to an explicit reset control
-   > (or a genuinely fresh session with no stored settings), not to
-   > reload in general.
+   > (FR-039/FR-040), a plain page reload restores the last-used fret
+   > range from `localStorage` rather than resetting it — this scenario's
+   > reset behavior applies to the explicit reset control (or a genuinely
+   > fresh session with no stored settings), not to reload in general.
 
 ---
 
@@ -556,7 +557,7 @@ capo positions the way they're actually taught and played.
 - **FR-024**: System MUST visually distinguish the key root (scale degree 1) from other diatonic notes by both a color-role AND a secondary indicator (border/shape), in every label mode.
 - **FR-025**: System MUST provide a dual-handle fret-range slider whose left handle controls the lower visible-fret bound (labeled "N" at the nut, or the fret number if moved past fret 0) and whose right handle controls the upper visible-fret bound (labeled with the fret number), defaulting on load to left="N" and right=24 with all frets 0–24 visible.
 - **FR-026**: System MUST constrain the fret-range slider so the left handle cannot move past the right handle's position (or vice versa), always leaving at least one fret visible, and MUST hide frets outside the selected range.
-- **FR-027**: System MUST restore the fret-range slider to its default N–24 full view when an explicit reset control is used, or on first load with no previously stored settings; a plain reload with existing stored settings MUST instead restore the last-used range per FR-039.
+- **FR-027**: System MUST provide an explicit reset control that restores the fret-range slider to its default N–24 full view when activated. The system MUST also restore this default on first load with no previously stored settings; a plain reload with existing stored settings MUST instead restore the last-used range per FR-039.
 - **FR-028**: System MUST play, on click/tap of any fret position, the correct pitch at its correct octave using a recorded/multi-sampled real guitar tone (not a synthesized waveform).
 - **FR-029**: System MUST produce audibly distinct playback for the same pitch class at different octaves (e.g. open low E vs. 12th-fret high E), never collapsing them to one sample or one octave.
 - **FR-030**: System MUST fetch required audio assets once and reuse them for subsequent playback, without a live network dependency for notes already loaded, and without re-fetching per trigger.

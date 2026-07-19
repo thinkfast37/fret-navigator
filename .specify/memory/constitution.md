@@ -1,6 +1,22 @@
 <!--
 SYNC IMPACT REPORT
 ==================
+Version change: 1.0.0 → 1.1.0
+Modified principles:
+  - IV. Testing Standards — softened the CI coverage-gate requirement to match
+    solo-MVP scope: `theory.js` still MUST maintain exhaustive test coverage,
+    but verification is now via `node --test --experimental-test-coverage`
+    run manually/on-demand, not an automated CI pipeline gate.
+
+Added sections: None
+
+Removed sections: None
+
+Templates reviewed:
+  - specs/001-fretboard-visualizer/plan.md    ✅ — Constitution Check row IV updated to match softened wording; still PASSes
+
+Deferred TODOs: None — all placeholders resolved.
+==================
 Version change: [unversioned template] → 1.0.0
 Modified principles: N/A (initial population — all placeholders replaced)
 
@@ -99,8 +115,11 @@ No feature that modifies theory logic may merge without passing tests.
   label to appear anywhere in the UI is classified **P0** (correctness bug),
   regardless of how infrequently it is triggered or how visually minor it appears.
   P0 bugs block release.
-- Test coverage reporting MUST be configured for the theory module. A drop below
-  the established coverage baseline blocks CI.
+- `theory.js` MUST maintain exhaustive test coverage, verified via
+  `node --test --experimental-test-coverage` run manually/on-demand by the
+  developer before merging changes to theory logic. Per this project's
+  solo-MVP scope, no CI pipeline enforces this automatically — it is a
+  manual, developer-run verification step, not an automated gate.
 
 **Rationale**: Cheap tests on pure logic should never be skipped. Treating theory
 bugs as cosmetic leads to shipped misinformation that erodes user trust.
@@ -203,4 +222,4 @@ in the Complexity Tracking table and receive sign-off before work starts.
 deployment method belong in the plan document (`/speckit-plan`), not here.
 This constitution governs behavior and quality bars regardless of stack.
 
-**Version**: 1.0.0 | **Ratified**: 2026-07-18 | **Last Amended**: 2026-07-18
+**Version**: 1.1.0 | **Ratified**: 2026-07-18 | **Last Amended**: 2026-07-19
