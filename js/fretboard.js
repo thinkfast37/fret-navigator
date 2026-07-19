@@ -3,6 +3,7 @@
 
 import * as theory from "./theory.js";
 import * as state from "./state.js";
+import * as audio from "./audio.js";
 
 const ALL_ROLE_IDS = ["1", "b2", "2", "b3", "3", "4", "4s5b", "5", "b6", "6", "b7", "7"];
 
@@ -63,9 +64,12 @@ function svgEl(tag, attrs = {}) {
   return el;
 }
 
-// Only diatonically-colored notes are clickable as a new focal point
-// (FR-017). Audio playback (US8) is added here in a later phase.
+// Every fret click/tap plays its true sounding pitch (FR-028). Only
+// diatonically-colored notes additionally become the new focal point
+// (FR-017) - non-diatonic notes still play audio, just don't affect focus.
 function onNoteActivated(g) {
+  audio.play(Number(g.dataset.midiNote));
+
   if (!g.classList.contains("is-diatonic")) return;
   const appState = state.getState();
   const rootSemitone = theory.rootLetterToSemitone(appState.root);

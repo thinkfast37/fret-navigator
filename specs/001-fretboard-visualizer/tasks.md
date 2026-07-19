@@ -258,13 +258,13 @@ Per contracts/theory-api.md's binding rule: `getDiatonicSemitones`, `computeDefa
 
 **Depends on**: US1 (needs clickable fret positions). **theory.js dependency used here**: `noteAt()`'s `midiNote` (T012) — already tested/implemented.
 
-- [ ] T080 [US8] Load `soundfont-player` + the `acoustic_guitar_steel` instrument via the `gleitz/midi-js-soundfonts` CDN, caching the loaded instrument, in `js/audio.js`
-- [ ] T081 [US8] Implement `audio.play(midiNote)` in `js/audio.js`, using `noteAt()`'s `midiNote` (T012) — always the true sounding pitch, never a label-mode-adjusted one (depends on T080)
-- [ ] T082 [US8] Create/resume the `AudioContext` inside the first user-gesture handler only — no autoplay on load or state change — in `js/audio.js` (depends on T080)
-- [ ] T083 [US8] Wire fret click/tap → `audio.play()` in `js/controls.js`/`js/fretboard.js` (depends on T081, T082, T042)
-- [ ] T084 [US8] Verify/implement clean handling of rapid sequential triggers (no improper cutoff, no audible lag) in `js/audio.js` (depends on T081)
-- [ ] T085 [US8] Implement a visible, non-blocking error toast/banner on sample load failure, with retry-on-next-tap for the affected note (FR-041), in `js/audio.js` + `index.html`/`css/styles.css` (depends on T080)
-- [ ] T086 [US8] Manually validate against quickstart.md Section 7 (correct octave distinction, offline replay after caching, rapid-trigger cleanliness, load-failure banner)
+- [X] T080 [US8] Load `soundfont-player` + the `acoustic_guitar_steel` instrument via the `gleitz/midi-js-soundfonts` CDN, caching the loaded instrument, in `js/audio.js`
+- [X] T081 [US8] Implement `audio.play(midiNote)` in `js/audio.js`, using `noteAt()`'s `midiNote` (T012) — always the true sounding pitch, never a label-mode-adjusted one (depends on T080)
+- [X] T082 [US8] Create/resume the `AudioContext` inside the first user-gesture handler only — no autoplay on load or state change — in `js/audio.js` (depends on T080)
+- [X] T083 [US8] Wire fret click/tap → `audio.play()` in `js/controls.js`/`js/fretboard.js` (depends on T081, T082, T042)
+- [X] T084 [US8] Verify/implement clean handling of rapid sequential triggers (no improper cutoff, no audible lag) in `js/audio.js` (depends on T081)
+- [X] T085 [US8] Implement a visible, non-blocking error toast/banner on sample load failure, with retry-on-next-tap for the affected note (FR-041), in `js/audio.js` + `index.html`/`css/styles.css` (depends on T080)
+- [X] T086 [US8] Manually validate against quickstart.md Section 7 (correct octave distinction, offline replay after caching, rapid-trigger cleanliness, load-failure banner)
 
 **Checkpoint**: US1–US8 independently functional.
 

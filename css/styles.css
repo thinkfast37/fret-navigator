@@ -50,6 +50,24 @@ main {
   padding: 0 1rem 1rem;
 }
 
+#audio-error-banner {
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #7a2323;
+  color: #fff;
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  z-index: 10;
+}
+
+#audio-error-banner[hidden] {
+  display: none;
+}
+
 footer#credits {
   padding: 1rem;
   font-size: 0.8rem;
