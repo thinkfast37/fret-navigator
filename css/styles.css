@@ -179,6 +179,18 @@ footer#credits a {
   cursor: not-allowed;
 }
 
+.fret-range-handle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.fret-range-label {
+  min-width: 2.2rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
 .chord-summary {
   margin: 0.4rem 0 0;
   font-size: 0.9rem;
@@ -192,6 +204,10 @@ footer#credits a {
 
 .note {
   cursor: pointer;
+}
+
+.note.fret-hidden {
+  display: none;
 }
 
 /* ---- Controls ---- */

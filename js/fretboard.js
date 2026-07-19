@@ -222,9 +222,13 @@ function updateNotes(state) {
         label = theory.getIntervalLabel(semitoneFromRoot);
       }
 
+      const isVisibleInRange = f >= state.fretRange.lowerBound && f <= state.fretRange.upperBound;
+
       g.classList.toggle("is-root", isRoot);
       g.classList.toggle("is-diatonic", isDiatonic);
       g.classList.toggle("is-bright", isFocalChordTone);
+      g.classList.toggle("fret-hidden", !isVisibleInRange);
+      g.setAttribute("tabindex", isVisibleInRange ? "0" : "-1");
 
       for (const roleId of ALL_ROLE_IDS) g.classList.remove(`role-${roleId}`);
       if (isDiatonic) {

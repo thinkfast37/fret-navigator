@@ -229,6 +229,90 @@ function syncLabelModeButtons() {
   }
 }
 
+export function initFretRangeControls() {
+  const container = document.getElementById("fret-range-controls");
+  container.textContent = "";
+
+  const { lowerBound, upperBound } = state.getState().fretRange;
+
+  const leftLabel = el("span", { class: "fret-range-label", id: "fret-range-left-label" });
+  const rightLabel = el("span", { class: "fret-range-label", id: "fret-range-right-label" });
+
+  const leftInput = el("input", {
+    type: "range",
+    id: "fret-range-left",
+    min: "0",
+    max: "24",
+    value: String(lowerBound),
+    "aria-label": "Lower visible fret bound",
+  });
+  const rightInput = el("input", {
+    type: "range",
+    id: "fret-range-right",
+    min: "0",
+    max: "24",
+    value: String(upperBound),
+    "aria-label": "Upper visible fret bound",
+  });
+
+  const resetButton = el("button", { type: "button", id: "fret-range-reset", text: "Reset range" });
+
+  function updateLabels() {
+    const isCapoLocked = state.getState().capoFret > 0;
+    const left = Number(leftInput.value);
+    leftLabel.textContent = left === 0 && !isCapoLocked ? "N" : isCapoLocked ? "Capo" : String(left);
+    rightLabel.textContent = String(rightInput.value);
+  }
+
+  function syncConstraints() {
+    // Left cannot be dragged past right, and vice versa (FR-026) - at least one fret stays visible.
+    rightInput.min = leftInput.value;
+    leftInput.max = state.getState().capoFret > 0 ? String(state.getState().capoFret) : rightInput.value;
+  }
+
+  leftInput.addEventListener("input", () => {
+    if (state.getState().capoFret > 0) return; // locked to capo, see T089
+    syncConstraints();
+    state.setFretRange(Number(leftInput.value), Number(rightInput.value));
+    updateLabels();
+    rerender();
+  });
+
+  rightInput.addEventListener("input", () => {
+    syncConstraints();
+    state.setFretRange(Number(leftInput.value), Number(rightInput.value));
+    updateLabels();
+    rerender();
+  });
+
+  resetButton.addEventListener("click", () => {
+    leftInput.value = "0";
+    rightInput.value = "24";
+    syncConstraints();
+    state.setFretRange(0, 24);
+    updateLabels();
+    rerender();
+  });
+
+  syncConstraints();
+  updateLabels();
+
+  const leftGroup = el("div", { class: "fret-range-handle" }, [
+    el("label", { for: "fret-range-left", text: "Left: " }),
+    leftLabel,
+    leftInput,
+  ]);
+  const rightGroup = el("div", { class: "fret-range-handle" }, [
+    el("label", { for: "fret-range-right", text: "Right: " }),
+    rightLabel,
+    rightInput,
+  ]);
+
+  container.appendChild(leftGroup);
+  container.appendChild(rightGroup);
+  container.appendChild(resetButton);
+}
+
 function mod12(n) {
   return ((n % 12) + 12) % 12;
 }
@@ -283,6 +367,7 @@ export function initControls() {
   initRootControls();
   initScaleControls();
   initLabelModeControls();
+  initFretRangeControls();
   fretboard.onAfterRender(updateChordInfo);
   updateChordInfo();
 }
