@@ -47,7 +47,7 @@ function installSoundfontMock({ shouldFail = false } = {}) {
   return { instrumentCalls, playCalls, instrument };
 }
 
-const audio = await import("../js/audio.js");
+const audio = await import("../src/js/audio.js");
 
 describe("audio.js (Story 8, FR-028/FR-029/FR-030/FR-031/FR-032/FR-041)", () => {
   test("US8 edge case / FR-041: a failed sample load fires onLoadError and permits a later retry", async () => {

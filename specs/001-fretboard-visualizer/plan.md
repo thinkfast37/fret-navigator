@@ -106,26 +106,26 @@ specs/001-fretboard-visualizer/
 ### Source Code (repository root)
 
 ```text
-index.html               # Single page: markup shell, control elements, <script type="module"> entry
-css/
-└── styles.css           # All styling: color roles (bright/dark variants), shape/border indicators,
-                          # slider, contrast-compliant text
-
-js/
-├── theory.js            # PURE, dependency-free: tuning/note/scale/degree/chord/capo math
-                          # (constitution Principle I canonical module — the hard unit-test gate)
-├── state.js              # App state shape, defaults, localStorage load/save/migrate (schemaVersion)
-├── audio.js               # soundfont-player wrapper: instrument load/cache, play(midiNote),
-                            # AudioContext creation/resume inside user-gesture handler
-├── fretboard.js            # Inline SVG construction + per-note attribute/class updates driven
-                             # purely by current state (no hidden mutable display state)
-├── controls.js              # UI event wiring: tuning/root/scale selectors, fret-range slider,
-                              # capo control, label-mode toggle, focal-point clicks
-└── main.js                   # Bootstrap: load persisted state → init audio → initial render →
-                               # wire controls
+src/
+├── index.html            # Single page: markup shell, control elements, <script type="module"> entry
+├── css/
+│   └── styles.css        # All styling: color roles (bright/dark variants), shape/border indicators,
+│                         # slider, contrast-compliant text
+└── js/
+    ├── theory.js         # PURE, dependency-free: tuning/note/scale/degree/chord/capo math
+    │                     # (constitution Principle I canonical module — the hard unit-test gate)
+    ├── state.js          # App state shape, defaults, localStorage load/save/migrate (schemaVersion)
+    ├── audio.js           # soundfont-player wrapper: instrument load/cache, play(midiNote),
+    │                     # AudioContext creation/resume inside user-gesture handler
+    ├── fretboard.js       # Inline SVG construction + per-note attribute/class updates driven
+    │                     # purely by current state (no hidden mutable display state)
+    ├── controls.js        # UI event wiring: tuning/root/scale selectors, fret-range slider,
+    │                     # capo control, label-mode toggle, focal-point clicks
+    └── main.js            # Bootstrap: load persisted state → init audio → initial render →
+                          # wire controls
 
 tests/
-├── theory.test.js         # node --test unit tests for js/theory.js: open strings, 12-fret
+├── theory.test.js         # node --test unit tests for src/js/theory.js: open strings, 12-fret
 │                           # wraparound, enharmonics, every supported tuning, edge frets (0/12/24)
 ├── state.test.js          # jsdom tests: setters, persistence/migration, validation, pruning
 ├── audio.test.js          # jsdom tests: mocked Web Audio API + soundfont-player call assertions
@@ -134,13 +134,19 @@ tests/
 └── main.test.js           # jsdom tests: bootstrap sequencing, audio-error-banner wiring
 ```
 
-**Structure Decision**: Single static-site project at the repository root (no `src/`, `backend/`,
-or `frontend/` split — there is no backend). The music-theory core (`js/theory.js`) is physically
-isolated from rendering (`js/fretboard.js`), audio (`js/audio.js`), state/persistence (`js/state.js`),
-and UI wiring (`js/controls.js`) so the constitution's hard unit-test gate applies cleanly to one
-file with zero DOM or Web Audio dependencies. `index.html` loads `js/main.js` as a native ES module
-(`<script type="module" src="js/main.js">`) plus the `soundfont-player` CDN script — no bundler
-step is introduced anywhere in this tree.
+**Structure Decision**: Publishable assets live under `src/` (`index.html`, `css/`, `js/`), split
+out from `specs/`, `tests/`, and `.specify/` at the repository root. The purpose of this split is
+to isolate exactly what a static-hosting deploy (GitHub Pages) should publish: pointing Pages at
+`src/` publishes only the app itself, keeping specs, tests, and tooling off the public site.
+`tests/` did NOT move — it still lives at the repository root and its imports now point at
+`../src/js/...` instead of `../js/...`. The music-theory core (`src/js/theory.js`) is physically
+isolated from rendering (`src/js/fretboard.js`), audio (`src/js/audio.js`), state/persistence
+(`src/js/state.js`), and UI wiring (`src/js/controls.js`) so the constitution's hard unit-test gate
+applies cleanly to one file with zero DOM or Web Audio dependencies. `src/index.html` loads
+`js/main.js` as a native ES module (`<script type="module" src="js/main.js">`) plus the
+`soundfont-player` CDN script — all paths inside `src/` are relative and un-rooted, so the whole
+directory works standalone whether served from the repository root or from `src/` directly. No
+bundler step is introduced anywhere in this tree.
 
 ## Complexity Tracking
 

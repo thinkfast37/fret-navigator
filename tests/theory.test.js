@@ -22,7 +22,7 @@ import {
   getRelativeLabelSemitone,
   isFretPlayable,
   rootLetterToSemitone,
-} from "../js/theory.js";
+} from "../src/js/theory.js";
 
 // ---- Reference data (T005, T007, T009) ----
 

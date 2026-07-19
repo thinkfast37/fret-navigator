@@ -63,8 +63,8 @@ function flush() {
   return new Promise((resolve) => setTimeout(resolve, 10));
 }
 
-await import("../js/main.js");
-const audio = await import("../js/audio.js");
+await import("../src/js/main.js");
+const audio = await import("../src/js/audio.js");
 
 describe("main.js bootstrap (Story 1, FR-039/FR-040/FR-041)", () => {
   test("FR-039/FR-040: restores persisted state before the first render/control build (no default-then-restore flash)", () => {

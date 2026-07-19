@@ -20,8 +20,8 @@ globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 globalThis.localStorage = dom.window.localStorage;
 
-const state = await import("../js/state.js");
-const controls = await import("../js/controls.js");
+const state = await import("../src/js/state.js");
+const controls = await import("../src/js/controls.js");
 
 function fire(el, type) {
   el.dispatchEvent(new dom.window.Event(type, { bubbles: true }));

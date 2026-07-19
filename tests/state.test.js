@@ -8,7 +8,7 @@ globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 globalThis.localStorage = dom.window.localStorage;
 
-const state = await import("../js/state.js");
+const state = await import("../src/js/state.js");
 
 beforeEach(() => {
   localStorage.clear();

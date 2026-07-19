@@ -35,8 +35,8 @@ function flush() {
   return new Promise((resolve) => setTimeout(resolve, 10));
 }
 
-const state = await import("../js/state.js");
-const fretboard = await import("../js/fretboard.js");
+const state = await import("../src/js/state.js");
+const fretboard = await import("../src/js/fretboard.js");
 
 function baseState(overrides = {}) {
   return {
