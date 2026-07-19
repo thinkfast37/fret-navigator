@@ -68,17 +68,23 @@ to 12 chromatic scale-degree color roles, 25 frets (0–24) × 6 strings.
 | I. Music Theory Correctness (NON-NEGOTIABLE) | PASS | All note/scale/degree/chord/capo math lives in one pure, side-effect-free `theory.js` module, directly sourced from the Story 4 canonical tables; hard-gated unit tests planned (see Testing above). |
 | II. Visualization Consistency | PASS | Single inline-SVG fretboard is the sole source of truth; every control mutates one shared state object and the SVG updates via attribute/class changes, not parallel views. Color-alone encoding is explicitly disallowed (FR-004, FR-024). |
 | III. Audio Behavior | PASS | `soundfont-player` wraps the Web Audio API (no external audio library beyond this thin wrapper); playback fires only on direct user interaction (fret click/tap), never on state changes; AudioContext will be created/resumed inside the first user-gesture handler. |
-| IV. Testing Standards | PASS | `theory.js` is the exhaustively unit-tested layer (open strings, 12-fret wraparound, enharmonics, all supported tunings, edge frets), with coverage verified manually/on-demand via `node --test --experimental-test-coverage` — no CI pipeline enforces this automatically, per solo-MVP scope; rendering/audio layers use lighter manual quickstart validation. |
+| IV. Testing Standards | **FAIL (gap)** | Constitution now requires persistent, committed automated tests for ALL modules (`theory.js`, `state.js`, `audio.js`, `fretboard.js`, `controls.js`, `main.js`), not `theory.js` alone. `theory.js` still meets its exhaustive unit-test hard gate (open strings, 12-fret wraparound, enharmonics, all supported tunings, edge frets) via `tests/theory.test.js`. However, `state.js`, `audio.js`, `fretboard.js`, `controls.js`, and `main.js` currently have **no committed jsdom-based tests** — only `tests/theory.test.js` exists in the repo. This row cannot honestly read PASS until jsdom tests covering DOM construction, event wiring, and state transitions are added for those modules, with every public function and every `spec.md` acceptance scenario covered by at least one test. Manual `quickstart.md` validation does not close this gap — it is a supplement for end-to-end/visual behavior only, not a substitute for automated coverage. |
 | V. Simplicity & Scope Discipline | PASS | No backend, no build tooling, single new runtime dependency (`soundfont-player`) with explicit justification (Web Audio API alone would require re-implementing sample loading/playback plumbing); `localStorage`-only persistence with `schemaVersion`. |
 | Accessibility & Inclusive Design | PASS (design commitment) | Fret cells get `aria-label`s (e.g. "E4, root, fret 0, string 1"), are keyboard-focusable/activatable, and every highlight state pairs color with shape/border, per FR-004/FR-024 and the constitution's accessibility section. |
 | Client-Side Architecture Constraints | PASS | Single serializable state object mirrors the persisted settings schema; no framework is introduced; dependency vetted below (research.md); no secrets/API keys (static site). |
 
-No violations identified — Complexity Tracking table below is not needed.
+One violation identified (Principle IV, testing coverage gap — see Complexity Tracking below).
+This gap was introduced retroactively by a constitution amendment (v1.2.0) broadening the
+testing standard beyond `theory.js`; it was not present at initial Constitution Check time and
+does not block already-completed design work, but MUST be closed (jsdom tests added for
+`state.js`, `audio.js`, `fretboard.js`, `controls.js`) before this feature can be considered
+compliant going forward.
 
 **Post-Phase-1 re-check**: `research.md` and `data-model.md`/`contracts/` were reviewed against
 this table after design — no new dependency, framework, storage mechanism, or architectural
 element was introduced beyond what's listed above (still just `soundfont-player` + `localStorage`
-+ vanilla JS/SVG). All rows remain PASS with no changes required.
++ vanilla JS/SVG). All rows other than IV remain PASS with no changes required; row IV was
+downgraded after the fact by the v1.2.0 constitution amendment (see note in that row).
 
 ## Project Structure
 
@@ -134,4 +140,6 @@ step is introduced anywhere in this tree.
 
 > **Fill ONLY if Constitution Check has violations that must be justified**
 
-Not applicable — the Constitution Check above has no violations (initial or post-design).
+| Violation | Why Needed | Simpler Alternative Rejected Because |
+|---|---|---|
+| Principle IV (Testing Standards): `state.js`, `audio.js`, `fretboard.js`, `controls.js`, and `main.js` lack committed automated tests | Constitution v1.2.0 broadened the testing hard-gate to all modules after this plan's initial design phase; the code and its manual-quickstart-only validation predate that amendment | No alternative rejected — this is an outstanding gap to close, not a deliberate design trade-off. Tracked as a required follow-up: add jsdom-based `node --test` coverage for the listed modules before treating Principle IV as satisfied. |

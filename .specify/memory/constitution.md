@@ -1,6 +1,35 @@
 <!--
 SYNC IMPACT REPORT
 ==================
+Version change: 1.1.0 → 1.2.0
+Modified principles:
+  - IV. Testing Standards — broadened the automated-test-coverage requirement from
+    `theory.js` alone to ALL modules (`theory.js`, `state.js`, `audio.js`,
+    `fretboard.js`, `controls.js`, `main.js`). `theory.js` keeps its exhaustive
+    unit-test hard gate; the other modules now MUST have jsdom-based tests
+    (DOM construction, event wiring, state transitions) run via the same
+    `node --test` runner — not exhaustive, but every public function/exported
+    behavior and every spec.md acceptance scenario MUST have at least one test.
+    Manual `quickstart.md` validation is now explicitly scoped as a supplement
+    for true end-to-end/visual checks only, not a substitute for automated
+    coverage of any module's logic or DOM structure.
+
+Added sections: None
+
+Removed sections: None
+
+Templates reviewed:
+  - specs/001-fretboard-visualizer/plan.md    ⚠ — Constitution Check row IV previously
+    claimed PASS based on the old theory.js-only standard. Under the broadened
+    standard, only `tests/theory.test.js` exists; `state.js`, `audio.js`,
+    `fretboard.js`, `controls.js`, and `main.js` have no committed automated
+    tests. Row IV updated to reflect this gap accurately (no longer marked
+    unconditional PASS) rather than silently continuing to claim compliance.
+
+Deferred TODOs: Author jsdom-based test files for state.js, audio.js,
+  fretboard.js, and controls.js (main.js coverage may be indirect via the
+  others, or via a light bootstrap test) to close the gap flagged above.
+==================
 Version change: 1.0.0 → 1.1.0
 Modified principles:
   - IV. Testing Standards — softened the CI coverage-gate requirement to match
@@ -105,24 +134,43 @@ Accidental autoplay violates browser policy and degrades user trust.
 
 ### IV. Testing Standards
 
-The music theory calculation layer MUST have exhaustive unit test coverage as a
-hard quality gate — this layer is pure logic and every branch is cheaply testable.
-No feature that modifies theory logic may merge without passing tests.
+Every module — `theory.js`, `state.js`, `audio.js`, `fretboard.js`, `controls.js`,
+and `main.js` — MUST have persistent, committed automated test coverage. This is
+not a theory-only requirement: no module ships or continues to ship without a
+corresponding test file exercising its public behavior.
 
-- The UI/visualization layer MAY rely on lighter integration and snapshot testing;
-  pixel-perfect assertions are not required.
+- `theory.js` MUST maintain exhaustive unit test coverage as a hard quality gate
+  — this layer is pure logic (no DOM), every branch is cheaply testable, and
+  coverage must include open strings, 12-fret octave wraparound, enharmonic
+  equivalents, every supported tuning, and edge-position frets (nut, 12th, 24th).
+  No feature that modifies theory logic may merge without passing tests.
+- `state.js`, `audio.js`, `fretboard.js`, and `controls.js` MUST have jsdom-based
+  tests exercising DOM construction, event wiring, and state transitions, run via
+  the same `node --test` runner used for `theory.js`. This coverage does not need
+  to be as exhaustive as `theory.js` (e.g. it does not need every tuning × every
+  scale combination) — but every public function or exported behavior MUST have
+  at least one passing test, and every acceptance scenario in `spec.md` MUST be
+  covered by at least one test somewhere in the suite.
 - Any defect that causes an incorrect note name, wrong interval, or wrong chord
   label to appear anywhere in the UI is classified **P0** (correctness bug),
   regardless of how infrequently it is triggered or how visually minor it appears.
   P0 bugs block release.
-- `theory.js` MUST maintain exhaustive test coverage, verified via
-  `node --test --experimental-test-coverage` run manually/on-demand by the
-  developer before merging changes to theory logic. Per this project's
-  solo-MVP scope, no CI pipeline enforces this automatically — it is a
-  manual, developer-run verification step, not an automated gate.
+- Test coverage is verified via `node --test` (with
+  `--experimental-test-coverage` for `theory.js`), run manually/on-demand by the
+  developer before merging changes. Per this project's solo-MVP scope, no CI
+  pipeline enforces this automatically — it is a manual, developer-run
+  verification step, not an automated gate.
+- Manual `quickstart.md` validation remains a supplementary check for true
+  end-to-end/visual behavior that no automated test can verify (e.g. actual
+  color rendering, audio timbre) — it does NOT substitute for automated test
+  coverage of logic or DOM structure in any module.
 
 **Rationale**: Cheap tests on pure logic should never be skipped. Treating theory
-bugs as cosmetic leads to shipped misinformation that erodes user trust.
+bugs as cosmetic leads to shipped misinformation that erodes user trust. Limiting
+the hard-gate to `theory.js` alone let regressions creep into state, audio,
+rendering, and control-wiring code with no committed safety net beyond ad hoc
+manual checks — those layers construct DOM, wire events, and manage state
+transitions that are just as capable of silently breaking as theory math is.
 
 ### V. Simplicity & Scope Discipline
 
@@ -222,4 +270,4 @@ in the Complexity Tracking table and receive sign-off before work starts.
 deployment method belong in the plan document (`/speckit-plan`), not here.
 This constitution governs behavior and quality bars regardless of stack.
 
-**Version**: 1.1.0 | **Ratified**: 2026-07-18 | **Last Amended**: 2026-07-19
+**Version**: 1.2.0 | **Ratified**: 2026-07-18 | **Last Amended**: 2026-07-19
