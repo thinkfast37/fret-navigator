@@ -194,8 +194,59 @@ export function initScaleControls() {
   container.appendChild(select);
 }
 
+function mod12(n) {
+  return ((n % 12) + 12) % 12;
+}
+
+export function updateChordInfo() {
+  const container = document.getElementById("chord-info");
+  container.textContent = "";
+
+  const appState = state.getState();
+  const rootSemitone = appState.root ? theory.rootLetterToSemitone(appState.root) : null;
+  if (rootSemitone === null || !appState.scaleId) return;
+
+  const activeBrightSet = fretboard.computeActiveBrightSet(appState);
+
+  const toggleRow = el("div", { class: "chord-tone-toggles", role: "group", "aria-label": "Chord tones" });
+  for (const role of theory.DEGREE_ROLES) {
+    const semitone = role.semitoneFromRoot;
+    const toggleable = theory.isToggleableChordTone(semitone, rootSemitone, appState.scaleId);
+    const button = el("button", {
+      type: "button",
+      text: role.roleLabel,
+      "data-semitone": semitone,
+      "aria-pressed": String(activeBrightSet.has(semitone)),
+    });
+    if (!toggleable) button.setAttribute("disabled", "true");
+    button.addEventListener("click", () => {
+      const isOn = fretboard.computeActiveBrightSet(state.getState()).has(semitone);
+      state.setChordToneOverride(semitone, !isOn);
+      rerender();
+    });
+    toggleRow.appendChild(button);
+  }
+  container.appendChild(toggleRow);
+
+  const keyContext = {
+    root: appState.root,
+    accidentalPreference: appState.accidentalPreference,
+    scaleId: appState.scaleId,
+  };
+  const brightNames = [...activeBrightSet]
+    .sort((a, b) => a - b)
+    .map((semitone) => theory.spellPitchClass(mod12(rootSemitone + semitone), keyContext));
+  const quality = theory.identifyChordQuality([...activeBrightSet], appState.focalDegreeSemitone);
+
+  const summary = el("p", { class: "chord-summary" });
+  summary.textContent = `Bright notes: ${brightNames.join(", ")}${quality ? ` (${quality})` : ""}`;
+  container.appendChild(summary);
+}
+
 export function initControls() {
   initTuningControls();
   initRootControls();
   initScaleControls();
+  fretboard.onAfterRender(updateChordInfo);
+  updateChordInfo();
 }

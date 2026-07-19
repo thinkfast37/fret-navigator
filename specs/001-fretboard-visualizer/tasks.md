@@ -201,14 +201,14 @@ Per contracts/theory-api.md's binding rule: `getDiatonicSemitones`, `computeDefa
 
 **Depends on**: US4 (needs diatonic-set computation). **theory.js dependencies used here**: `DEGREE_ROLES`/`getDegreeRole()` (T018), `computeDefaultTriad()`/`getTriadQuality()` (T024, T026), `isToggleableChordTone()` (T028), `identifyChordQuality()` (T030) — all already tested/implemented.
 
-- [ ] T063 [US5] Assign each note's fixed `degreeRole` via `getDegreeRole()` (T018) and render the dark color-role variant for diatonic notes in `js/fretboard.js` (depends on T060)
-- [ ] T064 [US5] Implement focal-point click handling in `js/fretboard.js`/`js/controls.js`: only diatonically-colored notes are clickable as focal, default focal = root (semitone 0) on every root/scale change (depends on T063)
-- [ ] T065 [US5] Compute the default triad via `computeDefaultTriad()` (T024) and its quality via `getTriadQuality()` (T026); render focal-triad notes bright + bordered, other diatonic notes dark, in `js/fretboard.js` (depends on T064)
-- [ ] T066 [US5] Implement the chord-tone override toggle UI, gated by `isToggleableChordTone()` (T028), in `js/controls.js` (depends on T065)
-- [ ] T067 [US5] Display the active bright note set + recognized chord-quality label via `identifyChordQuality()` (T030) in `index.html`/`js/controls.js` (depends on T066)
-- [ ] T068 [P] [US5] Implement focal-point + `chordToneOverrides` reset on root/scale change (Edge Case) in `js/state.js` (depends on T039)
-- [ ] T069 [P] [US5] Style bright/dark/bordered variants for all 12 color roles in `css/styles.css`
-- [ ] T070 [US5] Manually validate against quickstart.md Section 4 steps 3–6 (minor triad on E, Esus4 override via A, F# gated out of C Major, F# ungated in C Lydian)
+- [X] T063 [US5] Assign each note's fixed `degreeRole` via `getDegreeRole()` (T018) and render the dark color-role variant for diatonic notes in `js/fretboard.js` (depends on T060)
+- [X] T064 [US5] Implement focal-point click handling in `js/fretboard.js`/`js/controls.js`: only diatonically-colored notes are clickable as focal, default focal = root (semitone 0) on every root/scale change (depends on T063)
+- [X] T065 [US5] Compute the default triad via `computeDefaultTriad()` (T024) and its quality via `getTriadQuality()` (T026); render focal-triad notes bright + bordered, other diatonic notes dark, in `js/fretboard.js` (depends on T064)
+- [X] T066 [US5] Implement the chord-tone override toggle UI, gated by `isToggleableChordTone()` (T028), in `js/controls.js` (depends on T065)
+- [X] T067 [US5] Display the active bright note set + recognized chord-quality label via `identifyChordQuality()` (T030) in `index.html`/`js/controls.js` (depends on T066)
+- [X] T068 [P] [US5] Implement focal-point + `chordToneOverrides` reset on root/scale change (Edge Case) in `js/state.js` (depends on T039)
+- [X] T069 [P] [US5] Style bright/dark/bordered variants for all 12 color roles in `css/styles.css`
+- [X] T070 [US5] Manually validate against quickstart.md Section 4 steps 3–6 (minor triad on E, Esus4 override via A, F# gated out of C Major, F# ungated in C Lydian)
 
 **Checkpoint**: US1–US5 independently functional — the harmonic-analysis core is complete.
 

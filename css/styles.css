@@ -116,10 +116,6 @@ footer#credits a {
   stroke-width: 2;
 }
 
-.note.is-diatonic .note-marker {
-  fill: var(--role-1-dark);
-}
-
 .note.is-root .note-marker {
   stroke: #ffd54a;
   stroke-width: 3;
@@ -127,6 +123,65 @@ footer#credits a {
 
 .note.is-root .note-label {
   font-weight: 700;
+}
+
+/* Diatonic degree-role coloring: dark by default, bright + bordered when the
+   note is part of the active focal-point chord-tone set (Story 5). */
+.note.role-1 .note-marker { fill: var(--role-1-dark); }
+.note.role-1.is-bright .note-marker { fill: var(--role-1-bright); }
+.note.role-b2 .note-marker { fill: var(--role-b2-dark); }
+.note.role-b2.is-bright .note-marker { fill: var(--role-b2-bright); }
+.note.role-2 .note-marker { fill: var(--role-2-dark); }
+.note.role-2.is-bright .note-marker { fill: var(--role-2-bright); }
+.note.role-b3 .note-marker { fill: var(--role-b3-dark); }
+.note.role-b3.is-bright .note-marker { fill: var(--role-b3-bright); }
+.note.role-3 .note-marker { fill: var(--role-3-dark); }
+.note.role-3.is-bright .note-marker { fill: var(--role-3-bright); }
+.note.role-4 .note-marker { fill: var(--role-4-dark); }
+.note.role-4.is-bright .note-marker { fill: var(--role-4-bright); }
+.note.role-4s5b .note-marker { fill: var(--role-4s5b-dark); }
+.note.role-4s5b.is-bright .note-marker { fill: var(--role-4s5b-bright); }
+.note.role-5 .note-marker { fill: var(--role-5-dark); }
+.note.role-5.is-bright .note-marker { fill: var(--role-5-bright); }
+.note.role-b6 .note-marker { fill: var(--role-b6-dark); }
+.note.role-b6.is-bright .note-marker { fill: var(--role-b6-bright); }
+.note.role-6 .note-marker { fill: var(--role-6-dark); }
+.note.role-6.is-bright .note-marker { fill: var(--role-6-bright); }
+.note.role-b7 .note-marker { fill: var(--role-b7-dark); }
+.note.role-b7.is-bright .note-marker { fill: var(--role-b7-bright); }
+.note.role-7 .note-marker { fill: var(--role-7-dark); }
+.note.role-7.is-bright .note-marker { fill: var(--role-7-bright); }
+
+.note.is-bright .note-marker {
+  stroke: var(--color-fg);
+  stroke-width: 3;
+}
+
+.note.is-bright.is-root .note-marker {
+  stroke: #ffd54a;
+  stroke-width: 4;
+}
+
+.chord-tone-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.chord-tone-toggles button[aria-pressed="true"] {
+  background: #ffffff;
+  color: #14171c;
+  font-weight: 700;
+}
+
+.chord-tone-toggles button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.chord-summary {
+  margin: 0.4rem 0 0;
+  font-size: 0.9rem;
 }
 
 .note:focus-visible .note-marker {

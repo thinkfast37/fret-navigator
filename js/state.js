@@ -39,8 +39,17 @@ export function setTuning(presetId, customOpenPitchClasses = null, customOpenOct
   save();
 }
 
+// Edge Case: switching root or scale/mode resets focal point to the new root
+// (degree 1) and clears any custom chord-tone override, since degree-role
+// assignment is fully recalculated from scratch (Story 5).
+function resetFocalPointAndOverrides() {
+  state.focalDegreeSemitone = 0;
+  state.chordToneOverrides = [];
+}
+
 export function setRoot(root) {
   state.root = root;
+  resetFocalPointAndOverrides();
   save();
 }
 
@@ -51,6 +60,7 @@ export function setAccidentalPreference(pref) {
 
 export function setScaleId(scaleId) {
   state.scaleId = scaleId;
+  resetFocalPointAndOverrides();
   save();
 }
 

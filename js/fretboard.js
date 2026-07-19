@@ -2,6 +2,9 @@
 // Visual state is a pure function of the current app state (constitution Principle II).
 
 import * as theory from "./theory.js";
+import * as state from "./state.js";
+
+const ALL_ROLE_IDS = ["1", "b2", "2", "b3", "3", "4", "4s5b", "5", "b6", "6", "b7", "7"];
 
 const STRING_COUNT = 6;
 const FRET_COUNT = 24; // frets 1-24; fret 0 is the open string
@@ -29,12 +32,47 @@ function stringY(stringIndex) {
   return MARGIN + stringIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
 }
 
+function mod12(n) {
+  return ((n % 12) + 12) % 12;
+}
+
+// Default focal triad merged with user chord-tone overrides -> Set of
+// root-relative semitones (0=key root) currently in the "bright" set.
+export function computeActiveBrightSet(appState) {
+  const rootSemitone = appState.root ? theory.rootLetterToSemitone(appState.root) : null;
+  if (rootSemitone === null || !appState.scaleId) return new Set();
+
+  const defaultTriad = theory.computeDefaultTriad(
+    appState.focalDegreeSemitone,
+    rootSemitone,
+    appState.scaleId
+  );
+  const brightSet = new Set(defaultTriad || []);
+  for (const override of appState.chordToneOverrides) {
+    if (override.on) brightSet.add(override.semitone);
+    else brightSet.delete(override.semitone);
+  }
+  return brightSet;
+}
+
 function svgEl(tag, attrs = {}) {
   const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
   for (const [key, value] of Object.entries(attrs)) {
     el.setAttribute(key, value);
   }
   return el;
+}
+
+// Only diatonically-colored notes are clickable as a new focal point
+// (FR-017). Audio playback (US8) is added here in a later phase.
+function onNoteActivated(g) {
+  if (!g.classList.contains("is-diatonic")) return;
+  const appState = state.getState();
+  const rootSemitone = theory.rootLetterToSemitone(appState.root);
+  const pitchClassSemitone = Number(g.dataset.pitchClassSemitone);
+  const semitoneFromRoot = mod12(pitchClassSemitone - rootSemitone);
+  state.setFocalDegreeSemitone(semitoneFromRoot);
+  render(state.getState());
 }
 
 function resolveTuning(state) {
@@ -133,6 +171,15 @@ function buildSkeleton() {
       g.appendChild(text);
       notesLayer.appendChild(g);
       noteElements.set(key, { g, circle, text });
+
+      const activate = () => onNoteActivated(g);
+      g.addEventListener("click", activate);
+      g.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          activate();
+        }
+      });
     }
   }
 }
@@ -154,6 +201,7 @@ function updateNotes(state) {
     rootSemitone !== null && state.scaleId
       ? theory.getDiatonicSemitones(rootSemitone, state.scaleId)
       : new Set();
+  const activeBrightSet = computeActiveBrightSet(state);
 
   for (let s = 0; s < STRING_COUNT; s++) {
     for (let f = 0; f <= FRET_COUNT; f++) {
@@ -164,23 +212,44 @@ function updateNotes(state) {
 
       const isRoot = rootSemitone !== null && pitchClassSemitone === rootSemitone;
       const isDiatonic = diatonicSemitones.has(pitchClassSemitone);
+      const semitoneFromRoot = rootSemitone !== null ? mod12(pitchClassSemitone - rootSemitone) : null;
+      const isFocalChordTone = isDiatonic && activeBrightSet.has(semitoneFromRoot);
+
       g.classList.toggle("is-root", isRoot);
       g.classList.toggle("is-diatonic", isDiatonic);
+      g.classList.toggle("is-bright", isFocalChordTone);
+
+      for (const roleId of ALL_ROLE_IDS) g.classList.remove(`role-${roleId}`);
+      if (isDiatonic) {
+        const role = theory.getDegreeRole(semitoneFromRoot);
+        g.classList.add(`role-${role.colorRoleId}`);
+      }
 
       text.textContent = label;
       g.setAttribute(
         "aria-label",
-        `${label}${isRoot ? ", root" : ""}${isDiatonic ? ", in scale" : ""}, fret ${f === 0 ? "open" : f}, string ${s + 1}`
+        `${label}${isRoot ? ", root" : ""}${isFocalChordTone ? ", chord tone" : isDiatonic ? ", in scale" : ""}, fret ${f === 0 ? "open" : f}, string ${s + 1}`
       );
       g.dataset.midiNote = midiNote;
+      g.dataset.pitchClassSemitone = pitchClassSemitone;
     }
   }
 }
 
-export function render(state) {
+const afterRenderHooks = [];
+
+// Lets controls.js keep dependent UI (e.g. the chord-info panel) in sync with
+// every render, including ones triggered by fretboard.js's own note clicks,
+// without fretboard.js importing controls.js (avoids a circular import).
+export function onAfterRender(fn) {
+  afterRenderHooks.push(fn);
+}
+
+export function render(appState) {
   if (!initialized) {
     buildSkeleton();
     initialized = true;
   }
-  updateNotes(state);
+  updateNotes(appState);
+  for (const fn of afterRenderHooks) fn(appState);
 }
