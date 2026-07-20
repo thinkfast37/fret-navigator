@@ -20,6 +20,19 @@ note is an individually addressable element updated via attribute/class changes,
 persistence (versioned schema), and a strictly pure, dependency-free `theory.js` module holding
 all note/scale/chord/degree/capo math, unit-tested with Node's built-in test runner.
 
+UAT round 2 (`docs/story-drafts/003-uat-round2-fixes.md`) refines two internal-architecture points
+without changing this stack: `theory.js` gains a new `getHighlightRootSemitone` function that
+determines the effective root used for on-fretboard color/degree-role/degree-label/interval-label/
+chord-tone highlighting — shifting only when a capo is active AND Relative label mode is selected
+(`+capoFret`, not the earlier, removed `-capoFret` formula) — while `noteAt`/`midiNote` (audio) and
+the "Bright notes" chord-quality text summary always stay anchored to the literal selected root
+(see `contracts/theory-api.md`). And `css/styles.css`'s existing `:root` custom-property layer
+(already used for the 12 chromatic degree-role bright/dark color pairs) is extended to also cover
+the handful of still-hardcoded UI-accent colors (root/capo-marker gold, text-on-bright-surface,
+error-banner red), so every rendered color has exactly one editable source (see data-model.md's
+Design Tokens section) — a pure refactor of where colors are defined, not a new dependency or
+build step.
+
 ## Technical Context
 
 **Language/Version**: JavaScript (ES2020+), native ES modules via `<script type="module">` — no
@@ -68,8 +81,8 @@ to 12 chromatic scale-degree color roles, 25 frets (0–24) × 6 strings.
 
 | Principle / Constraint | Status | Notes |
 |---|---|---|
-| I. Music Theory Correctness (NON-NEGOTIABLE) | PASS | All note/scale/degree/chord/capo math lives in one pure, side-effect-free `theory.js` module, directly sourced from the Story 4 canonical tables; hard-gated unit tests planned (see Testing above). |
-| II. Visualization Consistency | PASS | Single inline-SVG fretboard is the sole source of truth; every control mutates one shared state object and the SVG updates via attribute/class changes, not parallel views. Color-alone encoding is explicitly disallowed (FR-004, FR-024). |
+| I. Music Theory Correctness (NON-NEGOTIABLE) | PASS | All note/scale/degree/chord/capo math lives in one pure, side-effect-free `theory.js` module, directly sourced from the Story 4 canonical tables; hard-gated unit tests planned (see Testing above). UAT round 2 section A corrected the capo+Relative highlighting rule: `theory.js` now exports `getHighlightRootSemitone` (root + capoFret, shifted only under capo>0 AND Relative mode) as the sole root input for `getDiatonicSemitones`/`computeDefaultTriad`/`isToggleableChordTone`/`identifyChordQuality`/`getDegreeRole`/`getDegreeLabel`/`getIntervalLabel`, while `noteAt`/`midiNote` and the chord-quality text summary stay anchored to the literal true root always (FR-047/FR-048) — see `contracts/theory-api.md`'s updated rule, which supersedes round 1's "Root stability rule." |
+| II. Visualization Consistency | PASS | Single inline-SVG fretboard is the sole source of truth; every control mutates one shared state object and the SVG updates via attribute/class changes, not parallel views. Color-alone encoding is explicitly disallowed (FR-004, FR-024). UAT round 2 section E extends the existing `:root` CSS custom-property layer to cover the remaining UI-accent colors that were still duplicated as raw hex literals across rules, so `css/styles.css` remains the single editable source for every rendered color — no behavior change, purely where colors are defined (FR-052). |
 | III. Audio Behavior | PASS | `soundfont-player` wraps the Web Audio API (no external audio library beyond this thin wrapper); playback fires only on direct user interaction (fret click/tap), never on state changes; AudioContext will be created/resumed inside the first user-gesture handler. |
 | IV. Testing Standards | PASS | Constitution requires persistent, committed automated tests for ALL modules (`theory.js`, `state.js`, `audio.js`, `fretboard.js`, `controls.js`, `main.js`). `theory.js` meets its exhaustive unit-test hard gate (open strings, 12-fret wraparound, enharmonics, all supported tunings, edge frets) via `tests/theory.test.js` (40 tests). `state.js`, `audio.js`, `fretboard.js`, `controls.js`, and `main.js` now each have committed jsdom-based `node --test` coverage (`tests/state.test.js` 26, `tests/audio.test.js` 6, `tests/fretboard.test.js` 36, `tests/controls.test.js` 19, `tests/main.test.js` 4) exercising every exported function and every `spec.md` acceptance scenario each module is responsible for — 131 tests total, all passing (`npm test` / `node --test`). `audio.js` tests mock the Web Audio API and soundfont-player rather than producing real sound, per the constitution's lighter (non-exhaustive) bar for non-`theory.js` modules. Manual `quickstart.md` validation remains a supplement for true end-to-end/visual behavior (actual color rendering, audio timbre) that no automated test can verify. |
 | V. Simplicity & Scope Discipline | PASS | No backend, no build tooling, single new runtime dependency (`soundfont-player`) with explicit justification (Web Audio API alone would require re-implementing sample loading/playback plumbing); `localStorage`-only persistence with `schemaVersion`. |
@@ -80,6 +93,12 @@ No outstanding violations. The Principle IV gap (testing coverage) introduced re
 constitution amendment v1.2.0 was closed on 2026-07-19: jsdom-based `node --test` coverage was
 added for `state.js`, `audio.js`, `fretboard.js`, `controls.js`, and `main.js` (131 tests total,
 all passing), alongside `theory.js`'s existing exhaustive hard-gate coverage.
+
+**UAT round 2 addendum** (`docs/story-drafts/003-uat-round2-fixes.md`): The capo+Relative
+highlighting correction (new `getHighlightRootSemitone`, rows I above) and the CSS design-token
+consolidation (row II above, FR-052) are both internal-architecture refinements within the
+existing stack — no new dependency, framework, storage mechanism, or build step is introduced.
+All rows remain PASS unchanged by this addendum.
 
 **Post-Phase-1 re-check**: `research.md` and `data-model.md`/`contracts/` were reviewed against
 this table after design — no new dependency, framework, storage mechanism, or architectural

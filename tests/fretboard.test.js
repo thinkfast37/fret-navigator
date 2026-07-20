@@ -69,15 +69,37 @@ describe("getEffectiveRootSemitone", () => {
     assert.equal(fretboard.getEffectiveRootSemitone(baseState({ root: "C" })), 0);
   });
 
-  test("regression (UAT round 1 section A): stays the literal selected root under capo + Relative mode, never shifts", () => {
+  test("stays the TRUE literal selected root under capo + Relative mode, never shifts - this accessor specifically is the true-root one; see getHighlightRootSemitone below for the value that DOES shift (UAT round 2 section A)", () => {
     const s = baseState({ root: "C", capoFret: 3, capoLabelMode: "relative" });
-    assert.equal(fretboard.getEffectiveRootSemitone(s), 0); // stays C(0), never shifts to A(9)
+    assert.equal(fretboard.getEffectiveRootSemitone(s), 0); // stays C(0), always
   });
 
   test("US9 Acceptance Scenario 6: capo 0 makes Absolute/Relative identical", () => {
     const abs = fretboard.getEffectiveRootSemitone(baseState({ root: "E", capoFret: 0, capoLabelMode: "absolute" }));
     const rel = fretboard.getEffectiveRootSemitone(baseState({ root: "E", capoFret: 0, capoLabelMode: "relative" }));
     assert.equal(abs, rel);
+  });
+});
+
+// UAT round 2 section A: the value on-fretboard highlighting actually uses -
+// shifts by +capoFret only when capo>0 AND Relative mode is active.
+describe("getHighlightRootSemitone (UAT round 2 section A)", () => {
+  test("returns null when no root is selected", () => {
+    assert.equal(fretboard.getHighlightRootSemitone(baseState()), null);
+  });
+
+  test("Scenario 7: capo=0, unshifted regardless of label mode", () => {
+    assert.equal(fretboard.getHighlightRootSemitone(baseState({ root: "C", capoFret: 0, capoLabelMode: "absolute" })), 0);
+    assert.equal(fretboard.getHighlightRootSemitone(baseState({ root: "C", capoFret: 0, capoLabelMode: "relative" })), 0);
+  });
+
+  test("Scenario 8: capo=3, Absolute mode stays unshifted", () => {
+    assert.equal(fretboard.getHighlightRootSemitone(baseState({ root: "C", capoFret: 3, capoLabelMode: "absolute" })), 0);
+  });
+
+  test("Scenario 9: capo=3, Relative mode shifts to Eb (3), never A (9, the old -capoFret result), never C (0)", () => {
+    const result = fretboard.getHighlightRootSemitone(baseState({ root: "C", capoFret: 3, capoLabelMode: "relative" }));
+    assert.equal(result, 3);
   });
 });
 
@@ -144,6 +166,25 @@ describe("render (US1: base fretboard layout)", () => {
     fretboard.render(baseState());
     assert.ok(noteEl(0, 0).classList.contains("open-string"));
     assert.ok(!noteEl(0, 1).classList.contains("open-string"));
+  });
+
+  test("US1 Scenario 5 (UAT round 2 section B, Clarification 2026-07-19): marker dots stay at their TRUE PHYSICAL fret columns under an active capo + Relative renumbering, never remapped or missing", () => {
+    const markerFrets = [3, 5, 7, 9, 12, 15, 17, 19, 21, 24];
+
+    fretboard.render(baseState({ capoFret: 3, capoLabelMode: "relative", fretRange: { lowerBound: 3, upperBound: 24 } }));
+
+    // All 10 marker positions still present (12 dot circles: 8 single + 2 double x2).
+    const dots = [...document.querySelectorAll(".inlay-dot")];
+    assert.equal(dots.length, 12);
+
+    const dotCxValues = dots.map((el) => Number(el.getAttribute("cx")));
+    for (const f of markerFrets) {
+      const physicalColumnCx = Number(noteEl(0, f).querySelector(".note-marker").getAttribute("cx"));
+      assert.ok(
+        dotCxValues.some((cx) => Math.abs(cx - physicalColumnCx) < 0.01),
+        `expected an inlay dot at fret ${f}'s true physical column (cx=${physicalColumnCx}), matching the note-marker's own column - dots must never be keyed off the Relative-mode renumbered fret text`
+      );
+    }
   });
 });
 
@@ -424,40 +465,79 @@ describe("render (US9: capo mechanics)", () => {
     assert.equal(noteEl(aStringIndex, 5).textContent, "D");
   });
 
-  test("US9 Scenario 7 (corrected, UAT round 1 section A): toggling Absolute<->Relative leaves the diatonic COLOR set, chord-tone identity, and degree/interval labels unchanged - only note-name text differs", () => {
-    fretboard.render(baseState({ root: "C", scaleId: "ionian", capoFret: 3, capoLabelMode: "absolute", focalDegreeSemitone: 0 }));
-    const absoluteSnapshot = [...document.querySelectorAll(".note")].map((el) => ({
+  function snapshotRoles() {
+    return [...document.querySelectorAll(".note")].map((el) => ({
+      pitchClassSemitone: el.dataset.pitchClassSemitone,
       isDiatonic: el.classList.contains("is-diatonic"),
       isRoot: el.classList.contains("is-root"),
       isBright: el.classList.contains("is-bright"),
       role: [...el.classList].find((c) => c.startsWith("role-")) || null,
     }));
+  }
 
-    fretboard.render(baseState({ root: "C", scaleId: "ionian", capoFret: 3, capoLabelMode: "relative", focalDegreeSemitone: 0 }));
-    const relativeSnapshot = [...document.querySelectorAll(".note")].map((el) => ({
-      isDiatonic: el.classList.contains("is-diatonic"),
-      isRoot: el.classList.contains("is-root"),
-      isBright: el.classList.contains("is-bright"),
-      role: [...el.classList].find((c) => c.startsWith("role-")) || null,
-    }));
+  // Scenarios 7-10 (corrected, UAT round 2 section A): highlighting shifts
+  // by +capoFret ONLY when capo>0 AND Relative mode is active - this
+  // replaces the prior (superseded) test asserting highlighting NEVER
+  // shifts at all.
 
+  test("Scenario 7: capo=0, Absolute/Relative highlighting snapshots are identical regardless of label mode", () => {
+    fretboard.render(baseState({ root: "C", scaleId: "ionian", capoFret: 0, capoLabelMode: "absolute" }));
+    const absoluteSnapshot = snapshotRoles();
+    fretboard.render(baseState({ root: "C", scaleId: "ionian", capoFret: 0, capoLabelMode: "relative" }));
+    const relativeSnapshot = snapshotRoles();
     assert.deepEqual(absoluteSnapshot, relativeSnapshot);
-
-    // But the note-NAME text (the A string at the capo, fret 3) still
-    // legitimately differs: "C" in Absolute vs "A" in Relative.
-    fretboard.render(baseState({ root: "C", scaleId: "ionian", capoFret: 3, capoLabelMode: "absolute" }));
-    const absoluteLabel = noteEl(4, 3).textContent;
-    fretboard.render(baseState({ root: "C", scaleId: "ionian", capoFret: 3, capoLabelMode: "relative" }));
-    const relativeLabel = noteEl(4, 3).textContent;
-    assert.notEqual(absoluteLabel, relativeLabel);
   });
 
-  test("regression (UAT round 1 section A): capo 3 + Relative mode with root=C never highlights F# as diatonic (would only be true if the root silently shifted to A)", () => {
+  test("Scenario 8: capo=3, Absolute mode - highlighting matches the unshifted (capo=0) snapshot", () => {
+    fretboard.render(baseState({ root: "C", scaleId: "ionian", capoFret: 0, capoLabelMode: "absolute" }));
+    const unshiftedSnapshot = snapshotRoles();
+    fretboard.render(baseState({ root: "C", scaleId: "ionian", capoFret: 3, capoLabelMode: "absolute" }));
+    const capoAbsoluteSnapshot = snapshotRoles();
+    assert.deepEqual(capoAbsoluteSnapshot, unshiftedSnapshot);
+  });
+
+  test("Scenarios 9/10: capo=3, Relative mode - root marker/diatonic set/bright set all shift to Eb (3), never stay on C (0) or shift to A (9)", () => {
+    fretboard.render(baseState({ root: "C", scaleId: "ionian", capoFret: 3, capoLabelMode: "relative", focalDegreeSemitone: 0 }));
+
+    const eb = [...document.querySelectorAll(".note")].find((el) => el.dataset.pitchClassSemitone === "3");
+    const c = [...document.querySelectorAll(".note")].find((el) => el.dataset.pitchClassSemitone === "0");
+    const a = [...document.querySelectorAll(".note")].find((el) => el.dataset.pitchClassSemitone === "9");
+
+    // Eb is now the highlighted root: root marker, role-1, and (default
+    // focal=root) part of the bright triad.
+    assert.ok(eb.classList.contains("is-root"));
+    assert.ok(eb.classList.contains("role-1"));
+    assert.ok(eb.classList.contains("is-bright"));
+
+    // C (the true root) is no longer marked as root once shifted.
+    assert.ok(!c.classList.contains("is-root"));
+    // A (9) - the old, superseded -capoFret result - was never correct and
+    // still isn't the root here either.
+    assert.ok(!a.classList.contains("is-root"));
+
+    // The shifted diatonic set is Eb major (Eb F G Ab Bb C D), NOT C major
+    // and NOT A major.
+    const diatonicSemitones = [...document.querySelectorAll(".note")]
+      .filter((el) => el.classList.contains("is-diatonic"))
+      .map((el) => Number(el.dataset.pitchClassSemitone));
+    const uniqueDiatonic = new Set(diatonicSemitones);
+    assert.deepEqual(uniqueDiatonic, new Set([3, 5, 7, 8, 10, 0, 2]));
+  });
+
+  test("regression (UAT round 2 section A): capo 3 + Relative mode with root=C never highlights F# as diatonic (F# is not diatonic to Eb major either)", () => {
     fretboard.render(baseState({ root: "C", scaleId: "ionian", capoFret: 3, capoLabelMode: "relative" }));
     const fSharp = [...document.querySelectorAll(".note")].find(
       (el) => el.dataset.pitchClassSemitone === "6"
     );
     assert.ok(!fSharp.classList.contains("is-diatonic"));
+  });
+
+  test("Scenario 9 note-name text still legitimately differs from the shifted highlighting: the A string at the capo (fret 3) is colored/bordered as root (Eb, semitone 3) but its NOTE-NAME text still reads the as-if-uncapoed shape convention", () => {
+    fretboard.render(baseState({ root: "C", scaleId: "ionian", capoFret: 3, capoLabelMode: "absolute" }));
+    const absoluteLabel = noteEl(4, 3).textContent;
+    fretboard.render(baseState({ root: "C", scaleId: "ionian", capoFret: 3, capoLabelMode: "relative" }));
+    const relativeLabel = noteEl(4, 3).textContent;
+    assert.notEqual(absoluteLabel, relativeLabel);
   });
 
   test("regression (UAT round 1 section A): audio always plays true physical pitch regardless of label mode", async () => {
@@ -486,5 +566,17 @@ describe("render (US9: capo mechanics)", () => {
     fretboard.render(baseState({ capoFret: 0, capoLabelMode: "relative" }));
     const relativeLabels = [...document.querySelectorAll(".note")].map((el) => el.textContent);
     assert.deepEqual(absoluteLabels, relativeLabels);
+  });
+
+  test("Scenario 13 (UAT round 2 section C, FR-050): an active capo renders its own position indicator, distinct from the true nut", () => {
+    fretboard.render(baseState({ capoFret: 0, fretRange: { lowerBound: 0, upperBound: 24 } }));
+    assert.equal(document.querySelectorAll(".nut-line").length, 1);
+    assert.equal(document.querySelectorAll(".capo-line").length, 0);
+
+    fretboard.render(baseState({ capoFret: 3, fretRange: { lowerBound: 3, upperBound: 24 } }));
+    assert.equal(document.querySelectorAll(".capo-line").length, 1);
+    // No true-nut line renders while the capo occupies the left boundary -
+    // the two indicators are mutually exclusive, never both shown at once.
+    assert.equal(document.querySelectorAll(".nut-line").length, 0);
   });
 });

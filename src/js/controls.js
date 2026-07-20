@@ -461,8 +461,13 @@ export function updateChordInfo() {
   container.textContent = "";
 
   const appState = state.getState();
-  const rootSemitone = fretboard.getEffectiveRootSemitone(appState);
-  if (rootSemitone === null || !appState.scaleId) return;
+  // Two distinct root inputs (UAT round 2 section A / FR-047-048): toggle
+  // eligibility must match what's actually diatonic ON THE FRETBOARD (the
+  // highlight root), while the "Bright notes" text below must always name
+  // the TRUE root's own chord tones, regardless of any capo+Relative shift.
+  const trueRootSemitone = fretboard.getEffectiveRootSemitone(appState);
+  if (trueRootSemitone === null || !appState.scaleId) return;
+  const highlightRootSemitone = fretboard.getHighlightRootSemitone(appState);
 
   const activeBrightSet = fretboard.computeActiveBrightSet(appState);
 
@@ -470,7 +475,7 @@ export function updateChordInfo() {
   const toggleRow = el("div", { class: "chord-tone-toggles", role: "group", "aria-label": "Chord tones" });
   for (const role of theory.DEGREE_ROLES) {
     const semitone = role.semitoneFromRoot;
-    const toggleable = theory.isToggleableChordTone(semitone, rootSemitone, appState.scaleId);
+    const toggleable = theory.isToggleableChordTone(semitone, highlightRootSemitone, appState.scaleId);
     const isBright = activeBrightSet.has(semitone);
     const button = el("button", {
       type: "button",
@@ -501,9 +506,13 @@ export function updateChordInfo() {
     accidentalPreference: appState.accidentalPreference,
     scaleId: appState.scaleId,
   };
+  // FR-048: always the TRUE root's own chord tones, never the shifted
+  // highlight root - this text can legitimately diverge from what's actually
+  // rendered bright on the fretboard when a capo+Relative shift is active
+  // (Story 9 Acceptance Scenario 12).
   const brightNames = [...activeBrightSet]
     .sort((a, b) => a - b)
-    .map((semitone) => theory.spellPitchClass(mod12(rootSemitone + semitone), keyContext));
+    .map((semitone) => theory.spellPitchClass(mod12(trueRootSemitone + semitone), keyContext));
   const quality = theory.identifyChordQuality([...activeBrightSet], appState.focalDegreeSemitone);
 
   const summary = el("p", { class: "chord-summary" });

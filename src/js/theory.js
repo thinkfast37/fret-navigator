@@ -273,6 +273,21 @@ export function identifyChordQuality(brightSetSemitones, root) {
 
 // ---- Capo computation ----
 
+// Implements Story 9, FR-047 (UAT round 2 section A): the root used for
+// on-fretboard highlighting (diatonic set, degree roles/labels, interval
+// labels, chord-tone membership) shifts by +capoFret only when a capo is
+// active AND Relative label mode is selected - matching the "capo N, play a
+// C shape" tutorial convention. This is a NEW function, not a revival of the
+// removed, wrongly-signed (-capoFret) getDisplayRootSemitone from UAT round 1.
+// Audio (noteAt) and the "Bright notes" text summary are NEVER fed this
+// value (FR-048) - callers must keep using the literal true root for those.
+export function getHighlightRootSemitone(rootSemitone, capoFret, labelMode) {
+  if (capoFret > 0 && labelMode === "relative") {
+    return mod12(rootSemitone + capoFret);
+  }
+  return rootSemitone;
+}
+
 // Implements Story 9, FR-037: Relative-mode fret offset from the capo position
 export function getRelativeLabelSemitone(physicalFret, capoFret) {
   return physicalFret - capoFret;

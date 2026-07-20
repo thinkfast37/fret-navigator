@@ -304,6 +304,59 @@ Per contracts/theory-api.md's binding rule: `getDiatonicSemitones`, `computeDefa
 
 ---
 
+## Phase 13: UAT Round 2 — Amended Requirements (`docs/story-drafts/003-uat-round2-fixes.md`)
+
+**Purpose**: New/corrected requirements from spec.md's UAT round 2 amendment (FR-047–FR-053). All task IDs below are net-new (T101+); no task above (T001–T100) is modified or renumbered.
+
+**Tests-before-implementation**: Per constitution v1.2.0's testing standard, T101–T104 (regression tests for the corrected capo/Relative behavior) MUST be written and MUST fail against the current `getDisplayRootSemitone`-based implementation before T106 (the fix) is written. Do not reorder T101–T106.
+
+### A. Corrected capo/Relative highlighting — `getHighlightRootSemitone` (supersedes the `getDisplayRootSemitone` binding rule from T031/T032/T093; do not revive `getDisplayRootSemitone`'s `-capoFret` formula)
+
+- [X] T101 [US9] Write failing regression tests for `getHighlightRootSemitone(rootSemitone, capoFret, labelMode)` in `tests/theory.test.js` per contracts/theory-api.md and spec Story 9 Scenarios 7–9: capo=0 → unshifted (either mode); capo=3/Absolute → unshifted; capo=3/Relative → `(rootSemitone+capoFret) mod 12` (root=C → Eb=3, never A=9, never C)
+- [X] T102 [US9] Implement `getHighlightRootSemitone()` in `js/theory.js` to satisfy T101 (depends on T101)
+- [X] T103 [US9] Write the highlighting-consistency regression test in `tests/theory.test.js` (spec Story 9 Scenario 10, FR-047): with root=C, capo=3, Relative mode, assert `getDiatonicSemitones`, `computeDefaultTriad`, `isToggleableChordTone`, and `identifyChordQuality` — each called with `getHighlightRootSemitone`'s output as root — all produce results consistent with root=Eb, never root=C and never root=A (depends on T102, T016, T024, T028, T030)
+- [X] T104 [P] [US9] Write the anchoring regression tests in `tests/theory.test.js`/`tests/audio.test.js` (spec Story 9 Scenarios 11–12, FR-048): `noteAt`/`midiNote` stays the true physical pitch for any tuning/string/fret regardless of capo/label mode; a separate "true-root chord summary" computation (`computeDefaultTriad`/`identifyChordQuality` fed the TRUE root, never `getHighlightRootSemitone`'s output) always names the true root's own chord tones (e.g. "C, E, G (Major)") even when the fretboard is actually highlighting Eb/G/Bb
+- [X] T105 [US9] Run `node --test tests/theory.test.js`: confirm T101–T104 pass — hard gate before any rewiring below (depends on T101, T102, T103, T104)
+- [X] T106 [US9] Rewire `js/fretboard.js`'s render pipeline: replace the `getDisplayRootSemitone` call from T093 with `theory.getHighlightRootSemitone(trueRootSemitone, state.capoFret, state.capoLabelMode)`, feeding its output — never the raw Story-3-selected root — as the `root` argument to `getDiatonicSemitones()`, `computeDefaultTriad()`, `isToggleableChordTone()`, and `identifyChordQuality()` on every render pass (depends on T105)
+- [X] T107 [US9] Add a second, independent `computeDefaultTriad()`/`identifyChordQuality()` call in `js/fretboard.js`/`js/controls.js` for the "Bright notes: X, Y, Z (Quality)" text summary (T067), fed the TRUE root semitone always — never `getHighlightRootSemitone`'s output — so the displayed text stays anchored to the true root even when on-fretboard highlighting is shifted (FR-048) (depends on T106, T067)
+- [X] T108 [P] [US9] Update `tests/fretboard.test.js` with a jsdom case asserting the rendered DOM's root-marker/diatonic/bright classes at capo=3+Relative mode match root=Eb, not root=C (depends on T106)
+- [X] T109 [US9] Manually validate against spec Story 9 Acceptance Scenarios 7–12: root=C, capo=3, Relative mode visibly highlights the Eb-shape position as root/diatonic set, while the "Bright notes" text still reads "C, E, G (Major)", and clicking any fret still plays its true physical pitch (depends on T106, T107)
+
+### B. Fret-marker dot bug fix (physical-position anchoring, per Clarification 2026-07-19)
+
+- [X] T110 [P] [US1] Update `tests/fretboard.test.js` with a jsdom regression case: with capo=3 and Relative label mode active, the standard marker frets (3,5,7,9,12,15,17,19,21,24) still render their inlay dots at those true physical fret columns — never remapped to a renumbered column, never silently missing
+- [X] T111 [US1] Fix `js/fretboard.js`'s marker-dot rendering (T043) to key strictly off true physical fret position, independent of any Relative-mode renumbering logic (FR-049) — root-cause the current failure before patching, per the source doc's "do not guess" instruction (depends on T110)
+- [X] T112 [US1] Manually validate against spec Story 1 Acceptance Scenario 5: place a capo, toggle Relative mode, confirm all 10 marker-fret dots remain visible and aligned to their true physical columns (depends on T111)
+
+### C. Capo position indicator (distinct from the true nut)
+
+- [X] T113 [P] [US9] Add a new `--color-capo-indicator` custom property to `css/styles.css`'s `:root` block, distinct from whatever token/value styles the true-nut line (FR-050)
+- [X] T114 [US9] Render a capo position indicator (vertical line/bar) in `js/fretboard.js` at `capoFret`'s column whenever `capoFret>0`, styled via `var(--color-capo-indicator)` with a color and/or thickness distinct from the true-nut indicator (depends on T113, T088)
+- [X] T115 [P] [US9] Update `tests/fretboard.test.js` with a jsdom case asserting the capo indicator element exists and carries a distinct class/style from the nut-line element when `capoFret>0` (depends on T114)
+- [X] T116 [US9] Manually validate against spec Story 9 Acceptance Scenario 13: place a capo, visually confirm its indicator is never confusable with the true nut (depends on T114)
+
+### D. Root-selector color consistency
+
+- [X] T117 [P] [US3] Update `tests/controls.test.js` with a jsdom case asserting the selected root button's rendered color matches the fretboard's root-marker color-role token, not the current hardcoded `#ffd54a` (FR-051)
+- [X] T118 [US3] Replace `.root-buttons button[aria-pressed="true"]`'s hardcoded `#ffd54a` background/border in `css/styles.css` with the same token used for the fretboard's root-marker color-role (depends on T117)
+- [X] T119 [US3] Manually validate against spec Story 3 Acceptance Scenario 3: the selected root button visually matches the fretboard's root-marker color for every one of the 12 roots (depends on T118)
+
+### E. Color-scheme design-token consolidation (refactor only, no rendered-value changes)
+
+- [X] T120 [P] Add UI-accent design tokens to `css/styles.css`'s `:root` block per data-model.md's Design Tokens section: `--color-root-accent` (the `#ffd54a` gold currently duplicated across the root-marker border, bright-root marker border, and fret-range-thumb focus outline — EXCLUDING `.root-buttons button[aria-pressed="true"]`, whose value is intentionally changing per T118/FR-051, not being preserved as this accent), `--color-text-on-bright` (the `#14171c` currently duplicated across several `is-bright`/`aria-pressed="true"` rules — may simply alias `var(--color-bg)`, which already holds this exact value), and `--color-error-bg`/`--color-error-text` (the audio-error-banner's `#7a2323`/`#fff` pair) (FR-052)
+- [X] T121 Replace every raw hex literal identified in T120 with its new `var(--token-name)` reference across `css/styles.css`, confirming via visual diff that no rendered color value changes anywhere (FR-052) (depends on T120)
+- [X] T122 Manually validate: change one token's value in `:root` and confirm every rule referencing it updates consistently, with no remaining duplicate hardcoded literal for that color anywhere in `css/styles.css` (depends on T121)
+
+### F. "Buy Me a Coffee" link
+
+- [X] T123 [P] Add the Buy Me a Coffee link to `index.html` near the existing FluidR3_GM credit line (T096): `https://buymeacoffee.com/stevetakadimi`, `target="_blank" rel="noopener noreferrer"`, text "☕ Enjoying Fret Navigator? Buy me a coffee →" (FR-053)
+- [X] T124 [P] Style the new link in `css/styles.css` consistently with the existing credit-line fonts/colors/spacing — no new visual pattern introduced (depends on T123)
+- [X] T125 Manually validate: the link opens `https://buymeacoffee.com/stevetakadimi` in a new tab and visually matches surrounding footer/credit styling (depends on T123, T124)
+
+**Checkpoint**: All UAT round 2 amendments (sections A–F) implemented and validated; section G required no task (confirmed non-issue, spec.md Edge Cases note only).
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
@@ -368,3 +421,10 @@ Phase 2's checkpoint (T038: `node --test tests/theory.test.js` green) is a **har
 - Every `fretboard.js`/`audio.js`/`controls.js` task above cites its exact `theory.js` T-task dependency by ID — cross-check before starting a task that no cited dependency is still open.
 - T093/T094 (the binding-rule wiring and its manual verification) are deliberately separate, explicitly-named tasks distinct from "build the capo UI" — do not fold them back into a generic capo-implementation task.
 - Commit after each task or logical group; stop at any phase checkpoint to validate that story independently before continuing.
+
+### Phase 13 addendum (UAT round 2)
+
+- T101–T105 MUST pass (`node --test tests/theory.test.js` green) before T106 is written — this is the same test-before-implementation gate the constitution applies to every other `theory.js` function, applied here to the corrected capo/Relative rule specifically.
+- T106 supersedes T093's wiring in `js/fretboard.js` at the code level (calls `getHighlightRootSemitone` instead of the now-superseded `getDisplayRootSemitone`) but T093/T094 themselves are left as-is per instruction — they document what round-1 built, not what's currently wired.
+- Sections B–F (T110–T125) have no dependency on section A (T101–T109) and may be worked in parallel by a different contributor; within each section, later tasks depend on earlier ones as annotated.
+- [P] tasks in Phase 13 touch different files (or different, independent regions of `css/styles.css`) from any other incomplete task in the same section.

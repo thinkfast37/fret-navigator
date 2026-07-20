@@ -29,6 +29,26 @@
   --role-b7-dark: #601f7a;
   --role-7-bright: #ff3dc7;
   --role-7-dark: #7a1f60;
+
+  /* Capo position indicator (UAT round 2 section C, FR-050): distinct color
+     AND thickness from the true nut's indicator so the two are never
+     visually confused. */
+  --color-capo-indicator: #ffa726;
+
+  /* UI-accent design tokens (UAT round 2 section E, FR-052): centralizes
+     colors that were previously duplicated as raw hex literals across
+     multiple rules. Pure refactor of WHERE each color is defined - no
+     rendered value changes. Excludes .root-buttons button[aria-pressed]
+     (section D changed that rule's color to var(--role-1-bright) instead -
+     it never used this accent, so it's not part of this consolidation). */
+  --color-root-accent: #ffd54a;
+  --color-text-on-bright: var(--color-bg); /* already the same value (#14171c) */
+  /* Given its own literal (not aliased to --role-1-dark) even though the
+     values coincidentally match today - the error banner and the chromatic
+     degree-role palette are semantically unrelated and must stay free to
+     diverge independently. */
+  --color-error-bg: #7a2323;
+  --color-error-text: #fff;
 }
 
 * {
@@ -58,8 +78,8 @@ main {
   bottom: 1rem;
   left: 50%;
   transform: translateX(-50%);
-  background: #7a2323;
-  color: #fff;
+  background: var(--color-error-bg);
+  color: var(--color-error-text);
   padding: 0.6rem 1rem;
   border-radius: 6px;
   font-size: 0.9rem;
@@ -159,6 +179,14 @@ footer#credits a {
   stroke-width: 5;
 }
 
+/* Capo position indicator (UAT round 2 section C, FR-050): same general
+   treatment as the nut (a vertical bar) but a distinct color AND thickness,
+   so a capo is never visually mistaken for the instrument's actual nut. */
+.capo-line {
+  stroke: var(--color-capo-indicator);
+  stroke-width: 4;
+}
+
 .fret-line {
   stroke: var(--color-neutral-text);
   stroke-width: 1;
@@ -210,7 +238,7 @@ footer#credits a {
 }
 
 .note.is-root .note-marker {
-  stroke: #ffd54a;
+  stroke: var(--color-root-accent);
   stroke-width: 3;
 }
 
@@ -232,7 +260,7 @@ footer#credits a {
 /* Bright-variant fills are light; dark text keeps every role's label at or
    above WCAG AA contrast (4.5:1) against its own background. */
 .note.is-bright .note-label {
-  fill: #14171c;
+  fill: var(--color-text-on-bright);
   font-weight: 700;
 }
 
@@ -269,7 +297,7 @@ footer#credits a {
 }
 
 .note.is-bright.is-root .note-marker {
-  stroke: #ffd54a;
+  stroke: var(--color-root-accent);
   stroke-width: 4;
 }
 
@@ -312,7 +340,7 @@ footer#credits a {
 .chord-tone-toggles button.role-7.is-bright { background: var(--role-7-bright); }
 
 .chord-tone-toggles button.is-bright {
-  color: #14171c;
+  color: var(--color-text-on-bright);
   font-weight: 700;
 }
 
@@ -324,7 +352,7 @@ footer#credits a {
 
 .capo-label-mode-buttons button[aria-pressed="true"] {
   background: var(--color-fg);
-  color: #14171c;
+  color: var(--color-text-on-bright);
   font-weight: 700;
 }
 
@@ -360,7 +388,7 @@ footer#credits a {
   padding: 0 0.3rem;
   border-radius: 50%;
   background: var(--color-fg);
-  color: #14171c;
+  color: var(--color-text-on-bright);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -374,7 +402,7 @@ footer#credits a {
 }
 
 .fret-range-thumb:focus-visible {
-  outline: 2px solid #ffd54a;
+  outline: 2px solid var(--color-root-accent);
   outline-offset: 2px;
 }
 
@@ -495,10 +523,14 @@ footer#credits a {
   gap: 0.3rem;
 }
 
+/* UAT round 2 section D, FR-051: the selected root's button uses the same
+   color as that root's degree-1/"root" color-role on the fretboard (the
+   role-1 bright variant), not a separate/generic selection color - for
+   visual consistency between the control and the fretboard. */
 .root-buttons button[aria-pressed="true"] {
-  background: #ffd54a;
-  color: #14171c;
-  border-color: #ffd54a;
+  background: var(--role-1-bright);
+  color: var(--color-text-on-bright);
+  border-color: var(--role-1-bright);
   font-weight: 700;
 }
 
@@ -509,7 +541,7 @@ footer#credits a {
 
 .label-mode-buttons button[aria-pressed="true"] {
   background: var(--color-fg);
-  color: #14171c;
+  color: var(--color-text-on-bright);
   font-weight: 700;
 }
 

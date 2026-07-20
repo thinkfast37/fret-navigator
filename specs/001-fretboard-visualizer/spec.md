@@ -14,6 +14,7 @@
 
 - Q: Should the app remember the user's last-used settings (tuning, root/key, scale/mode, capo position, label mode, fret range) across a page reload, or should every reload start fresh from defaults? → A: Persist via localStorage — all selections auto-save and restore on next load, using a schemaVersion'd settings object.
 - Q: How should the app behave if a required guitar audio sample fails to load (e.g., a network hiccup on first visit, before samples are cached)? → A: Show a visible, non-blocking error indicator (e.g. toast/banner) without blocking other interaction.
+- Q: Under capo + Relative label mode, should fret-marker inlay dots (3,5,7,9,12,15,17,19,21,24) stay anchored to the true physical fret position, or track the renumbered/relative fret index? → A: True physical fret position — dots never move; only the fret-number text/note-name shown at a given physical column changes under Relative mode, matching how inlay dots work on a real guitar neck and how Story 9's capo mechanics already treat "frets below N" as physical positions.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -39,6 +40,16 @@ physical instrument.
    non-active notes (not color alone) — per our accessibility principle.
 4. **Given** open strings, **When** the fretboard renders, **Then** open-string
    notes are shown distinctly to the left of fret 1, past the nut line.
+5. **Given** a capo is active and Relative-mode fret-number renumbering is in
+   effect (FR-046), **When** the fretboard renders, **Then** inlay dot markers
+   remain visible at their true PHYSICAL fret positions (3,5,7,9,12,15,17,19,
+   21,24) — the dots never move or remap to whatever column currently shows
+   that number as a Relative-mode label; only the fret-number text and note
+   names at a column change under Relative mode, never the dot's physical
+   column. *(Amended UAT round 2, section B: dots had regressed to failing to
+   render/misaligning after capo-relative fret renumbering was introduced;
+   Clarification 2026-07-19 confirms physical-position anchoring, matching a
+   real guitar's fixed inlay dots, as the corrected behavior.)*
 
 ---
 
@@ -123,6 +134,11 @@ so that the fretboard matches the key signature I'm thinking in.
    F# spelled sharp-side; Db Ab Eb Bb F spelled flat-side) automatically —
    there is no manual sharp/flat toggle, and pitch is never affected by
    spelling choice.
+3. **Given** a root is selected, **When** the root selector renders, **Then**
+   the currently-selected root's button displays using the same color as
+   that root's degree-1/"root" color-role on the fretboard (Story 5) — never
+   a different or generic selection color — for visual consistency between
+   the control and the fretboard. *(Added UAT round 2, section D.)*
 
 ---
 
@@ -454,6 +470,16 @@ notes are labeled by their true sounding pitch or by the "as if uncapoed"
 shape guitarists conventionally use in tutorials, so that I can study
 capo positions the way they're actually taught and played.
 
+> **Amended (UAT round 2, section A)**: This story's highlighting behavior
+> under capo + Relative mode has gone through two incorrect implementations
+> (see `docs/story-drafts/002-mvp-uat-improvements.md` section A, and a
+> further incorrect correction after it). `docs/story-drafts/
+> 003-uat-round2-fixes.md` section A is the final, confirmed word on this
+> topic and supersedes 002's section A entirely — do not consult 002's
+> section A for this behavior. Acceptance Scenarios 7-12 below reflect the
+> corrected behavior; see the new "Highlighting under capo + Relative mode"
+> subsection for the formula.
+
 **Why this priority**: Capo usage is a common real-world guitar technique with its own labeling conventions; supporting it correctly (including the Absolute/Relative distinction) is necessary for the tool to be trustworthy for players who use a capo.
 
 **Independent Test**: Can be fully tested by placing a capo at several fret positions, confirming muted frets below it, the fret-range handle lock, and that Absolute vs. Relative label modes diverge correctly and reconverge at capo 0 — delivers value as a standalone capo-study feature layered on Stories 1, 2, and 7.
@@ -479,6 +505,12 @@ capo positions the way they're actually taught and played.
 - The right handle remains freely adjustable as before, up to fret 24.
 - Setting capo back to 0 (no capo) releases the left handle back to
   free movement, defaulting again to "N" at the nut.
+- **(Added UAT round 2, section C)** When a capo replaces the visible nut
+  as the fretboard's left boundary, the fretboard renders a visual position
+  indicator (a vertical line/bar, matching the true nut's general treatment)
+  at the capo's position, using a color and/or thickness distinct from the
+  true nut's indicator, so a capo position is never visually mistaken for
+  the instrument's actual nut.
 
 **Absolute vs. Relative note naming**
 - **Absolute** mode: every note is labeled by its true sounding pitch —
@@ -492,6 +524,39 @@ capo positions the way they're actually taught and played.
   higher.
 - With no capo active (fret 0), Absolute and Relative modes must produce
   identical labels — the distinction only matters once a capo is placed.
+- This note-NAME text computation is independent of, and unaffected by,
+  the root-highlighting behavior described next — Relative mode shifts
+  which letter name a position is labeled with, but (per the corrected
+  behavior below) it also shifts which pitch class is treated as "root" for
+  color/degree/chord-tone purposes when a capo is active.
+
+**Highlighting under capo + Relative mode (Added/corrected UAT round 2,
+section A)**
+
+- With a capo active (capo fret > 0) AND Relative label mode selected, all
+  fretboard color highlighting — the root marker, the full diatonic set,
+  degree roles, degree labels, interval labels, and chord-tone/bright-set
+  membership — is computed against a SHIFTED root, `getHighlightRootSemitone`,
+  rather than the literal selected root:
+
+      highlightRootSemitone = (trueRootSemitone + capoFret) mod 12   [capo>0 AND Relative mode]
+      highlightRootSemitone = trueRootSemitone                       [otherwise]
+
+  The sign is deliberately **+capoFret** (not -capoFret). Worked example:
+  root = C (0), capo = 3 → `highlightRootSemitone` = 3 = Eb. This matches
+  the "capo 3, play a C shape" tutorial convention: the position a player
+  would call "C" in shape terms is the one colored/bordered as root, even
+  though it truly sounds Eb.
+- `getDiatonicSemitones`, `computeDefaultTriad`, `isToggleableChordTone`,
+  `identifyChordQuality`, `getDegreeRole`, `getDegreeLabel`, and
+  `getIntervalLabel` all take `getHighlightRootSemitone`'s output as their
+  root/root-derived input, consistently, whenever this shift is active —
+  never some anchored to the true root while others use the shifted one.
+- What does NOT shift, regardless of capo or Absolute/Relative mode: audio
+  playback (always the true physical pitch — clicking the root-colored
+  position in the example above must audibly play Eb, never C), and the
+  "Bright notes: X, Y, Z (Quality)" text summary (always the TRUE root's
+  true chord tones, e.g. "C, E, G (Major)", never the shifted chord).
 
 **Acceptance Scenarios**:
 
@@ -524,12 +589,44 @@ capo positions the way they're actually taught and played.
    everywhere, and Story 7's left handle behaves exactly as originally
    specified (freely draggable, defaulting to "N").
 
-7. **Given** a capo is active and a key/scale is selected, **When** the user toggles
-   Absolute↔Relative mode, **Then** the diatonic color highlighting, degree labels, interval
-   labels, and chord-tone identity (Story 5) remain completely unchanged — the selected root
-   never shifts for these purposes, regardless of capo position or label mode. Only the
-   note-NAME text (via the as-if-uncapoed shape convention) differs between the two modes.
-   The highlighted note set staying fixed is expected behavior, not a rendering bug.
+7. **Given** root=C, capo=0, **When** either Absolute or Relative mode is active,
+   **Then** `getHighlightRootSemitone` returns C — highlighting is unshifted
+   regardless of label mode. *(Corrected UAT round 2, section A — this and
+   Scenarios 8-12 replace a prior Scenario 7 that encoded a since-superseded
+   design where highlighting never shifted at all.)*
+
+8. **Given** root=C, capo=3, Absolute mode active, **When** the fretboard
+   renders, **Then** `getHighlightRootSemitone` returns C (unshifted) — the
+   shift only applies in Relative mode.
+
+9. **Given** root=C, capo=3, Relative mode active, **When** the fretboard
+   renders, **Then** `getHighlightRootSemitone` returns Eb (semitone 3) — the
+   `+capoFret` result — never A (semitone 9, the old, superseded `-capoFret`
+   result), and never C.
+
+10. **Given** root=C, capo=3, Relative mode active (root highlighting shifted
+    to Eb per Scenario 9), **When** the fretboard computes the diatonic set,
+    default triad, chord-tone toggle eligibility, and chord-quality
+    identification, **Then** all of these are computed consistently against
+    Eb as root — never against C and never against A.
+
+11. **Given** any root, capo, and label-mode combination, **When** any fret
+    position is clicked/tapped, **Then** playback always sounds that
+    string/fret's true physical pitch — completely unaffected by capo
+    position or Absolute/Relative mode (unchanged from FR-032/Story 8
+    Scenario 5).
+
+12. **Given** root=C, capo=3, Relative mode active with the default C-major
+    triad as focal point, **When** the "Bright notes" text summary renders,
+    **Then** it always shows the TRUE root's chord tones ("C, E, G (Major)")
+    — never the shifted root's tones — regardless of capo or label mode.
+
+13. **Given** a capo is active, **When** the fretboard renders the capo's
+    fret position as the visible left boundary, **Then** a vertical
+    position-indicator renders at that position using a color and/or
+    thickness visually distinct from the true nut's indicator, so a capo
+    position is never visually confused with the instrument's physical nut.
+    *(Added UAT round 2, section C.)*
 
 ---
 
@@ -542,6 +639,7 @@ capo positions the way they're actually taught and played.
 - What happens when rapid tuning changes are made while a note is still audibly playing? The in-flight note finishes per Story 8's Acceptance Scenario 4 (no improper cutoff), and subsequent triggers use the newly selected tuning.
 - ~~What happens when the enharmonic sharp/flat toggle (Story 3) is applied to a root note with no meaningful enharmonic equivalent?~~ Moot per UAT round 1 section C3: the manual toggle is removed; every one of the 12 root options has exactly one fixed canonical spelling.
 - What happens when a required audio sample fails to load (e.g., a network hiccup on first visit before samples are cached)? The app shows a visible, non-blocking error indicator (e.g. toast/banner) and continues to allow all other interaction; the fret that failed to load simply produces no sound until the sample can be fetched successfully on a later attempt.
+- What happens when a non-diatonic note's label is shown while "Degrees" or "Intervals" label mode is active? It always displays its note name regardless of the active label mode — reviewed and CONFIRMED as intended behavior in UAT round 2 (`docs/story-drafts/003-uat-round2-fixes.md` section G), not a bug. No change made; deferred as a possible enhancement for a future round.
 
 ## Requirements *(mandatory)*
 
@@ -597,19 +695,30 @@ capo positions the way they're actually taught and played.
 - **FR-045** *(section C4)*: System MUST color each scale-degree chord-tone toggle button to match its corresponding fretboard color role: the active/"on" state uses that role's bright variant, the diatonic-but-inactive/"off" state uses that role's dark variant, and non-diatonic (disabled) toggles remain visually disabled as already specified by FR-020.
 - **FR-046** *(sections C5/E)*: System MUST display fret-position number labels at standard marker positions at both the visual top and bottom of the fretboard, following the same Absolute/Relative convention as note names — in Relative mode showing `(physicalFret − capoFret)`, in Absolute mode showing the true physical fret number — using the same arithmetic as `getRelativeLabelSemitone` without the note-name conversion step.
 
+**The following requirements were added or corrected in UAT round 2 (`docs/story-drafts/003-uat-round2-fixes.md`), sections A–F. Section A supersedes the highlighting behavior implied by round 1's section A entirely — do not apply that section for this topic:**
+
+- **FR-047** *(section A)*: System MUST compute a shifted highlight-root semitone, `getHighlightRootSemitone`, equal to `(trueRootSemitone + capoFret) mod 12` whenever capo > 0 AND Relative label mode is active, and equal to the true root semitone otherwise, and MUST use this value consistently as the root/root-derived input to diatonic-set computation (`getDiatonicSemitones`), default-triad computation (`computeDefaultTriad`), chord-tone-toggle eligibility (`isToggleableChordTone`), chord-quality identification (`identifyChordQuality`), degree-role assignment (`getDegreeRole`), degree labels (`getDegreeLabel`), and interval labels (`getIntervalLabel`) — never mixing true-root-based and shifted-root-based results across these functions.
+- **FR-048** *(section A)*: System MUST NOT apply `getHighlightRootSemitone`'s shift to audio playback (every fret's true physical pitch, per FR-032/FR-034) or to the "Bright notes" chord-quality text summary, both of which MUST always reflect the true selected root regardless of capo position or Absolute/Relative mode.
+- **FR-049** *(section B; resolved per Clarification 2026-07-19)*: System MUST render inlay dot markers at the standard marker frets' true PHYSICAL fret positions (3, 5, 7, 9, 12, 15, 17, 19, 21, 24) at all times, whether or not a capo is active — dot position MUST be computed from absolute physical fret number, completely independent of the Relative-mode renumbering logic used for fret-number labels and note names (FR-046, FR-037) — so dots remain visible and correctly aligned to the same physical column regardless of capo position or label mode, never silently failing to render or drifting to a different column.
+- **FR-050** *(section C)*: System MUST render a visual position indicator (a vertical line/bar, matching the true nut's general treatment) at the active capo's fret position, using a color and/or thickness distinct from the true-nut indicator, so a capo position is never visually confused with the physical nut.
+- **FR-051** *(section D)*: System MUST render the currently-selected root's button in the root selector using the same color as that root's degree-1/"root" color-role on the fretboard (FR-014, FR-024), for visual consistency between the control and the fretboard.
+- **FR-052** *(section E)*: System MUST define all degree-role colors (bright and dark variants, for all 12 roles) plus root/UI accent colors as a single set of centrally-editable design tokens (e.g. CSS custom properties declared once in a `:root` block) rather than hardcoded per-component values, such that the entire color scheme can be changed by editing that one location alone — this is a refactor of WHERE colors are defined, not a change to any color's current value or to any other behavior.
+- **FR-053** *(section F)*: System MUST display a link to `https://buymeacoffee.com/stevetakadimi`, opening in a new tab (`target="_blank" rel="noopener noreferrer"`), with text "☕ Enjoying Fret Navigator? Buy me a coffee →", placed near the existing attribution/credit line (FR-042) and styled consistently with existing fonts, colors, and spacing.
+
 ### Key Entities
 
 - **Note**: A pitch at a specific string/fret position; carries a pitch class, absolute octave/MIDI value, and (when applicable) an enharmonic spelling, a scale-degree role, and diatonic/non-diatonic status relative to the active key.
 - **String**: One of the 6 physical guitar strings (1 = high-E through 6 = low-E); carries an open pitch determined by the active tuning.
 - **Tuning**: A named or custom set of 6 open-string pitches; belongs to a tuning group (D-Family, G-Family, C-Family, or Custom) when named.
 - **Scale/Mode**: A named degree formula (from the canonical tables in Story 4) defining which semitone offsets from a root are diatonic; belongs to a category (Church Modes, Pentatonic, Blues, Other).
-- **Key Context**: The combination of root note (one of the 12 canonical chromatic roots, each with a fixed circle-of-fifths sharp/flat spelling — UAT round 1 section C3) and active scale/mode that determines every note's diatonic status, degree role, and label spelling.
+- **Key Context**: The combination of root note (one of the 12 canonical chromatic roots, each with a fixed circle-of-fifths sharp/flat spelling — UAT round 1 section C3) and active scale/mode that determines every note's diatonic status, degree role, and label spelling. For highlighting purposes (color, degree roles/labels, interval labels, chord-tone membership) the effective root is `getHighlightRootSemitone`'s output, which shifts from the true root only when capo > 0 AND Relative label mode is active (UAT round 2 section A); audio and the "Bright notes" text summary always use the true root regardless.
 - **Focal Point**: The currently selected scale-degree acting as the reference for chord-tone (bright set) computation; defaults to the root and resets on key/scale change.
 - **Chord-Tone Set**: The user-adjustable set of diatonic degrees currently marked "bright" relative to the focal point, along with an optional recognized chord-quality label.
 - **Label Mode**: The current note-label rendering choice — Notes, Degrees, or Intervals — applied to diatonic notes on top of the persistent base layer.
 - **Fret Range**: The user-adjustable visible window of frets, bounded by a left handle (nut or capo-locked) and a right handle (up to fret 24).
-- **Capo**: A single fret position (0–12) that mutes all frets below it and shifts the reference point used by Relative-mode labeling, without altering true sounding pitch.
+- **Capo**: A single fret position (0–12) that mutes all frets below it, shifts the reference point used by Relative-mode note-name labeling and (per UAT round 2 section A) by highlighting via `getHighlightRootSemitone`, without altering true sounding pitch; rendered on the fretboard with its own visual position indicator distinct from the true nut (UAT round 2 section C).
 - **Audio Sample**: A pre-recorded, real-guitar-tone asset mapped to a specific note/octave, fetched once and reused for playback.
+- **Color Token**: A centrally-defined design-system value (e.g. a CSS custom property) representing one of the 12 degree-role colors (bright/dark variants), a root/UI accent color, or another fretboard color, serving as the single editable source for that color across every component that renders it (UAT round 2 section E).
 
 ## Success Criteria *(mandatory)*
 
@@ -632,3 +741,5 @@ capo positions the way they're actually taught and played.
 - The app is a single-page, client-side-only experience with no backend, consistent with the project constitution. Per the Clarifications session, the user's last-used tuning, root/key, scale/mode, capo position, label mode, and fret range ARE persisted via `localStorage` (schemaVersion'd) and restored on reload; no other persistence (e.g. multiple named custom-tuning presets) is required unless it emerges during planning.
 - Switching root note or scale/mode resets focal point to the new root and clears any custom chord-tone override, since degree-role assignment is fully recalculated from the new key context (per Story 5's fixed-until-key-changes rule).
 - Standard tuning (E A D G B E) is available in the tuning selector as the default/baseline tuning alongside the named alternate-tuning groups, since User Story 2's acceptance scenarios reference it as a baseline for capo examples.
+- The capo position indicator's exact color and/or thickness (UAT round 2 section C) is left to the planning/design stage, provided it is visually distinct from the true-nut indicator; the requirement only constrains that the two must never be visually confusable.
+- The color-scheme design-token refactor (UAT round 2 section E) is a pure refactor with no intended change to any color's current rendered value — if implementation reveals a token's current value was itself inconsistent across components, that discrepancy should be flagged rather than silently resolved one way or the other.

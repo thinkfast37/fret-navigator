@@ -18,6 +18,7 @@ import {
   getRelativeLabelSemitone,
   isFretPlayable,
   rootLetterToSemitone,
+  getHighlightRootSemitone,
 } from "../src/js/theory.js";
 
 // ---- Reference data (T005, T007, T009) ----
@@ -374,11 +375,77 @@ describe("isFretPlayable", () => {
   });
 });
 
+// ---- getHighlightRootSemitone (T101/T102, UAT round 2 section A) ----
+// Supersedes the round-1 rule that highlighting never shifts at all
+// (see the describe block below, which still holds at the pure-function
+// level: these functions never gained a capoFret parameter themselves -
+// it's the CALLER, fretboard.js, that now feeds a different root in).
+
+describe("getHighlightRootSemitone", () => {
+  test("Scenario 7: capo=0, unshifted regardless of label mode", () => {
+    assert.equal(getHighlightRootSemitone(0, 0, "absolute"), 0);
+    assert.equal(getHighlightRootSemitone(0, 0, "relative"), 0);
+  });
+
+  test("Scenario 8: capo=3, Absolute mode stays unshifted", () => {
+    assert.equal(getHighlightRootSemitone(0, 3, "absolute"), 0);
+  });
+
+  test("Scenario 9: capo=3, Relative mode shifts +capoFret to Eb(3) - never A(9, the old -capoFret result), never C(0)", () => {
+    const result = getHighlightRootSemitone(0, 3, "relative");
+    assert.equal(result, 3);
+    assert.notEqual(result, 9);
+    assert.notEqual(result, 0);
+  });
+});
+
+describe("Scenario 10: highlighting-consistency - getDiatonicSemitones/computeDefaultTriad/isToggleableChordTone/identifyChordQuality all agree when fed getHighlightRootSemitone's output", () => {
+  test("root=C, capo=3, Relative mode -> every function is consistent with root=Eb, not C, not A", () => {
+    const highlightRoot = getHighlightRootSemitone(0, 3, "relative"); // Eb (3)
+    assert.equal(highlightRoot, 3);
+
+    // getDiatonicSemitones/isToggleableChordTone produce ABSOLUTE semitones
+    // and so meaningfully depend on which root they're fed.
+    assert.deepEqual(getDiatonicSemitones(highlightRoot, "ionian"), new Set([3, 5, 7, 8, 10, 0, 2])); // Eb major
+    assert.equal(isToggleableChordTone(4, highlightRoot, "ionian"), true); // G (Eb+4=7) is diatonic to Eb major
+
+    // computeDefaultTriad/identifyChordQuality operate entirely in
+    // root-relative OFFSET space (their `root`/normalizer argument doesn't
+    // change which offsets come out) - the default triad off the root
+    // (focal=0) is [0,4,7] whether the underlying root is C or Eb; it's the
+    // absolute pitches those offsets map to (via getDiatonicSemitones, or via
+    // controls.js's own root-plus-offset conversion) that actually shift.
+    assert.deepEqual(computeDefaultTriad(0, highlightRoot, "ionian"), [0, 4, 7]);
+    assert.equal(identifyChordQuality([0, 4, 7], 0), "Major");
+
+    // Sanity: the ABSOLUTE diatonic set is distinct from root=C(0) or the
+    // old -capoFret result A(9).
+    assert.notDeepEqual(getDiatonicSemitones(highlightRoot, "ionian"), getDiatonicSemitones(0, "ionian"));
+    assert.notDeepEqual(getDiatonicSemitones(highlightRoot, "ionian"), getDiatonicSemitones(9, "ionian"));
+  });
+});
+
+describe("Scenario 11: audio anchoring - noteAt never takes a root/capo-shift parameter at all", () => {
+  test("noteAt's signature is (tuning, stringIndex, fret) only - true pitch is structurally incapable of reflecting getHighlightRootSemitone", () => {
+    const tuning = TUNINGS.find((t) => t.id === "standard");
+    const a = noteAt(tuning, 4, 3); // A string, fret 3 -> C, regardless of any root/capo/label-mode state
+    assert.equal(a.pitchClassSemitone, 0);
+  });
+});
+
 // ---- Root stability regression test (UAT round 1 section A) ----
 // Capo + Relative mode must NEVER substitute a different root into any of
 // theory.js's diatonic/degree-role/focal/chord-tone computation - only
 // note-NAME text (getRelativeLabelSemitone, tested above) varies with capo.
 // This replaces the earlier (incorrect) getDisplayRootSemitone binding rule.
+//
+// UAT round 2 section A note: at the app-integration level (fretboard.js),
+// this is now superseded - the caller DOES feed a shifted root (via
+// getHighlightRootSemitone above) into these functions when capo+Relative
+// applies. The assertions below remain true and useful as-is: they document
+// that these pure functions themselves have no capo awareness and behave
+// identically no matter what a caller passes as `root` - shifting is exactly
+// and only the caller's responsibility, never smuggled in as a hidden default.
 
 describe("root stability under capo + Relative mode (regression, UAT round 1 section A)", () => {
   test("getDiatonicSemitones/computeDefaultTriad/isToggleableChordTone/identifyChordQuality never take a capo-shifted root", () => {

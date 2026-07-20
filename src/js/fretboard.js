@@ -66,19 +66,38 @@ function mod12(n) {
   return ((n % 12) + 12) % 12;
 }
 
-// The literal Story-3-selected root's semitone. Every diatonic/degree-role/
-// focal/chord-tone computation keys off this value UNCHANGED regardless of
-// capo position or Absolute/Relative mode (Story 9 Acceptance Scenario 7,
-// corrected in UAT round 1 section A) - only note-NAME text (via
-// getRelativeLabelSemitone) varies with capo + Relative mode. Returns null
-// when no root is selected yet.
+// The literal Story-3-selected root's semitone - the TRUE root, always
+// unshifted regardless of capo position or Absolute/Relative mode. Audio
+// (noteAt) and the "Bright notes" text summary MUST use this value, never
+// getHighlightRootSemitone below (FR-048). Returns null when no root is
+// selected yet.
 export function getEffectiveRootSemitone(appState) {
   if (!appState.root) return null;
   return theory.rootLetterToSemitone(appState.root);
 }
 
+// Implements Story 9, FR-047 (UAT round 2 section A, corrects the earlier
+// "never shifts" rule from UAT round 1 section A): the root used for
+// ON-FRETBOARD highlighting only - the root marker, diatonic set, degree
+// roles/labels, interval labels, and chord-tone/bright-set membership. Shifts
+// by +capoFret only when a capo is active AND Relative label mode is
+// selected. Audio and the "Bright notes" text summary must keep using
+// getEffectiveRootSemitone (true root) instead - see FR-048.
+export function getHighlightRootSemitone(appState) {
+  const trueRoot = getEffectiveRootSemitone(appState);
+  if (trueRoot === null) return null;
+  return theory.getHighlightRootSemitone(trueRoot, appState.capoFret, appState.capoLabelMode);
+}
+
 // Default focal triad merged with user chord-tone overrides -> Set of
-// root-relative semitones (0=effective root) currently in the "bright" set.
+// root-relative semitones (0=root) currently in the "bright" set. Note:
+// theory.computeDefaultTriad's own math is root-agnostic (it operates
+// entirely in offset space via focalSemitone), so this Set of offsets is
+// identical whichever root variant is passed in below - the true root vs.
+// getHighlightRootSemitone divergence (UAT round 2 section A) only shows up
+// downstream, when a caller converts these offsets to absolute pitches
+// (fretboard rendering uses getHighlightRootSemitone; the "Bright notes"
+// text summary must use getEffectiveRootSemitone/true root instead, FR-048).
 // Implements Story 5, FR-018/FR-020: default triad merged with chord-tone overrides
 export function computeActiveBrightSet(appState) {
   const rootSemitone = getEffectiveRootSemitone(appState);
@@ -116,9 +135,13 @@ function onNoteActivated(g) {
 
   if (!g.classList.contains("is-diatonic")) return;
   const appState = state.getState();
-  const rootSemitone = getEffectiveRootSemitone(appState);
+  // Uses the HIGHLIGHT root (UAT round 2 section A), not the true root: a
+  // clicked note's "is-diatonic" class was itself assigned on the highlight
+  // basis in updateNotes() below, so the resulting focal offset must be
+  // computed relative to that same basis to stay consistent.
+  const highlightRootSemitone = getHighlightRootSemitone(appState);
   const pitchClassSemitone = Number(g.dataset.pitchClassSemitone);
-  const semitoneFromRoot = mod12(pitchClassSemitone - rootSemitone);
+  const semitoneFromRoot = mod12(pitchClassSemitone - highlightRootSemitone);
   state.setFocalDegreeSemitone(semitoneFromRoot);
   render(state.getState());
 }
@@ -189,7 +212,7 @@ function buildSkeleton() {
 // Implements FR-043 (UAT round 1 section C1): rebuilds string lines, the
 // nut/fret wires, and inlay dots for the current visible range on every
 // render (their count and position change with the range).
-function renderBackground(layout) {
+function renderBackground(appState, layout) {
   backgroundGroup.textContent = "";
   const { showOpenColumn, firstFret, lastFret, wireX, noteX } = layout;
 
@@ -208,13 +231,18 @@ function renderBackground(layout) {
 
   // Wires from the boundary before firstFret through lastFret. When the
   // open column is shown, the boundary wire (f=0) is the thick nut line;
-  // otherwise it's a plain fret-line marking the edge of the visible range.
+  // when a capo has replaced the nut as the left visible boundary (FR-035),
+  // that same boundary wire renders as a distinct capo-position indicator
+  // instead (FR-050, UAT round 2 section C) - never both, and never
+  // confusable with the true nut. Otherwise it's a plain fret-line marking
+  // the edge of the visible range.
   for (let f = firstFret - 1; f <= lastFret; f++) {
     const x = wireX(f);
     const isNut = showOpenColumn && f === 0;
+    const isCapoLine = !isNut && appState.capoFret > 0 && f === appState.capoFret - 1;
     backgroundGroup.appendChild(
       svgEl("line", {
-        class: isNut ? "nut-line" : "fret-line",
+        class: isNut ? "nut-line" : isCapoLine ? "capo-line" : "fret-line",
         x1: x,
         y1: MARGIN,
         x2: x,
@@ -280,10 +308,14 @@ function updateNotes(state, layout) {
   const tuning = resolveTuning(state);
   const keyContext = effectiveKeyContext(state);
 
-  // Diatonic set, degree-role assignment, focal triad, and chord-tone
-  // gating all key off the literal selected root, unaffected by capo
-  // position or Absolute/Relative mode (Story 9 Acceptance Scenario 7).
-  const rootSemitone = getEffectiveRootSemitone(state);
+  // Diatonic set, degree-role assignment, and chord-tone/focal membership
+  // for ON-FRETBOARD rendering all key off the HIGHLIGHT root (UAT round 2
+  // section A, FR-047) - which shifts by +capoFret only when a capo is
+  // active AND Relative label mode is selected. Audio (below, via
+  // dataset.midiNote from theory.noteAt) and the "Bright notes" text summary
+  // (controls.js) never use this value - they stay anchored to the true
+  // root (FR-048).
+  const rootSemitone = getHighlightRootSemitone(state);
   const diatonicSemitones =
     rootSemitone !== null && state.scaleId
       ? theory.getDiatonicSemitones(rootSemitone, state.scaleId)
@@ -375,7 +407,7 @@ export function render(appState) {
     initialized = true;
   }
   const layout = computeLayout(appState.fretRange);
-  renderBackground(layout);
+  renderBackground(appState, layout);
   renderFretNumbers(appState, layout);
   updateNotes(appState, layout);
   for (const fn of afterRenderHooks) fn(appState);

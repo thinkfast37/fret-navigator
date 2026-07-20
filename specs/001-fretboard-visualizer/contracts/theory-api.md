@@ -82,13 +82,37 @@ arguments.
 
 ## Capo computation
 
-**Root stability rule**: `getDiatonicSemitones`, `computeDefaultTriad`, `isToggleableChordTone`,
-`identifyChordQuality`, `getDegreeRole`, `getDegreeLabel`, and `getIntervalLabel` always take the
-literal Story-3-selected root's semitone (via `rootLetterToSemitone`) as their `root`/root-derived
-input — regardless of capo position or Absolute/Relative mode. Capo and label mode never
-substitute a different root into any of these functions (UAT round 1 section A; corrects the
-earlier `getDisplayRootSemitone` binding rule, which is removed). The ONLY thing that varies with
-capo + Relative mode is the note-NAME text, via `getRelativeLabelSemitone` below.
+### `getHighlightRootSemitone(rootSemitone, capoFret, labelMode) -> number`
+*(Added/corrected UAT round 2, section A — supersedes round 1's "Root stability rule" below;
+do not apply round 1's rule for this topic.)*
+- **Output**: `(rootSemitone + capoFret) mod 12` when `capoFret > 0 AND labelMode === "relative"`;
+  otherwise `rootSemitone` unchanged (FR-047).
+- **Contract**: the sign is deliberately **`+capoFret`**, not `-capoFret`. This is a NEW function —
+  it is not a revival of the round-1-removed `getDisplayRootSemitone` (which used `-capoFret` and
+  was wrong). Worked example: `rootSemitone=0` (C), `capoFret=3` → returns `3` (Eb).
+
+**Highlighting-root rule** *(corrects round 1's "Root stability rule" — see history note below)*:
+`getDiatonicSemitones`, `computeDefaultTriad`, `isToggleableChordTone`, `identifyChordQuality`,
+`getDegreeRole`, `getDegreeLabel`, and `getIntervalLabel` all take `getHighlightRootSemitone`'s
+OUTPUT — not the literal Story-3-selected root's raw semitone — as their `root`/root-derived input,
+consistently, whenever capo>0 AND Relative mode is active (FR-047). All must shift together; never
+some anchored to the true root while others use the shifted one.
+
+**What stays anchored to the literal true root always** (never fed by `getHighlightRootSemitone`,
+regardless of capo position or Absolute/Relative mode) — FR-048:
+- `noteAt`/`midiNote` — always the true sounding pitch (unchanged from round 1; FR-032, FR-034).
+- The "Bright notes: X, Y, Z (Quality)" text-summary computation. This means callers need TWO
+  separate invocations of `computeDefaultTriad`/`identifyChordQuality` when a capo+Relative shift
+  is active: one fed `getHighlightRootSemitone`'s output (drives what's actually rendered bright on
+  the fretboard), and one fed the literal true root semitone (drives the text summary only). These
+  two invocations may legitimately disagree on which pitch classes they name — that divergence is
+  intentional (Story 9 Acceptance Scenario 12), not a bug to reconcile.
+
+**History note**: round 1 (`docs/story-drafts/002-mvp-uat-improvements.md` section A) had
+established a "Root stability rule" stating these functions ALWAYS take the literal selected root,
+with no shift ever — that rule is now superseded by the above. Do not reintroduce the round-1
+behavior; do not revive `getDisplayRootSemitone`'s `-capoFret` formula either. `getHighlightRootSemitone`
+is the sole, currently-correct function for this purpose.
 
 ### `getRelativeLabelSemitone(physicalFret, capoFret) -> number`
 - **Output**: `physicalFret - capoFret`, the semitone offset added to a string's ORIGINAL
@@ -113,7 +137,17 @@ Every function above must be covered by `tests/theory.test.js` for at minimum: o
 (`fret=0`), the 12-fret octave wraparound, enharmonic equivalents, every `Tuning` in `TUNINGS`,
 and edge frets (0, 12, 24) — per the constitution's Principle I hard-gate requirement.
 
-Include a capo + Relative-mode regression test case that verifies `getDiatonicSemitones`,
-`computeDefaultTriad`, `isToggleableChordTone`, and `identifyChordQuality` all stay anchored to
-the literal selected root — i.e. produce IDENTICAL results with an active capo in Relative mode
-as with no capo at all — per the root stability rule above.
+Include `getHighlightRootSemitone` regression test cases per the spec's required tests (UAT round
+2 section A) — do NOT assert the round-1 "identical results with/without capo" behavior; that
+rule is superseded:
+1. root=C, capo=0: `getHighlightRootSemitone` returns C regardless of Absolute/Relative mode.
+2. root=C, capo=3, Absolute mode: `getHighlightRootSemitone` returns C (unshifted).
+3. root=C, capo=3, Relative mode: `getHighlightRootSemitone` returns Eb (3) — never A (9, the old
+   `-capoFret` result) and never C.
+4. root=C, capo=3, Relative mode: `getDiatonicSemitones`/`computeDefaultTriad`/
+   `isToggleableChordTone`/`identifyChordQuality` all produce results consistent with root=Eb, not
+   root=C and not root=A.
+5. `noteAt`/`midiNote` for any tuning/string/physical-fret combination is COMPLETELY UNCHANGED by
+   capo or Absolute/Relative mode.
+6. The "Bright notes" text-summary computation (wherever it lives) always uses the true root (C,
+   E, G for root=C major), never `getHighlightRootSemitone`'s output, regardless of capo/mode.

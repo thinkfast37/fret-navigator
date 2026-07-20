@@ -2,6 +2,8 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { JSDOM } from "jsdom";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 const dom = new JSDOM(
   `<!doctype html><html><body>
@@ -156,6 +158,20 @@ describe("initRootControls (Story 3, FR-008/FR-009, UAT round 1 section C3)", ()
     dbButton.click();
     assert.equal(state.getState().root, "Db");
     assert.equal(state.getState().accidentalPreference, "flat");
+  });
+
+  test("US3 Scenario 3 (UAT round 2 section D, FR-051): the selected root's button color is the same token as the fretboard's root color-role, not a hardcoded/generic accent", () => {
+    // jsdom in these tests never loads css/styles.css (only bare DOM is
+    // built), so the selected-state color can't be read via computed style
+    // here - instead this asserts against the stylesheet SOURCE that the
+    // selected-root rule references the shared role-1 token, guarding
+    // against a regression back to a separate hardcoded color.
+    const cssPath = fileURLToPath(new URL("../src/css/styles.css", import.meta.url));
+    const css = readFileSync(cssPath, "utf8");
+    const match = css.match(/\.root-buttons button\[aria-pressed="true"\]\s*\{([^}]*)\}/);
+    assert.ok(match, "expected a .root-buttons button[aria-pressed=\"true\"] rule in styles.css");
+    assert.match(match[1], /var\(--role-1-bright\)/);
+    assert.doesNotMatch(match[1], /#ffd54a/);
   });
 });
 
@@ -322,5 +338,20 @@ describe("initCapoControls (Story 9, FR-033/FR-037)", () => {
     assert.equal(relativeBtn.getAttribute("aria-pressed"), "true");
     const absoluteBtn = document.querySelector('.capo-label-mode-buttons button[data-capo-mode="absolute"]');
     assert.equal(absoluteBtn.getAttribute("aria-pressed"), "false");
+  });
+
+  test("Scenario 12 (UAT round 2 section A, FR-048): with capo=3 + Relative mode active, the 'Bright notes' text summary still always names the TRUE root's own chord tones", () => {
+    document.querySelector('.root-buttons button[data-root="C"]').click();
+    const scaleSelect = document.getElementById("scale-select");
+    scaleSelect.value = "ionian";
+    fire(scaleSelect, "change");
+
+    const capoSelect = document.getElementById("capo-select");
+    capoSelect.value = "3";
+    fire(capoSelect, "change");
+    assert.equal(state.getState().capoLabelMode, "relative"); // set by the earlier test in this block
+
+    const summary = document.querySelector(".chord-summary");
+    assert.match(summary.textContent, /Bright notes: C, E, G \(Major\)/);
   });
 });
