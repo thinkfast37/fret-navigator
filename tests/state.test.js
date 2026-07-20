@@ -19,7 +19,10 @@ describe("getState", () => {
   test("returns the current in-memory state tuple with documented defaults", () => {
     const s = state.getState();
     assert.equal(s.tuning.presetId, "standard");
-    assert.equal(s.root, null);
+    // Feature 002-default-root-scale: first load defaults to C Ionian so the
+    // fretboard is highlighted immediately instead of starting blank.
+    assert.equal(s.root, "C");
+    assert.equal(s.scaleId, "ionian");
     assert.equal(s.labelMode, "notes");
     assert.equal(s.capoFret, 0);
     assert.equal(s.capoLabelMode, "absolute");
@@ -211,27 +214,60 @@ describe("save/load persistence", () => {
     assert.equal(restored.capoFret, 2);
   });
 
-  test("load() falls back to defaults when localStorage is empty", () => {
+  test("load() falls back to C Ionian defaults when localStorage is empty (feature 002, FR-001)", () => {
     localStorage.clear();
     const restored = state.load();
-    assert.equal(restored.root, null);
+    assert.equal(restored.root, "C");
+    assert.equal(restored.scaleId, "ionian");
     assert.equal(restored.capoFret, 0);
   });
 
-  test("load() falls back to defaults on corrupt JSON", () => {
+  test("load() falls back to C Ionian defaults on corrupt JSON (feature 002, FR-001)", () => {
     localStorage.setItem("fret-navigator-settings", "{not valid json");
     const restored = state.load();
-    assert.equal(restored.root, null);
+    assert.equal(restored.root, "C");
+    assert.equal(restored.scaleId, "ionian");
   });
 
-  test("load() falls back to defaults when stored data fails validation", () => {
+  test("load() falls back to C Ionian defaults when stored data fails validation (feature 002, FR-001)", () => {
     localStorage.setItem(
       "fret-navigator-settings",
       JSON.stringify({ schemaVersion: 1, root: "not-a-root", tuning: { presetId: "standard" } })
     );
     const restored = state.load();
-    assert.equal(restored.root, null);
+    assert.equal(restored.root, "C");
+    assert.equal(restored.scaleId, "ionian");
     assert.equal(restored.tuning.presetId, "standard");
+  });
+
+  test("feature 002, FR-005: a previously persisted null root/scaleId is honored, not overridden to the new C Ionian default", () => {
+    localStorage.setItem(
+      "fret-navigator-settings",
+      JSON.stringify({
+        schemaVersion: 1,
+        tuning: { presetId: "standard", customOpenPitchClasses: null, customOpenOctaves: null },
+        root: null,
+        accidentalPreference: "sharp",
+        scaleId: null,
+        focalDegreeSemitone: 0,
+        chordToneOverrides: [],
+        labelMode: "notes",
+        capoFret: 0,
+        capoLabelMode: "absolute",
+        fretRange: { lowerBound: 0, upperBound: 24 },
+      })
+    );
+    const restored = state.load();
+    assert.equal(restored.root, null);
+    assert.equal(restored.scaleId, null);
+  });
+
+  test("feature 002, FR-005: a previously persisted non-default root/scaleId is honored, not overridden to C Ionian", () => {
+    state.setRoot("A");
+    state.setScaleId("mixolydian");
+    const restored = state.load();
+    assert.equal(restored.root, "A");
+    assert.equal(restored.scaleId, "mixolydian");
   });
 
   test("Edge Case: chord-tone overrides that become non-diatonic on reload are pruned", () => {

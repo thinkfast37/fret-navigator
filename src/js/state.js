@@ -16,9 +16,11 @@ const CAPO_LABEL_MODES = ["absolute", "relative"];
 function defaultState() {
   return {
     tuning: { presetId: "standard", customOpenPitchClasses: null, customOpenOctaves: null },
-    root: null,
+    // Feature 002-default-root-scale: default to C Ionian so a first-time
+    // visitor sees the fretboard highlighted immediately instead of blank.
+    root: "C",
     accidentalPreference: "sharp",
-    scaleId: null,
+    scaleId: "ionian",
     focalDegreeSemitone: 0,
     chordToneOverrides: [],
     labelMode: "notes",
