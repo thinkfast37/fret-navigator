@@ -24,6 +24,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Stamp build version
+        # Every deploy carries a legible version stamp: view-source on the live
+        # site shows the UTC build time (to the second) and the commit it came from.
+        run: |
+          STAMP="$(date -u '+%Y-%m-%d %H:%M:%S UTC') (${GITHUB_SHA::7})"
+          sed -i "s|<meta name=\"build-version\" content=\"dev\" />|<meta name=\"build-version\" content=\"$STAMP\" />|" src/index.html
+          grep -F "$STAMP" src/index.html
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
