@@ -2,11 +2,21 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <!-- Replaced by the Pages deploy workflow with the build timestamp + commit,
        so view-source on the live site shows which version is running. -->
   <meta name="build-version" content="dev" />
   <title>Fret Navigator</title>
+  <!-- PWA install metadata: the manifest's display:standalone plus the
+       apple-mobile-web-app-capable meta are what make "Add to Home Screen"
+       in iOS Safari open the app full screen instead of as a browser tab. -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#14171c" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Fret Nav" />
+  <link rel="apple-touch-icon" href="icons/icon-180.png" />
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>

@@ -60,6 +60,13 @@ body {
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
   background: var(--color-bg);
   color: var(--color-fg);
+  /* Standalone PWA on iOS (black-translucent status bar + viewport-fit=cover):
+     content extends under the notch/status bar and home indicator, so inset
+     the page by the device's safe areas. All zero in a regular browser tab. */
+  padding-top: env(safe-area-inset-top);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
 }
 
 header {

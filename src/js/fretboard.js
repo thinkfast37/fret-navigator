@@ -231,15 +231,16 @@ function renderBackground(appState, layout) {
 
   // Wires from the boundary before firstFret through lastFret. When the
   // open column is shown, the boundary wire (f=0) is the thick nut line;
-  // when a capo has replaced the nut as the left visible boundary (FR-035),
-  // that same boundary wire renders as a distinct capo-position indicator
-  // instead (FR-050, UAT round 2 section C) - never both, and never
-  // confusable with the true nut. Otherwise it's a plain fret-line marking
-  // the edge of the visible range.
+  // when a capo is active (FR-035), the wire at the END of the capo fret's
+  // cell renders as a distinct capo-position indicator (FR-050, UAT round 2
+  // sections C and follow-up): the capo-fret cell holds the notes that now
+  // sound as open strings, so the capo bar sits to their RIGHT, exactly
+  // where the physical capo clamps against the fret wire - never confusable
+  // with the true nut. Other wires are plain fret-lines.
   for (let f = firstFret - 1; f <= lastFret; f++) {
     const x = wireX(f);
     const isNut = showOpenColumn && f === 0;
-    const isCapoLine = !isNut && appState.capoFret > 0 && f === appState.capoFret - 1;
+    const isCapoLine = !isNut && appState.capoFret > 0 && f === appState.capoFret;
     backgroundGroup.appendChild(
       svgEl("line", {
         class: isNut ? "nut-line" : isCapoLine ? "capo-line" : "fret-line",
