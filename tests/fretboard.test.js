@@ -578,5 +578,15 @@ describe("render (US9: capo mechanics)", () => {
     // No true-nut line renders while the capo occupies the left boundary -
     // the two indicators are mutually exclusive, never both shown at once.
     assert.equal(document.querySelectorAll(".nut-line").length, 0);
+
+    // UAT round 3: the capo bar sits to the RIGHT of the capo fret's note
+    // markers (the notes that now sound as open strings), matching where a
+    // physical capo clamps against the fret wire - not at the left edge of
+    // that cell, which made the capo look like it was a fret too low.
+    const capoLineX = Number(document.querySelector(".capo-line").getAttribute("x1"));
+    const capoFretNoteX = Number(noteEl(0, 3).querySelector(".note-marker").getAttribute("cx"));
+    const nextFretNoteX = Number(noteEl(0, 4).querySelector(".note-marker").getAttribute("cx"));
+    assert.ok(capoLineX > capoFretNoteX, "capo line renders right of the capo fret's notes");
+    assert.ok(capoLineX < nextFretNoteX, "capo line renders left of the next fret's notes");
   });
 });
