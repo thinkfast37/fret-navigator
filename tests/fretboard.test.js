@@ -661,3 +661,41 @@ describe("render (US9: capo mechanics)", () => {
     assert.ok(capoLineX < nextFretNoteX, "capo line renders left of the next fret's notes");
   });
 });
+
+// ---- Circle-of-fifths spelling on the rendered board (T138) ----
+
+describe("circle-of-fifths spelling on the fretboard (FR-009)", () => {
+  const SIDE_OF = {
+    C: "sharp", G: "sharp", D: "sharp", A: "sharp", E: "sharp", B: "sharp", "F#": "sharp",
+    Db: "flat", Ab: "flat", Eb: "flat", Bb: "flat", F: "flat",
+  };
+
+  test("AC-1.3.2 — Fixed circle-of-fifths spelling with no manual sharp/flat toggle: rendered note labels never mix sides", () => {
+    for (const [root, side] of Object.entries(SIDE_OF)) {
+      fretboard.render(baseState({ root, accidentalPreference: side, scaleId: "ionian", labelMode: "notes" }));
+      const labels = [...document.querySelectorAll(".note .note-label")]
+        .map((el) => el.textContent)
+        .filter((text) => text.includes("#") || text.includes("b"));
+      assert.ok(labels.length > 0, `${root} Ionian rendered no accidental labels at all`);
+      const wrongSide = side === "sharp" ? "b" : "#";
+      const offenders = [...new Set(labels.filter((text) => text.includes(wrongSide)))];
+      assert.deepEqual(offenders, [], `${root} Ionian is ${side}-side but rendered ${offenders.join(", ")}`);
+    }
+  });
+
+  test("AC-1.3.2 — Fixed circle-of-fifths spelling with no manual sharp/flat toggle: a chord root renders the same spelling as the board", () => {
+    // C is sharp-side: bVII renders A# on the board, so the chord must agree.
+    fretboard.render(
+      baseState({ root: "C", accidentalPreference: "sharp", scaleId: "ionian", viewMode: "chord", chordRootOffset: 10, chordQualityId: "major" })
+    );
+    const bVII = [...document.querySelectorAll(".note")].find((el) => el.dataset.pitchClassSemitone === "10");
+    assert.equal(bVII.querySelector(".note-label").textContent, "A#");
+
+    // F is flat-side: the same interval renders Eb, never D#.
+    fretboard.render(
+      baseState({ root: "F", accidentalPreference: "flat", scaleId: "ionian", viewMode: "chord", chordRootOffset: 10, chordQualityId: "major" })
+    );
+    const flatSide = [...document.querySelectorAll(".note")].find((el) => el.dataset.pitchClassSemitone === "3");
+    assert.equal(flatSide.querySelector(".note-label").textContent, "Eb");
+  });
+});

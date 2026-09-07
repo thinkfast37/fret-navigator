@@ -555,7 +555,9 @@ describe("getChordName (feature 003)", () => {
     assert.equal(getChordName(4, "dom7", cIonian), "E7");
     assert.equal(getChordName(0, "major", cIonian), "C");
     assert.equal(getChordName(2, "minor", cIonian), "Dm");
-    assert.equal(getChordName(10, "major", cIonian), "Bb");
+    // C is sharp-side, so its bVII chord is A# (AC-1.3.2: the convention applies to
+    // "every other non-diatonic note's spelling", not just the tonic).
+    assert.equal(getChordName(10, "major", cIonian), "A#");
     assert.equal(getChordName(11, "m7b5", cIonian), "Bm7b5");
     const fLydian = { root: "F", accidentalPreference: "flat", scaleId: "lydian" };
     assert.equal(getChordName(11, "dim", fLydian), "Bdim");
@@ -582,7 +584,9 @@ describe("getChordRootOptions (feature 003)", () => {
     assert.equal(d.degreeLabel, "ii");
     assert.equal(d.inScale, true);
     const bb = options[10];
-    assert.equal(bb.noteName, "Bb"); // borrowed roots spell per their degree (bVII), not the root's sharp preference
+    // Borrowed roots spell by the KEY's circle-of-fifths side, not by their degree
+    // label's accidental (AC-1.3.2/FR-009). The numeral is still "bVII".
+    assert.equal(bb.noteName, "A#");
     assert.equal(bb.inScale, false);
   });
 
@@ -861,4 +865,68 @@ describe("getChordQualityOptions (feature 006)", () => {
       CHORD_QUALITIES.map((q) => q.label)
     );
   });
+});
+
+// ---- Circle-of-fifths spelling consistency (T138) ----
+
+// FR-009 / AC-1.3.2: the key's circle-of-fifths side is "applied consistently to
+// the root's own label and to every other non-diatonic note's spelling". These
+// tests pin BOTH surfaces to the SAME side, which is what "consistently" means:
+// a chord root and a chord tone naming the same pitch class must agree.
+describe("circle-of-fifths spelling is applied consistently (FR-009)", () => {
+  const SHARP_SIDE = ["C", "G", "D", "A", "E", "B", "F#"];
+  const FLAT_SIDE = ["Db", "Ab", "Eb", "Bb", "F"];
+
+  function contextFor(root) {
+    const preference = SHARP_SIDE.includes(root) ? "sharp" : "flat";
+    return { root, accidentalPreference: preference, scaleId: "ionian" };
+  }
+
+  test("AC-1.3.2 — Fixed circle-of-fifths spelling with no manual sharp/flat toggle: chord roots and chord tones agree", () => {
+    for (const root of [...SHARP_SIDE, ...FLAT_SIDE]) {
+      const context = contextFor(root);
+      for (const option of getChordRootOptions(context)) {
+        assert.equal(
+          option.noteName,
+          spellPitchClass(option.semitone, context),
+          `${root} Ionian: chord root at +${option.offset} spells "${option.noteName}" ` +
+            `but the same pitch class spells "${spellPitchClass(option.semitone, context)}" as a chord tone`
+        );
+      }
+    }
+  });
+
+  test("AC-1.3.2 — Fixed circle-of-fifths spelling with no manual sharp/flat toggle: a sharp-side key never spells a chord root flat", () => {
+    for (const root of SHARP_SIDE) {
+      for (const option of getChordRootOptions(contextFor(root))) {
+        assert.ok(
+          !option.noteName.includes("b"),
+          `${root} Ionian is a sharp-side key but spells a chord root "${option.noteName}"`
+        );
+      }
+    }
+  });
+
+  test("AC-1.3.2 — Fixed circle-of-fifths spelling with no manual sharp/flat toggle: a flat-side key never spells a chord root sharp", () => {
+    for (const root of FLAT_SIDE) {
+      for (const option of getChordRootOptions(contextFor(root))) {
+        assert.ok(
+          !option.noteName.includes("#"),
+          `${root} Ionian is a flat-side key but spells a chord root "${option.noteName}"`
+        );
+      }
+    }
+  });
+
+  test("AC-1.3.2 — Fixed circle-of-fifths spelling with no manual sharp/flat toggle: the chord NAME follows the key too", () => {
+    // C is sharp-side, so its bIII chord is D#, not Eb.
+    assert.equal(getChordName(3, "major", contextFor("C")), "D#");
+    // F is flat-side, so its bIII chord is Ab, not G#.
+    assert.equal(getChordName(mod12For("F", 3), "major", contextFor("F")), "Ab");
+  });
+
+  function mod12For(root, offset) {
+    const semitones = { C: 0, G: 7, D: 2, A: 9, E: 4, B: 11, "F#": 6, Db: 1, Ab: 8, Eb: 3, Bb: 10, F: 5 };
+    return (semitones[root] + offset) % 12;
+  }
 });

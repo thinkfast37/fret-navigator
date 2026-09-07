@@ -290,7 +290,7 @@ describe("chord picker + view toggle (feature 003)", () => {
     assert.equal(options.length, 12);
     assert.equal(options[0].textContent, "I — C");
     assert.equal(options[2].textContent, "ii — D");
-    assert.match(options[10].textContent, /^bVII — Bb/);
+    assert.match(options[10].textContent, /^bVII — A#/); // sharp-side key (AC-1.3.2)
   });
 
   test("AC-3.1.2 — Chord quality dropdown offers the full vocabulary: controls", () => {
@@ -313,7 +313,7 @@ describe("chord picker + view toggle (feature 003)", () => {
   test("AC-3.3.2 — Non-diatonic chord roots are labelled as borrowed with a source when one is common: controls", () => {
     selectCIonian();
     const options = [...document.querySelectorAll("#chord-root-select option")];
-    assert.equal(options[10].textContent, "bVII — Bb (borrowed: Mixolydian / parallel minor)");
+    assert.equal(options[10].textContent, "bVII — A# (borrowed: Mixolydian / parallel minor)");
     assert.ok(options[10].classList.contains("non-diatonic"));
     assert.ok(!options[0].classList.contains("non-diatonic"));
   });

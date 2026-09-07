@@ -16,12 +16,12 @@
 **Feature**: specs/001-fretboard-visualizer/spec.md, specs/002-default-root-scale/spec.md, specs/003-chord-mode/spec.md, specs/004-play-chord/spec.md, specs/005-display-overhaul/spec.md, specs/006-key-aware-chords/spec.md
 **Criteria**: 96 across 22 User Stories
 
-**Coverage**: 44 of 96 criteria proven (45.8%)
+**Coverage**: 45 of 96 criteria proven (46.9%)
 
 | | Criteria | Share |
 |---|---|---|
-| 🟢 Proven | 44 | 45.8% |
-| 🔴 Gap — CRITICAL | 52 | 54.2% |
+| 🟢 Proven | 45 | 46.9% |
+| 🔴 Gap — CRITICAL | 51 | 53.1% |
 
 A row is one *criterion*: an Acceptance Criterion that asserts one thing, or one Case of
 an AC that asserts several. 🖵 marks a criterion that describes something a person sees or
@@ -49,7 +49,7 @@ cannot be talked down when a deadline is close.
 and MEDIUM may be waived — CRITICAL and HIGH are exactly the states that let unbuilt work
 report as complete, so no reason clears them (Constitution Principle IV).
 
-ᵃ marks a gap accepted as pre-existing debt (52 rows). It is reported but does not
+ᵃ marks a gap accepted as pre-existing debt (51 rows). It is reported but does not
 fail the build, and it is outstanding work — never a settled decision.
 
 ## Coverage by User Story
@@ -58,7 +58,7 @@ fail the build, and it is outstanding work — never a settled decision.
 |---|---|---|---|---|---|---|---|
 | 🔴 US-1.1 | 5 | 0 | · | 5 | · | · | · |
 | 🔴 US-1.2 | 6 | 0 | · | 6 | · | · | · |
-| 🔴 US-1.3 | 3 | 0 | · | 3 | · | · | · |
+| 🔴 US-1.3 | 3 | 1 | · | 2 | · | · | · |
 | 🔴 US-1.4 | 4 | 0 | · | 4 | · | · | · |
 | 🔴 US-1.5 | 2 | 0 | · | 2 | · | · | · |
 | 🔴 US-1.6 | 5 | 0 | · | 5 | · | · | · |
@@ -95,7 +95,7 @@ fail the build, and it is outstanding work — never a settled decision.
 | US-1.2 | `AC-1.2.5` | Custom Tuning sets each string's pitch independently | P-003 | T050, T051, T052, T053, T054 (5/5 done) | T127 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
 | US-1.2 | `AC-1.2.6` | Enharmonic spelling stays consistent with key/scale context | P-003 | T050, T051, T052, T053, T054 (5/5 done) | T127 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
 | US-1.3 | `AC-1.3.1` 🖵 | Selected root highlighted as root everywhere it appears | P-004 | T055, T056, T057, T058, T117, T118, T119 (7/7 done) | T128 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
-| US-1.3 | `AC-1.3.2` 🖵 | Fixed circle-of-fifths spelling with no manual sharp/flat toggle | P-004 | T055, T056, T057, T058, T117, T118, T119 (7/7 done) | T128 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.3 | `AC-1.3.2` 🖵 | Fixed circle-of-fifths spelling with no manual sharp/flat toggle | P-004 | T055, T056, T057, T058, T117, T118, T119 (7/7 done) | T128 (1/1 done) | `fretboard.test.js`, `theory.test.js` | 🟢 OK |
 | US-1.3 | `AC-1.3.3` 🖵 | Selected root button uses the root color-role | P-004 | T055, T056, T057, T058, T117, T118, T119 (7/7 done) | T128 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
 | US-1.4 | `AC-1.4.1` 🖵 | Exactly the scale's semitone-offset notes highlighted | P-005 | T059, T060, T061, T062 (4/4 done) | T129 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
 | US-1.4 | `AC-1.4.2` 🖵 | Highlighted set updates immediately with no stale notes | P-005 | T059, T060, T061, T062 (4/4 done) | T129 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
