@@ -29,27 +29,42 @@ physical instrument.
 **Independent Test**: Can be fully tested by loading the app with no other configuration and visually confirming string order, fret markers, open-string display, and the color+shape distinction rule — delivers immediate value as a static reference fretboard.
 
 **Acceptance Scenarios**:
-1. **Given** the app loads, **When** the fretboard renders, **Then** strings
-   are ordered high-E at top to low-E at bottom, matching how a player
-   looks down at their own neck. low-E is string 6, and high-e is string 1.
-2. **Given** standard fret markers (3,5,7,9,12,15,17,19,21,24), **When** the
-   fretboard renders, **Then** those frets show inlay dot markers (single,
-   except double at 12 and 24).
-3. **Given** any note is part of the active scale/chord, **When** it renders,
-   **Then** it's visually distinguished by both color AND shape/border from
-   non-active notes (not color alone) — per our accessibility principle.
-4. **Given** open strings, **When** the fretboard renders, **Then** open-string
-   notes are shown distinctly to the left of fret 1, past the nut line.
-5. **Given** a capo is active and Relative-mode fret-number renumbering is in
-   effect (FR-046), **When** the fretboard renders, **Then** inlay dot markers
-   remain visible at their true PHYSICAL fret positions (3,5,7,9,12,15,17,19,
-   21,24) — the dots never move or remap to whatever column currently shows
-   that number as a Relative-mode label; only the fret-number text and note
-   names at a column change under Relative mode, never the dot's physical
-   column. *(Amended UAT round 2, section B: dots had regressed to failing to
-   render/misaligning after capo-relative fret renumbering was introduced;
-   Clarification 2026-07-19 confirms physical-position anchoring, matching a
-   real guitar's fixed inlay dots, as the corrected behavior.)*
+
+- **AC-1.1.1** — Strings ordered high-E top to low-E bottom
+
+  **Given** the app loads, **When** the fretboard renders, **Then** strings
+  are ordered high-E at top to low-E at bottom, matching how a player
+  looks down at their own neck. low-E is string 6, and high-e is string 1.
+
+- **AC-1.1.2** — Inlay dot markers at standard frets, double at 12 and 24
+
+  **Given** standard fret markers (3,5,7,9,12,15,17,19,21,24), **When** the
+  fretboard renders, **Then** those frets show inlay dot markers (single,
+  except double at 12 and 24).
+
+- **AC-1.1.3** — Active notes distinguished by color and shape, not color alone
+
+  **Given** any note is part of the active scale/chord, **When** it renders,
+  **Then** it's visually distinguished by both color AND shape/border from
+  non-active notes (not color alone) — per our accessibility principle.
+
+- **AC-1.1.4** — Open-string notes shown left of fret 1 past the nut
+
+  **Given** open strings, **When** the fretboard renders, **Then** open-string
+  notes are shown distinctly to the left of fret 1, past the nut line.
+
+- **AC-1.1.5** — Inlay dots anchored to physical fret positions under capo Relative renumbering
+
+  **Given** a capo is active and Relative-mode fret-number renumbering is in
+  effect (FR-046), **When** the fretboard renders, **Then** inlay dot markers
+  remain visible at their true PHYSICAL fret positions (3,5,7,9,12,15,17,19,
+  21,24) — the dots never move or remap to whatever column currently shows
+  that number as a Relative-mode label; only the fret-number text and note
+  names at a column change under Relative mode, never the dot's physical
+  column. *(Amended UAT round 2, section B: dots had regressed to failing to
+  render/misaligning after capo-relative fret renumbering was introduced;
+  Clarification 2026-07-19 confirms physical-position anchoring, matching a
+  real guitar's fixed inlay dots, as the corrected behavior.)*
 
 ---
 
@@ -64,44 +79,56 @@ a custom one), so that I can see how note positions shift across alternate tunin
 
 **Acceptance Scenarios**:
 
-1. **Given** the tuning selector, **When** I choose any supported tuning,
-   **Then** all 6 strings retune to the correct pitch and every fretted
-   note recalculates accordingly.
+- **AC-1.2.1** — All 6 strings retune and every fretted note recalculates
 
-2. **Given** the "D-Family" tuning group, **When** I select one of:
-   - Drop D (D A D G B E)
-   - Double Drop D (D A D G B D)
-   - DADGAD / "Dsus4" (D A D G A D)
-   - Open D (D A D F# A D)
-   - Open D Minor (D A D F A D)
-   - D A D E A D (D A D E A D)
-   - Drop High D (E A D G B D)
-   - D G D F# G G (D add 4)
-   **Then** the fretboard reflects that exact tuning.
+  **Given** the tuning selector, **When** I choose any supported tuning,
+  **Then** all 6 strings retune to the correct pitch and every fretted
+  note recalculates accordingly.
 
-3. **Given** the "G-Family" tuning group, **When** I select one of:
-   - Open G (D G D G B D)
-   - Gsus4 (D G D G C D)
-   - Open G Minor (D G D G Bb D)
-   - D G D G A D (D G D G A D)
-   - G6 (D G D G B E)
-   **Then** the fretboard reflects that exact tuning.
+- **AC-1.2.2** — D-Family tunings reflected exactly
 
-4. **Given** the "C-Family" tuning group, **When** I select one of:
-   - C G D G B E (unlabeled in source)
-   - C G D G B D (unlabeled in source)
-   - Open C (C G C G C E)
-   - Open C Minor (C G C G C Eb)
-   **Then** the fretboard reflects that exact tuning.
+  **Given** the "D-Family" tuning group, **When** I select one of:
+  - Drop D (D A D G B E)
+  - Double Drop D (D A D G B D)
+  - DADGAD / "Dsus4" (D A D G A D)
+  - Open D (D A D F# A D)
+  - Open D Minor (D A D F A D)
+  - D A D E A D (D A D E A D)
+  - Drop High D (E A D G B D)
+  - D G D F# G G (D add 4)
+  **Then** the fretboard reflects that exact tuning.
 
-5. **Given** none of the above match what the user wants, **When** they choose
-   "Custom Tuning," **Then** they can independently set each string's pitch
-   and the fretboard recalculates accordingly.
+- **AC-1.2.3** — G-Family tunings reflected exactly
 
-6. **Given** any tuning is applied, **When** notes are re-labeled, **Then**
-   enharmonic spelling stays consistent with the active key/scale context
-   (per our music-theory-correctness principle) rather than defaulting to
-   one universal sharp/flat convention regardless of tuning.
+  **Given** the "G-Family" tuning group, **When** I select one of:
+  - Open G (D G D G B D)
+  - Gsus4 (D G D G C D)
+  - Open G Minor (D G D G Bb D)
+  - D G D G A D (D G D G A D)
+  - G6 (D G D G B E)
+  **Then** the fretboard reflects that exact tuning.
+
+- **AC-1.2.4** — C-Family tunings reflected exactly
+
+  **Given** the "C-Family" tuning group, **When** I select one of:
+  - C G D G B E (unlabeled in source)
+  - C G D G B D (unlabeled in source)
+  - Open C (C G C G C E)
+  - Open C Minor (C G C G C Eb)
+  **Then** the fretboard reflects that exact tuning.
+
+- **AC-1.2.5** — Custom Tuning sets each string's pitch independently
+
+  **Given** none of the above match what the user wants, **When** they choose
+  "Custom Tuning," **Then** they can independently set each string's pitch
+  and the fretboard recalculates accordingly.
+
+- **AC-1.2.6** — Enharmonic spelling stays consistent with key/scale context
+
+  **Given** any tuning is applied, **When** notes are re-labeled, **Then**
+  enharmonic spelling stays consistent with the active key/scale context
+  (per our music-theory-correctness principle) rather than defaulting to
+  one universal sharp/flat convention regardless of tuning.
 
 ---
 
@@ -124,21 +151,30 @@ so that the fretboard matches the key signature I'm thinking in.
 **Independent Test**: Can be fully tested by selecting each of the 12 root options and confirming the root highlight updates to the correct pitch class, with its spelling matching the fixed circle-of-fifths convention — delivers value as a standalone key-reference tool.
 
 **Acceptance Scenarios**:
-1. **Given** the app is loaded, **When** I select a root from the 12 available
-   options (displayed alphabetically: A, Ab, B, Bb, C, D, Db, E, Eb, F, F#, G),
-   **Then** the fretboard highlights that pitch class as the root/tonic
-   everywhere it appears.
-2. **Given** any root is selected, **When** the fretboard renders, **Then**
-   the root's own label and every other non-diatonic note's sharp/flat
-   spelling follow the same fixed circle-of-fifths convention (C G D A E B
-   F# spelled sharp-side; Db Ab Eb Bb F spelled flat-side) automatically —
-   there is no manual sharp/flat toggle, and pitch is never affected by
-   spelling choice.
-3. **Given** a root is selected, **When** the root selector renders, **Then**
-   the currently-selected root's button displays using the same color as
-   that root's degree-1/"root" color-role on the fretboard (Story 5) — never
-   a different or generic selection color — for visual consistency between
-   the control and the fretboard. *(Added UAT round 2, section D.)*
+
+- **AC-1.3.1** — Selected root highlighted as root everywhere it appears
+
+  **Given** the app is loaded, **When** I select a root from the 12 available
+  options (displayed alphabetically: A, Ab, B, Bb, C, D, Db, E, Eb, F, F#, G),
+  **Then** the fretboard highlights that pitch class as the root/tonic
+  everywhere it appears.
+
+- **AC-1.3.2** — Fixed circle-of-fifths spelling with no manual sharp/flat toggle
+
+  **Given** any root is selected, **When** the fretboard renders, **Then**
+  the root's own label and every other non-diatonic note's sharp/flat
+  spelling follow the same fixed circle-of-fifths convention (C G D A E B
+  F# spelled sharp-side; Db Ab Eb Bb F spelled flat-side) automatically —
+  there is no manual sharp/flat toggle, and pitch is never affected by
+  spelling choice.
+
+- **AC-1.3.3** — Selected root button uses the root color-role
+
+  **Given** a root is selected, **When** the root selector renders, **Then**
+  the currently-selected root's button displays using the same color as
+  that root's degree-1/"root" color-role on the fretboard (Story 5) — never
+  a different or generic selection color — for visual consistency between
+  the control and the fretboard. *(Added UAT round 2, section D.)*
 
 ---
 
@@ -197,24 +233,32 @@ different layers, per our music-theory-correctness principle.
 
 **Acceptance Scenarios**:
 
-1. **Given** a root note is selected, **When** I choose any scale or mode
-   from the tables above, **Then** exactly the notes matching that scale's
-   semitone offsets (relative to the root) are highlighted as "in scale" —
-   no more, no fewer.
+- **AC-1.4.1** — Exactly the scale's semitone-offset notes highlighted
 
-2. **Given** a scale is selected, **When** I switch to a different mode or
-   scale of the same root, **Then** the highlighted note set updates
-   immediately to reflect the new scale's formula, with no stale notes
-   left highlighted from the previous selection.
+  **Given** a root note is selected, **When** I choose any scale or mode
+  from the tables above, **Then** exactly the notes matching that scale's
+  semitone offsets (relative to the root) are highlighted as "in scale" —
+  no more, no fewer.
 
-3. **Given** any mode/scale in the tables above, **When** it is rendered,
-   **Then** its degree labels (if "Degrees" label mode is active) display
-   using the exact formula notation shown above (e.g. "b3", "#4", "b7") —
-   not alternate enharmonic degree names.
+- **AC-1.4.2** — Highlighted set updates immediately with no stale notes
 
-4. **Given** the scale/mode list, **When** the user opens the selector,
-   **Then** all scales/modes listed above are available as selectable
-   options, grouped as: Church Modes, Pentatonic, Blues, Other.
+  **Given** a scale is selected, **When** I switch to a different mode or
+  scale of the same root, **Then** the highlighted note set updates
+  immediately to reflect the new scale's formula, with no stale notes
+  left highlighted from the previous selection.
+
+- **AC-1.4.3** — Degree labels use the exact formula notation
+
+  **Given** any mode/scale in the tables above, **When** it is rendered,
+  **Then** its degree labels (if "Degrees" label mode is active) display
+  using the exact formula notation shown above (e.g. "b3", "#4", "b7") —
+  not alternate enharmonic degree names.
+
+- **AC-1.4.4** — All scales and modes selectable, grouped by category
+
+  **Given** the scale/mode list, **When** the user opens the selector,
+  **Then** all scales/modes listed above are available as selectable
+  options, grouped as: Church Modes, Pentatonic, Blues, Other.
 
 ---
 
@@ -274,35 +318,49 @@ the key without losing the key's context.
 
 **Acceptance Scenarios**:
 
-1. **Given** C Major is selected, **When** the fretboard renders,
-   **Then** all 7 diatonic notes (C D E F G A B) display in their
-   assigned dark color-role, and the 5 non-diatonic notes (C#/Db,
-   D#/Eb, F#/Gb, G#/Ab, A#/Bb) display with no color.
+- **AC-1.5.1** — Diatonic notes dark-colored, non-diatonic notes uncolored
 
-2. **Given** C Major with focal point defaulted to root (C),
-   **When** the fretboard renders, **Then** C, E, G display bright +
-   bordered (C major triad), and D, F, A, B display dark.
+  **Given** C Major is selected, **When** the fretboard renders,
+  **Then** all 7 diatonic notes (C D E F G A B) display in their
+  assigned dark color-role, and the 5 non-diatonic notes (C#/Db,
+  D#/Eb, F#/Gb, G#/Ab, A#/Bb) display with no color.
 
-3. **Given** C Major, **When** the user clicks E, **Then** focal point
-   becomes E, and E, G, B display bright + bordered — correctly shown
-   as a minor triad (the diatonic quality of the 3rd degree in C Major).
+- **AC-1.5.2** — Default focal root triad bright and bordered
 
-4. **Given** focal point = E (C Major), **When** "Degrees" label mode
-   is active, **Then** E, G, B display "3", "5", "7" — always relative
-   to the key root (C), never relative to the focal note.
+  **Given** C Major with focal point defaulted to root (C),
+  **When** the fretboard renders, **Then** C, E, G display bright +
+  bordered (C major triad), and D, F, A, B display dark.
 
-5. **Given** focal point = E (C Major) with the default minor triad
-   active, **When** the user toggles off G and toggles on A, **Then**
-   the bright set becomes E, A, B (an Esus4-type voicing) — valid
-   because A is diatonic to C Major.
+- **AC-1.5.3** — Clicking E sets focal point shown as a minor triad
 
-6. **Given** focal point = E (C Major), **When** the user attempts to
-   toggle on F# (which would build an Esus2 voicing), **Then** that
-   toggle is unavailable, because F# is not diatonic to C Major.
+  **Given** C Major, **When** the user clicks E, **Then** focal point
+  becomes E, and E, G, B display bright + bordered — correctly shown
+  as a minor triad (the diatonic quality of the 3rd degree in C Major).
 
-7. **Given** the key changes to C Lydian, **When** focal point = E,
-   **Then** F# becomes an available toggle, because F# is diatonic
-   to C Lydian.
+- **AC-1.5.4** — Degree labels always relative to the key root
+
+  **Given** focal point = E (C Major), **When** "Degrees" label mode
+  is active, **Then** E, G, B display "3", "5", "7" — always relative
+  to the key root (C), never relative to the focal note.
+
+- **AC-1.5.5** — Diatonic chord-tone toggles build a sus4 voicing
+
+  **Given** focal point = E (C Major) with the default minor triad
+  active, **When** the user toggles off G and toggles on A, **Then**
+  the bright set becomes E, A, B (an Esus4-type voicing) — valid
+  because A is diatonic to C Major.
+
+- **AC-1.5.6** — Non-diatonic toggle unavailable
+
+  **Given** focal point = E (C Major), **When** the user attempts to
+  toggle on F# (which would build an Esus2 voicing), **Then** that
+  toggle is unavailable, because F# is not diatonic to C Major.
+
+- **AC-1.5.7** — Toggle availability follows the key change
+
+  **Given** the key changes to C Lydian, **When** focal point = E,
+  **Then** F# becomes an available toggle, because F# is diatonic
+  to C Lydian.
 
 ---
 
@@ -319,28 +377,38 @@ without becoming visually noisy.
 
 **Acceptance Scenarios**:
 
-1. **Given** any tuning/key selection, **When** the fretboard renders,
-   **Then** every fret position displays its note name at all times, in
-   a neutral/dark, non-distracting style — this base layer never
-   disappears, regardless of scale or focal-point selections.
+- **AC-1.6.1** — Base-layer note names always visible
 
-2. **Given** "Notes" label mode, **When** the fretboard renders,
-   **Then** diatonic notes show their letter name inside the colored
-   (bright/dark, per Story 5) marker; non-diatonic notes show their
-   letter name in the neutral base-layer style only.
+  **Given** any tuning/key selection, **When** the fretboard renders,
+  **Then** every fret position displays its note name at all times, in
+  a neutral/dark, non-distracting style — this base layer never
+  disappears, regardless of scale or focal-point selections.
 
-3. **Given** "Degrees" label mode, **When** the fretboard renders,
-   **Then** diatonic notes show their scale-degree number (relative to
-   the key root, per Story 5) instead of the letter name.
+- **AC-1.6.2** — Notes mode shows letter names in colored markers
 
-4. **Given** "Intervals" label mode, **When** the fretboard renders,
-   **Then** diatonic notes show interval names relative to the key root
-   (e.g. "R", "M3", "P5", "m7") instead of letters or numbers.
+  **Given** "Notes" label mode, **When** the fretboard renders,
+  **Then** diatonic notes show their letter name inside the colored
+  (bright/dark, per Story 5) marker; non-diatonic notes show their
+  letter name in the neutral base-layer style only.
 
-5. **Given** any label mode, **When** the fretboard renders, **Then**
-   the key root (scale degree 1) is visually distinguished from other
-   diatonic notes by BOTH color-role AND a secondary indicator (e.g.
-   distinct border/shape) — never by color alone.
+- **AC-1.6.3** — Degrees mode shows scale-degree numbers
+
+  **Given** "Degrees" label mode, **When** the fretboard renders,
+  **Then** diatonic notes show their scale-degree number (relative to
+  the key root, per Story 5) instead of the letter name.
+
+- **AC-1.6.4** — Intervals mode shows interval names relative to root
+
+  **Given** "Intervals" label mode, **When** the fretboard renders,
+  **Then** diatonic notes show interval names relative to the key root
+  (e.g. "R", "M3", "P5", "m7") instead of letters or numbers.
+
+- **AC-1.6.5** — Root distinguished by color and secondary indicator in every label mode
+
+  **Given** any label mode, **When** the fretboard renders, **Then**
+  the key root (scale degree 1) is visually distinguished from other
+  diatonic notes by BOTH color-role AND a secondary indicator (e.g.
+  distinct border/shape) — never by color alone.
 
 ---
 
@@ -376,34 +444,46 @@ which frets are in view.
 
 **Acceptance Scenarios**:
 
-1. **Given** the app loads with no prior adjustment, **When** the
-   fretboard renders, **Then** the left handle displays "N", the right
-   handle displays "24", and all frets 0(nut)–24 are visible.
+- **AC-1.7.1** — Default full range N to 24 visible
 
-2. **Given** the default full-range view, **When** I drag the left
-   handle right to fret 5, **Then** its label updates to show "5", and
-   the fretboard re-renders showing only frets 5–24 (frets 0–4 hidden).
+  **Given** the app loads with no prior adjustment, **When** the
+  fretboard renders, **Then** the left handle displays "N", the right
+  handle displays "24", and all frets 0(nut)–24 are visible.
 
-3. **Given** the default full-range view, **When** I drag the right
-   handle left to fret 12, **Then** its label updates to show "12", and
-   the fretboard re-renders showing only frets N(0)–12 (frets 13–24 hidden).
+- **AC-1.7.2** — Left handle drag narrows the range from below
 
-4. **Given** both handles have been adjusted (e.g. left=3, right=15),
-   **When** the fretboard renders, **Then** only frets 3–15 are visible,
-   and both handle labels reflect "3" and "15" respectively.
+  **Given** the default full-range view, **When** I drag the left
+  handle right to fret 5, **Then** its label updates to show "5", and
+  the fretboard re-renders showing only frets 5–24 (frets 0–4 hidden).
 
-5. **Given** any handle position, **When** I attempt to drag one handle
-   past the other's current position, **Then** the drag is constrained
-   so the range never inverts or collapses to zero frets.
+- **AC-1.7.3** — Right handle drag narrows the range from above
 
-6. **Given** any adjusted range, **When** the user activates the reset
-   control, **Then** the range returns to the default N–24 full view.
+  **Given** the default full-range view, **When** I drag the right
+  handle left to fret 12, **Then** its label updates to show "12", and
+  the fretboard re-renders showing only frets N(0)–12 (frets 13–24 hidden).
 
-   > **Clarification (2026-07-19)**: Per the persistence decision above
-   > (FR-039/FR-040), a plain page reload restores the last-used fret
-   > range from `localStorage` rather than resetting it — this scenario's
-   > reset behavior applies to the explicit reset control (or a genuinely
-   > fresh session with no stored settings), not to reload in general.
+- **AC-1.7.4** — Both handles adjusted shows only the selected range
+
+  **Given** both handles have been adjusted (e.g. left=3, right=15),
+  **When** the fretboard renders, **Then** only frets 3–15 are visible,
+  and both handle labels reflect "3" and "15" respectively.
+
+- **AC-1.7.5** — Handle drag constrained so the range never inverts
+
+  **Given** any handle position, **When** I attempt to drag one handle
+  past the other's current position, **Then** the drag is constrained
+  so the range never inverts or collapses to zero frets.
+
+- **AC-1.7.6** — Reset control restores the default N-24 view
+
+  **Given** any adjusted range, **When** the user activates the reset
+  control, **Then** the range returns to the default N–24 full view.
+
+  > **Clarification (2026-07-19)**: Per the persistence decision above
+  > (FR-039/FR-040), a plain page reload restores the last-used fret
+  > range from `localStorage` rather than resetting it — this scenario's
+  > reset behavior applies to the explicit reset control (or a genuinely
+  > fresh session with no stored settings), not to reload in general.
 
 ---
 
@@ -437,29 +517,39 @@ I can connect the visual fretboard to actual sound.
 
 **Acceptance Scenarios**:
 
-1. **Given** any fret position, **When** I click/tap it, **Then** the
-   correct pitch (correct octave, not just pitch class) plays audibly
-   using a real guitar sample, not a synthesized tone.
+- **AC-1.8.1** — Correct pitch and octave plays from a real guitar sample
 
-2. **Given** the same pitch class at different octaves (e.g. open low E
-   vs. 12th fret high E), **When** each is played, **Then** they sound
-   at their correct distinct octaves — never collapsed to the same
-   sample pitch-shifted incorrectly or defaulted to one octave.
+  **Given** any fret position, **When** I click/tap it, **Then** the
+  correct pitch (correct octave, not just pitch class) plays audibly
+  using a real guitar sample, not a synthesized tone.
 
-3. **Given** the app is used entirely offline after first load (if
-   samples are cached), **When** notes are played, **Then** playback
-   still works without a live network dependency — audio assets are
-   fetched once and reusable, not re-fetched per note trigger.
+- **AC-1.8.2** — Same pitch class sounds distinct at different octaves
 
-4. **Given** rapid sequential note triggers (e.g. strumming or fast
-   scale runs), **When** multiple notes are played in quick succession,
-   **Then** each note plays cleanly without cutting off the previous
-   note improperly or introducing audible lag.
+  **Given** the same pitch class at different octaves (e.g. open low E
+  vs. 12th fret high E), **When** each is played, **Then** they sound
+  at their correct distinct octaves — never collapsed to the same
+  sample pitch-shifted incorrectly or defaulted to one octave.
 
-5. **Given** a capo is active (Story 9), **When** any fret position is
-   played, **Then** audio always sounds the true physical pitch
-   (Absolute-mode pitch) regardless of which label mode (Absolute or
-   Relative) is currently displayed — labels are cosmetic; sound is not.
+- **AC-1.8.3** — Playback works offline after samples are cached
+
+  **Given** the app is used entirely offline after first load (if
+  samples are cached), **When** notes are played, **Then** playback
+  still works without a live network dependency — audio assets are
+  fetched once and reusable, not re-fetched per note trigger.
+
+- **AC-1.8.4** — Rapid triggers play cleanly without cutoffs or lag
+
+  **Given** rapid sequential note triggers (e.g. strumming or fast
+  scale runs), **When** multiple notes are played in quick succession,
+  **Then** each note plays cleanly without cutting off the previous
+  note improperly or introducing audible lag.
+
+- **AC-1.8.5** — Audio always sounds the true physical pitch under capo
+
+  **Given** a capo is active (Story 9), **When** any fret position is
+  played, **Then** audio always sounds the true physical pitch
+  (Absolute-mode pitch) regardless of which label mode (Absolute or
+  Relative) is currently displayed — labels are cosmetic; sound is not.
 
 ---
 
@@ -560,73 +650,99 @@ section A)**
 
 **Acceptance Scenarios**:
 
-1. **Given** standard tuning with no capo, **When** I place a capo at
-   fret 3, **Then** frets 0–2 become unplayable/hidden, and Story 7's
-   left handle locks to fret 3, labeled "Capo."
+- **AC-1.9.1** — Capo mutes lower frets and locks the left handle
 
-2. **Given** capo at fret 3 in standard tuning, **When** Absolute mode
-   is active, **Then** the note at the capo position on the 5th (A)
-   string displays as "C" (A + 3 semitones).
+  **Given** standard tuning with no capo, **When** I place a capo at
+  fret 3, **Then** frets 0–2 become unplayable/hidden, and Story 7's
+  left handle locks to fret 3, labeled "Capo."
 
-3. **Given** the same capo-3 setup, **When** Relative mode is active
-   instead, **Then** that same physical position displays as "A" (the
-   string's original open-string name, treated as the new reference
-   point).
+- **AC-1.9.2** — Absolute mode shows the true sounding pitch at the capo
 
-4. **Given** capo at fret 3 in Relative mode, **When** I fret 2 additional
-   frets above the capo (physical fret 5) on the A string, **Then** it
-   displays as "B" (A + 2 semitones from the capo reference) — while
-   Absolute mode simultaneously shows "D" (A + 5 semitones, true pitch)
-   for that same physical position.
+  **Given** capo at fret 3 in standard tuning, **When** Absolute mode
+  is active, **Then** the note at the capo position on the 5th (A)
+  string displays as "C" (A + 3 semitones).
 
-5. **Given** any tuning/key/scale selection active, **When** a capo is
-   placed or removed, **Then** all scale/chord/degree highlighting
-   (Stories 3, 4, 5) recalculates correctly against the new set of
-   playable frets — no stale highlighting from muted pre-capo frets.
+- **AC-1.9.3** — Relative mode shows the open-string name at the capo
 
-6. **Given** capo set to 0 (no capo), **When** the fretboard renders,
-   **Then** Absolute and Relative modes produce identical labels
-   everywhere, and Story 7's left handle behaves exactly as originally
-   specified (freely draggable, defaulting to "N").
+  **Given** the same capo-3 setup, **When** Relative mode is active
+  instead, **Then** that same physical position displays as "A" (the
+  string's original open-string name, treated as the new reference
+  point).
 
-7. **Given** root=C, capo=0, **When** either Absolute or Relative mode is active,
-   **Then** `getHighlightRootSemitone` returns C — highlighting is unshifted
-   regardless of label mode. *(Corrected UAT round 2, section A — this and
-   Scenarios 8-12 replace a prior Scenario 7 that encoded a since-superseded
-   design where highlighting never shifted at all.)*
+- **AC-1.9.4** — Relative and Absolute labels diverge above the capo
 
-8. **Given** root=C, capo=3, Absolute mode active, **When** the fretboard
-   renders, **Then** `getHighlightRootSemitone` returns C (unshifted) — the
-   shift only applies in Relative mode.
+  **Given** capo at fret 3 in Relative mode, **When** I fret 2 additional
+  frets above the capo (physical fret 5) on the A string, **Then** it
+  displays as "B" (A + 2 semitones from the capo reference) — while
+  Absolute mode simultaneously shows "D" (A + 5 semitones, true pitch)
+  for that same physical position.
 
-9. **Given** root=C, capo=3, Relative mode active, **When** the fretboard
-   renders, **Then** `getHighlightRootSemitone` returns Eb (semitone 3) — the
-   `+capoFret` result — never A (semitone 9, the old, superseded `-capoFret`
-   result), and never C.
+- **AC-1.9.5** — Highlighting recalculates on capo change with no stale frets
 
-10. **Given** root=C, capo=3, Relative mode active (root highlighting shifted
-    to Eb per Scenario 9), **When** the fretboard computes the diatonic set,
-    default triad, chord-tone toggle eligibility, and chord-quality
-    identification, **Then** all of these are computed consistently against
-    Eb as root — never against C and never against A.
+  **Given** any tuning/key/scale selection active, **When** a capo is
+  placed or removed, **Then** all scale/chord/degree highlighting
+  (Stories 3, 4, 5) recalculates correctly against the new set of
+  playable frets — no stale highlighting from muted pre-capo frets.
 
-11. **Given** any root, capo, and label-mode combination, **When** any fret
-    position is clicked/tapped, **Then** playback always sounds that
-    string/fret's true physical pitch — completely unaffected by capo
-    position or Absolute/Relative mode (unchanged from FR-032/Story 8
-    Scenario 5).
+- **AC-1.9.6** — Capo 0 makes both modes identical and frees the left handle
 
-12. **Given** root=C, capo=3, Relative mode active with the default C-major
-    triad as focal point, **When** the "Bright notes" text summary renders,
-    **Then** it always shows the TRUE root's chord tones ("C, E, G (Major)")
-    — never the shifted root's tones — regardless of capo or label mode.
+  **Given** capo set to 0 (no capo), **When** the fretboard renders,
+  **Then** Absolute and Relative modes produce identical labels
+  everywhere, and Story 7's left handle behaves exactly as originally
+  specified (freely draggable, defaulting to "N").
 
-13. **Given** a capo is active, **When** the fretboard renders the capo's
-    fret position as the visible left boundary, **Then** a vertical
-    position-indicator renders at that position using a color and/or
-    thickness visually distinct from the true nut's indicator, so a capo
-    position is never visually confused with the instrument's physical nut.
-    *(Added UAT round 2, section C.)*
+- **AC-1.9.7** — Highlight root unshifted at capo 0 in either mode
+
+  **Given** root=C, capo=0, **When** either Absolute or Relative mode is active,
+  **Then** `getHighlightRootSemitone` returns C — highlighting is unshifted
+  regardless of label mode. *(Corrected UAT round 2, section A — this and
+  Scenarios 8-12 replace a prior Scenario 7 that encoded a since-superseded
+  design where highlighting never shifted at all.)*
+
+- **AC-1.9.8** — Highlight root unshifted in Absolute mode with capo
+
+  **Given** root=C, capo=3, Absolute mode active, **When** the fretboard
+  renders, **Then** `getHighlightRootSemitone` returns C (unshifted) — the
+  shift only applies in Relative mode.
+
+- **AC-1.9.9** — Relative mode shifts the highlight root by plus capo fret
+
+  **Given** root=C, capo=3, Relative mode active, **When** the fretboard
+  renders, **Then** `getHighlightRootSemitone` returns Eb (semitone 3) — the
+  `+capoFret` result — never A (semitone 9, the old, superseded `-capoFret`
+  result), and never C.
+
+- **AC-1.9.10** — Diatonic set, triad, toggles, and quality computed against the shifted root
+
+  **Given** root=C, capo=3, Relative mode active (root highlighting shifted
+  to Eb per Scenario 9), **When** the fretboard computes the diatonic set,
+  default triad, chord-tone toggle eligibility, and chord-quality
+  identification, **Then** all of these are computed consistently against
+  Eb as root — never against C and never against A.
+
+- **AC-1.9.11** — Playback always sounds the true physical pitch
+
+  **Given** any root, capo, and label-mode combination, **When** any fret
+  position is clicked/tapped, **Then** playback always sounds that
+  string/fret's true physical pitch — completely unaffected by capo
+  position or Absolute/Relative mode (unchanged from FR-032/Story 8
+  Scenario 5).
+
+- **AC-1.9.12** — Bright notes summary always shows the true root's chord tones
+
+  **Given** root=C, capo=3, Relative mode active with the default C-major
+  triad as focal point, **When** the "Bright notes" text summary renders,
+  **Then** it always shows the TRUE root's chord tones ("C, E, G (Major)")
+  — never the shifted root's tones — regardless of capo or label mode.
+
+- **AC-1.9.13** — Capo indicator visually distinct from the nut
+
+  **Given** a capo is active, **When** the fretboard renders the capo's
+  fret position as the visible left boundary, **Then** a vertical
+  position-indicator renders at that position using a color and/or
+  thickness visually distinct from the true nut's indicator, so a capo
+  position is never visually confused with the instrument's physical nut.
+  *(Added UAT round 2, section C.)*
 
 ---
 

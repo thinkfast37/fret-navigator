@@ -15,7 +15,35 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Every deploy re-runs the gates. main is the live site, so nothing red publishes:
+  # a failing test, an AC without a test outside the accepted baseline, or a stale
+  # traceability matrix all stop the deploy job from ever starting.
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Tests (app + spec-trace self-tests)
+        run: npm test
+
+      - name: AC coverage
+        run: npm run coverage:ac
+
+      - name: Traceability chain
+        run: npm run check:trace
+
   deploy:
+    needs: verify
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

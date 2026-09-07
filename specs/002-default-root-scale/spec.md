@@ -20,9 +20,17 @@ A first-time visitor opens the app and, without selecting anything, immediately 
 
 **Acceptance Scenarios**:
 
-1. **Given** a user opens the app for the first time, **When** the page finishes loading, **Then** the root selector displays "C" and the scale selector displays "Ionian" as selected.
-2. **Given** a user opens the app for the first time, **When** the page finishes loading, **Then** the fretboard displays the notes of C Ionian highlighted, exactly as if the user had manually selected root C and scale Ionian.
-3. **Given** the app has loaded with the default C Ionian selection, **When** the user changes the root or scale, **Then** the fretboard updates normally to reflect the new selection (existing behavior is unaffected).
+- **AC-2.1.1** — Root selector shows C and scale selector shows Ionian on first load
+
+  **Given** a user opens the app for the first time, **When** the page finishes loading, **Then** the root selector displays "C" and the scale selector displays "Ionian" as selected.
+
+- **AC-2.1.2** — Fretboard shows C Ionian highlighted as if manually selected
+
+  **Given** a user opens the app for the first time, **When** the page finishes loading, **Then** the fretboard displays the notes of C Ionian highlighted, exactly as if the user had manually selected root C and scale Ionian.
+
+- **AC-2.1.3** — Changing root or scale after the default load updates the fretboard normally
+
+  **Given** the app has loaded with the default C Ionian selection, **When** the user changes the root or scale, **Then** the fretboard updates normally to reflect the new selection (existing behavior is unaffected).
 
 ---
 
