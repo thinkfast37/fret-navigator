@@ -472,3 +472,26 @@ but never logged as tasks. Added so every plan item carries a test task (spec-tr
   `interrupted`-and-recoverable and permanently-stuck states, asserting the awaited
   resume, the close-and-replace, the instrument reload on the new context, and the note
   sounding either way.
+- [X] T138 [US3] Bug fix (2026-09-07, FR-009 / AC-1.3.2): `spellChordRoot` in
+  `src/js/theory.js` spelled a non-diatonic CHORD ROOT from its Roman-numeral
+  accidental (`CHROMATIC_DEGREE_LABELS[offset].startsWith("b") ? "flat" : "sharp"`)
+  instead of from the key's circle-of-fifths side. Because chord TONES already used
+  the key's side via `spellPitchClass`, one pitch class rendered two ways on one
+  screen: C Ionian's chord-root dropdown read "bVII — Bb" while the fretboard and the
+  chord summary read "A#". AC-1.3.2 requires the convention be applied "to the root's
+  own label and to every other non-diatonic note's spelling", and FR-009 says
+  "applied consistently" — so the key decides, in both branches (the non-heptatonic
+  branch carried the same override). Failing tests added first in
+  `tests/theory.test.js` ("circle-of-fifths spelling is applied consistently
+  (FR-009)"): chord roots and chord tones agree for all 12 keys, a sharp-side key
+  never spells a chord root flat, a flat-side key never sharp, and the chord NAME
+  follows the key. Maintainer's decisions, this change: C takes the sharp side; the
+  side comes from the root note alone, not root+mode; F#/Gb stays F#.
+
+  **Test defects corrected (§2a)**: four assertions encoded the assumption AC-1.3.2
+  contradicts and were changed to match the AC, not the code —
+  `tests/theory.test.js` AC-3.2.9 name-spelling (`getChordName(10,"major",cIonian)`
+  "Bb" → "A#") and the AC-3.1.1 option check whose own comment read "borrowed roots
+  spell per their degree (bVII), not the root's sharp preference"; plus the two
+  matching `tests/controls.test.js` assertions on the `bVII` option text. Roman
+  numerals are unchanged — "bVII" is a degree name, not a note name.

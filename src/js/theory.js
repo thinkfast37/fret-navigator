@@ -327,18 +327,21 @@ function spellChordRoot(semitone, keyContext) {
   const offset = mod12(semitone - PITCH_CLASS_SEMITONES[root]);
   const isHeptatonic = scale.semitoneOffsets.length === 7;
   if (isHeptatonic && !scale.semitoneOffsets.includes(offset)) {
-    const preference = CHROMATIC_DEGREE_LABELS[offset].startsWith("b") ? "flat" : "sharp";
-    return CHROMATIC_NAMES[mod12(semitone)][preference];
+    // The KEY's circle-of-fifths side decides, never the degree label's
+    // accidental (FR-009/AC-1.3.2: the convention is applied "consistently to
+    // the root's own label and to every other non-diatonic note's spelling").
+    // Keying off the Roman numeral instead spelled C's bIII as "Eb" while the
+    // very same pitch class rendered "D#" as a chord tone on the fretboard and
+    // in the chord summary. The numeral stays "bIII" either way - a degree
+    // name and a note name are different things.
+    return CHROMATIC_NAMES[mod12(semitone)][accidentalPreference || "sharp"];
   }
   if (!isHeptatonic) {
     // spellPitchClass's degree-position letter-walk assumes one letter per
     // degree and misspells pentatonic/blues members (C in A minor pentatonic
-    // walks to "B#"); chord roots use the chromatic name keyed off the
-    // degree-role accidental instead.
-    const preference = DEGREE_ROLE_LABELS[offset].startsWith("b")
-      ? "flat"
-      : keyContext.accidentalPreference || "sharp";
-    return CHROMATIC_NAMES[mod12(semitone)][preference];
+    // walks to "B#"); chord roots use the chromatic name keyed off the key's
+    // side instead, for the same consistency reason as above.
+    return CHROMATIC_NAMES[mod12(semitone)][accidentalPreference || "sharp"];
   }
   return spellPitchClass(semitone, keyContext);
 }
