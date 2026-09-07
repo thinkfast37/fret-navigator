@@ -144,4 +144,57 @@ describe("audio.js (Story 8, FR-028/FR-029/FR-030/FR-031/FR-032/FR-041)", () => 
     assert.equal(audioContextInstances.length, 1);
     assert.ok(audioContextInstances[0].resumeCallCount >= 1);
   });
+
+  test("AC-1.8.6/1 — A suspended or interrupted context is resumed, and the resume awaited, before the note plays", async () => {
+    const ctx = audioContextInstances[0];
+    const startPlay = cached.playCalls.length;
+    ctx.state = "interrupted"; // iPadOS's non-standard backgrounded state
+    let release = null;
+    ctx.resume = () =>
+      new Promise((resolve) => {
+        release = () => {
+          ctx.state = "running";
+          resolve();
+        };
+      });
+
+    audio.play(45);
+    await flush();
+    // The resume has not resolved yet, so the note must not have played.
+    assert.ok(release, "resume() was never called for the interrupted context");
+    assert.equal(cached.playCalls.length, startPlay);
+
+    release();
+    await flush();
+    assert.deepEqual(cached.playCalls.slice(startPlay), [45]);
+    // Recoverable context: resumed in place, never replaced.
+    assert.equal(audioContextInstances.length, 1);
+  });
+
+  test("AC-1.8.6/2 — A context that stays stuck after resume is replaced, and the instrument reloads on the replacement", async () => {
+    const dead = audioContextInstances[0];
+    dead.state = "interrupted";
+    dead.resume = () => Promise.resolve(); // resolves but never leaves the stuck state
+    let closed = false;
+    dead.close = () => {
+      closed = true;
+      dead.state = "closed";
+      return Promise.resolve();
+    };
+    const reloaded = installSoundfontMock();
+
+    audio.play(52);
+    await flush();
+
+    assert.equal(closed, true);
+    assert.equal(audioContextInstances.length, 2);
+    const fresh = audioContextInstances[1];
+    // The soundfont instrument was bound to the dead context, so it must
+    // reload against the replacement before the note sounds.
+    assert.equal(reloaded.instrumentCalls.length, 1);
+    assert.equal(reloaded.instrumentCalls[0].ctx, fresh);
+    assert.deepEqual(reloaded.playCalls, [52]);
+    assert.ok(fresh.resumeCallCount >= 1);
+    assert.equal(fresh.state, "running");
+  });
 });

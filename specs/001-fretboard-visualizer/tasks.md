@@ -460,3 +460,15 @@ but never logged as tasks. Added so every plan item carries a test task (spec-tr
   non-sequential scales (A minor pentatonic's C rendered as "B#"). Failing tests added
   first in `tests/theory.test.js` ("spellPitchClass letter-walk on non-sequential degree
   formulas"), then the one-line letter-step fix; 7-note scales regression-guarded.
+- [X] T136 [US8] Stuck-audio-context recovery (2026-09-07, AC-1.8.6, P-011; ported from
+  rhythm-master AC-4.1.10): `src/js/audio.js` — `ensureRunningContext()` treats iPadOS's
+  non-standard `interrupted` state like `suspended`, awaits `resume()` instead of firing
+  and forgetting, and closes and replaces a context that stays stuck after the resume
+  attempt, resetting the cached instrument promise so the soundfont reloads against the
+  replacement; `play()` and `playChord()` await the recovered context before requesting
+  any note. Recovery runs only inside the tap's own handler (constitution Principle III).
+- [X] T137 [US8] Test task for AC-1.8.6: `tests/audio.test.js` — Case-named tests
+  (AC-1.8.6/1, AC-1.8.6/2) drive the module's cached mock context through
+  `interrupted`-and-recoverable and permanently-stuck states, asserting the awaited
+  resume, the close-and-replace, the instrument reload on the new context, and the note
+  sounding either way.
