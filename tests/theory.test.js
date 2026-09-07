@@ -246,6 +246,36 @@ describe("spellPitchClass", () => {
 
 // ---- Scale/degree computation (T015, T017, T019, T021) ----
 
+describe("spellPitchClass letter-walk on non-sequential degree formulas (bug fix 2026-09-07, Principle I)", () => {
+  test("A minor pentatonic spells its b3 as C, never B#", () => {
+    const key = { root: "A", accidentalPreference: "sharp", scaleId: "minor-pentatonic" };
+    assert.equal(spellPitchClass(0, key), "C"); // b3 of A
+    assert.equal(spellPitchClass(7, key), "G"); // b7 of A
+    assert.equal(spellPitchClass(2, key), "D"); // 4 of A
+  });
+
+  test("C major pentatonic spells 5 and 6 as G and A, never F## or G##", () => {
+    const key = { root: "C", accidentalPreference: "sharp", scaleId: "major-pentatonic" };
+    assert.equal(spellPitchClass(7, key), "G");
+    assert.equal(spellPitchClass(9, key), "A");
+  });
+
+  test("C minor blues spells b5 and 5 as Gb and G (distinct letters follow the formula)", () => {
+    const key = { root: "C", accidentalPreference: "sharp", scaleId: "minor-blues" };
+    assert.equal(spellPitchClass(3, key), "Eb");
+    assert.equal(spellPitchClass(6, key), "Gb");
+    assert.equal(spellPitchClass(7, key), "G");
+    assert.equal(spellPitchClass(10, key), "Bb");
+  });
+
+  test("7-note scales are unaffected (regression guard)", () => {
+    const gMajorKey = { root: "G", accidentalPreference: "sharp", scaleId: "ionian" };
+    assert.equal(spellPitchClass(6, gMajorKey), "F#");
+    const cDorian = { root: "C", accidentalPreference: "sharp", scaleId: "dorian" };
+    assert.equal(spellPitchClass(3, cDorian), "Eb");
+  });
+});
+
 describe("getDiatonicSemitones", () => {
   test("exact semitone set per scale x several roots, no more no fewer", () => {
     assert.deepEqual(getDiatonicSemitones(0, "ionian"), new Set([0, 2, 4, 5, 7, 9, 11])); // C major

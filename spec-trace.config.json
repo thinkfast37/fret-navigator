@@ -19,6 +19,11 @@
       "spec": "specs/004-play-chord/spec.md",
       "plan": "specs/004-play-chord/plan.md",
       "tasks": "specs/004-play-chord/tasks.md"
+    },
+    {
+      "spec": "specs/005-display-overhaul/spec.md",
+      "plan": "specs/005-display-overhaul/plan.md",
+      "tasks": "specs/005-display-overhaul/tasks.md"
     }
   ],
   "matrix": "specs/traceability-matrix.md",

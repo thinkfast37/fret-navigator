@@ -35,10 +35,12 @@ describe("design tokens (UAT round 2 section E, FR-052)", () => {
     assert.match(root, /--color-bg:\s*#14171c;/);
   });
 
-  test("the root-button selected-state rule uses --role-1-bright (FR-051), not the shared --color-root-accent", () => {
+  test("the root-button selected-state rule uses the shared --role-1 token (FR-051), not --color-root-accent", () => {
+    // (Updated 2026-09-07 with feature 005 FR-301: the token FR-051 shares is
+    // now the single --role-1, the bright/dark pair having been collapsed.)
     const match = css.match(/\.root-buttons button\[aria-pressed="true"\]\s*\{([^}]*)\}/);
     assert.ok(match);
-    assert.match(match[1], /var\(--role-1-bright\)/);
+    assert.match(match[1], /var\(--role-1\)/);
     assert.doesNotMatch(match[1], /--color-root-accent/);
   });
 
@@ -70,5 +72,89 @@ describe("Buy Me a Coffee link (UAT round 2 section F, FR-053)", () => {
     const footerMatch = html.match(/<footer id="credits">([\s\S]*?)<\/footer>/);
     assert.ok(footerMatch);
     assert.match(footerMatch[1], /buymeacoffee\.com\/stevetakadimi/);
+  });
+});
+
+// ---- Feature 005: display overhaul (T501/T502, P-401/P-402) ----
+
+const ROLE_IDS_005 = ["1", "b2", "2", "b3", "3", "4", "4s5b", "5", "b6", "6", "b7", "7"];
+
+function roleToken(id) {
+  const m = rootBlock().match(new RegExp(`--role-${id}:\\s*(#[0-9a-fA-F]{6});`));
+  assert.ok(m, `expected a --role-${id} token in :root`);
+  return m[1];
+}
+
+function relativeLuminance(hex) {
+  const channel = (i) => {
+    const c = parseInt(hex.slice(i, i + 2), 16) / 255;
+    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * channel(1) + 0.7152 * channel(3) + 0.0722 * channel(5);
+}
+
+function contrastRatio(hexA, hexB) {
+  const [a, b] = [relativeLuminance(hexA), relativeLuminance(hexB)];
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}
+
+describe("unified degree palette (feature 005, FR-301/FR-302/FR-303)", () => {
+  test("AC-5.1.1 — Each degree role has exactly one color, used identically in both views", () => {
+    // The bright/dark variant pair is gone...
+    assert.doesNotMatch(css, /--role-[\w]+-bright/);
+    assert.doesNotMatch(css, /--role-[\w]+-dark/);
+    // ...each role has exactly one token...
+    for (const id of ROLE_IDS_005) roleToken(id);
+    // ...and no chord-view rule re-fills a role with a different color: the
+    // only fill rule per role is the shared one.
+    for (const id of ROLE_IDS_005) {
+      const fillRules = css.match(new RegExp(`\\.note\\.role-${id}(?![\\w-])[^{]*\\{[^}]*fill:[^}]*\\}`, "g")) || [];
+      assert.equal(fillRules.length, 1, `role-${id} must have exactly one fill rule`);
+      assert.doesNotMatch(fillRules[0], /is-chord-tone/);
+    }
+  });
+
+  test("AC-5.1.2 — Note labels meet WCAG AA contrast on every role color", () => {
+    const labelColor = "#ffffff"; // bold white labels on colored fills (R-502)
+    assert.match(css, /--color-note-label:\s*#fff(?:fff)?;/);
+    for (const id of ROLE_IDS_005) {
+      const ratio = contrastRatio(roleToken(id), labelColor);
+      assert.ok(ratio >= 4.5, `--role-${id} ${roleToken(id)} vs white label: ${ratio.toFixed(2)} < 4.5`);
+    }
+  });
+
+  test("AC-5.1.3 — Chord tones are marked by ring and size, never by a color swap", () => {
+    const ring = css.match(/\.note\.is-chord-tone \.note-marker\s*\{([^}]*)\}/);
+    assert.ok(ring, "expected an .is-chord-tone marker rule");
+    assert.match(ring[1], /stroke:/);
+    assert.match(ring[1], /stroke-width:/);
+    assert.match(ring[1], /r:/); // larger radius = the size cue
+    assert.doesNotMatch(ring[1], /fill:/); // never a color swap
+    // Root + chord tone keeps the root's accent ring (edge case).
+    const rootRing = css.match(/\.note\.is-chord-tone\.is-root \.note-marker\s*\{([^}]*)\}/);
+    assert.ok(rootRing);
+    assert.match(rootRing[1], /var\(--color-root-accent\)/);
+  });
+});
+
+describe("TV layout + bounded chord selects (feature 005, FR-304/FR-305)", () => {
+  test("AC-5.2.1 — Wide viewports get compact controls and a fretboard-first layout", () => {
+    // The ≥768px no-scroll layout keeps the fretboard as the growing region...
+    const noScroll = css.match(/@media \(min-width: 768px\)\s*\{([\s\S]*?)\n\}/);
+    assert.ok(noScroll);
+    assert.match(noScroll[1], /#fretboard-container\s*\{[^}]*flex:\s*1 1 auto/);
+    // ...and a ≥1280px tier compacts the control strip.
+    const tv = css.match(/@media \(min-width: 1280px\)\s*\{([\s\S]*?)\n\}/);
+    assert.ok(tv, "expected a min-width: 1280px compact tier");
+    assert.match(tv[1], /#controls\s*\{[^}]*gap:/);
+    assert.match(tv[1], /\.control-label\s*\{[^}]*font-size:/);
+    assert.match(tv[1], /#controls select[^{]*\{[^}]*font-size:/);
+  });
+
+  test("AC-5.3.1 — Chord picker dropdowns have a bounded width", () => {
+    const rules = css.match(/#chord-root-select,\s*#chord-quality-select\s*\{[^}]*\}/g) || [];
+    assert.ok(rules.length >= 1, "expected a shared width rule for the chord selects");
+    for (const rule of rules) assert.match(rule, /max-width:/);
+    assert.ok(rules.some((rule) => /text-overflow:\s*ellipsis/.test(rule)));
   });
 });

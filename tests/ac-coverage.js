@@ -28,6 +28,7 @@ const SPECS = [
   join(ROOT, 'specs/002-default-root-scale/spec.md'),
   join(ROOT, 'specs/003-chord-mode/spec.md'),
   join(ROOT, 'specs/004-play-chord/spec.md'),
+  join(ROOT, 'specs/005-display-overhaul/spec.md'),
 ];
 const TEST_DIRS = [join(ROOT, 'tests')];
 

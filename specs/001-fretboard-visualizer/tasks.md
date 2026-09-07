@@ -449,3 +449,14 @@ but never logged as tasks. Added so every plan item carries a test task (spec-tr
 - [X] T132 [US7] Test task for US-1.7: suites in `tests/controls.test.js` (dual-handle slider, constraints, reset control) and `tests/state.test.js` (fretRange state and defaults) cover the fret-range scenarios
 - [X] T133 [US8] Test task for US-1.8: suites in `tests/audio.test.js` (sample loading/caching, play pitch/octave, rapid triggers, error banner) and `tests/main.test.js` (audio bootstrap and error-banner wiring) cover the audio scenarios
 - [X] T134 [US9] Test task for US-1.9: suites in `tests/theory.test.js` (getHighlightRootSemitone, getRelativeLabelSemitone, isFretPlayable, binding rule), `tests/fretboard.test.js` (muted frets, shifted-root rendering, capo indicator), and `tests/controls.test.js` (capo selector, handle lock, Absolute/Relative toggle) cover the capo scenarios
+
+---
+
+## Post-build-out maintenance log (T135+)
+
+- [X] T135 [US3] Bug fix (2026-09-07, constitution Principle I / FR-007/FR-009):
+  `spellPitchClass` in `src/js/theory.js` walked note letters by scale-array POSITION
+  rather than by the degreeFormula token's own number, misspelling members of
+  non-sequential scales (A minor pentatonic's C rendered as "B#"). Failing tests added
+  first in `tests/theory.test.js` ("spellPitchClass letter-walk on non-sequential degree
+  formulas"), then the one-line letter-step fix; 7-note scales regression-guarded.
