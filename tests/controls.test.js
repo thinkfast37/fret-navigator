@@ -500,3 +500,182 @@ describe("play chord button (feature 004)", () => {
     assert.deepEqual(instrumentPlayCalls.slice(mid), uncapoed, "capo+Relative never shifts what Play sounds");
   });
 });
+
+// ---- Feature 006: key-aware chord picker + tappable fret range (T603, T604, T605) ----
+
+describe("key-aware chord picker (feature 006)", () => {
+  function selectScale(root, scaleId) {
+    document.querySelector(`.root-buttons button[data-root="${root}"]`).click();
+    const scaleSelect = document.getElementById("scale-select");
+    scaleSelect.value = scaleId;
+    fire(scaleSelect, "change");
+  }
+
+  function pickChordRoot(offset) {
+    const rootSelect = document.getElementById("chord-root-select");
+    rootSelect.value = String(offset);
+    fire(rootSelect, "change");
+  }
+
+  function qualityOption(id) {
+    return document.querySelector(`#chord-quality-select option[value="${id}"]`);
+  }
+
+  test("AC-6.2.1 — Quality options are marked diatonic or not for the selected chord root", () => {
+    selectScale("C", "ionian");
+
+    pickChordRoot(5); // chord root IV — F
+    assert.ok(qualityOption("maj7").classList.contains("diatonic"), "Fmaj7 is in C major");
+    assert.ok(qualityOption("dom7").classList.contains("non-diatonic"), "F7 is not");
+    assert.ok(qualityOption("major").classList.contains("diatonic"));
+    assert.ok(qualityOption("minor").classList.contains("non-diatonic"));
+
+    pickChordRoot(7); // chord root V — G
+    assert.ok(qualityOption("dom7").classList.contains("diatonic"), "G7 is in C major");
+    assert.ok(qualityOption("maj7").classList.contains("non-diatonic"), "Gmaj7 is not");
+
+    // The marking is never colour alone: the classes carry italic/weight too.
+    assert.equal(qualityOption("dom7").title, "Diatonic to the key");
+    assert.equal(qualityOption("maj7").title, "Outside the key");
+  });
+
+  test("AC-6.2.2 — Scales that support no diatonic verdict leave every quality unmarked", () => {
+    selectScale("C", "major-pentatonic");
+    const options = [...document.querySelectorAll("#chord-quality-select option")];
+    assert.equal(options.length, 20);
+    for (const option of options) {
+      assert.equal(option.classList.contains("diatonic"), false, option.value);
+      assert.equal(option.classList.contains("non-diatonic"), false, option.value);
+    }
+  });
+
+  test("AC-6.1.1 — A diatonic chord root defaults to the scale's own triad on that degree: the picker follows", () => {
+    selectScale("C", "ionian");
+    pickChordRoot(2); // degree ii
+    assert.equal(document.getElementById("chord-quality-select").value, "minor");
+    assert.match(document.querySelector(".chord-summary").textContent, /^Dm: D, F, A$/);
+  });
+
+  test("AC-6.1.3 — An explicitly chosen quality survives until the root or key changes: the quality dropdown", () => {
+    selectScale("C", "ionian");
+    pickChordRoot(2); // degree ii — snaps to Minor
+    const qualitySelect = document.getElementById("chord-quality-select");
+    assert.equal(qualitySelect.value, "minor");
+
+    // An override made in the dropdown holds through unrelated interactions.
+    qualitySelect.value = "min9";
+    fire(qualitySelect, "change");
+    document.querySelector('.view-mode-buttons button[data-view="chord"]').click();
+    assert.equal(document.getElementById("chord-quality-select").value, "min9");
+
+    // The next chord-root change replaces it with that root's key default.
+    pickChordRoot(7); // degree V in C Ionian
+    assert.equal(document.getElementById("chord-quality-select").value, "major");
+
+    // As does a scale change.
+    document.getElementById("chord-quality-select").value = "maj9";
+    fire(document.getElementById("chord-quality-select"), "change");
+    selectScale("C", "aeolian");
+    assert.equal(document.getElementById("chord-quality-select").value, "minor");
+  });
+
+  test("AC-6.3.1 — A chord entirely inside the key is reported as diatonic: the chord panel", () => {
+    selectScale("C", "ionian");
+    pickChordRoot(5);
+    const qualitySelect = document.getElementById("chord-quality-select");
+    qualitySelect.value = "maj7";
+    fire(qualitySelect, "change");
+
+    const line = document.getElementById("chord-mixture");
+    assert.ok(line.classList.contains("is-diatonic"));
+    assert.equal(line.textContent, "Diatonic to C Ionian (Major)");
+  });
+
+  test("AC-6.3.2 — A chord outside the key names the parallel modes that contain it: the chord panel", () => {
+    selectScale("C", "ionian");
+    pickChordRoot(5);
+    const qualitySelect = document.getElementById("chord-quality-select");
+    qualitySelect.value = "dom7";
+    fire(qualitySelect, "change");
+
+    const line = document.getElementById("chord-mixture");
+    assert.ok(line.classList.contains("is-borrowed"));
+    assert.equal(line.textContent, "Modal mixture — borrowed from C Dorian");
+    // The root alone is diatonic — only the whole chord reveals the mixture.
+    assert.equal(document.querySelector('#chord-root-select option[value="5"]').textContent, "IV — F");
+  });
+
+  test("AC-6.3.3 — A chord no parallel mode contains is reported as chromatic: the chord panel", () => {
+    selectScale("C", "ionian");
+    pickChordRoot(0);
+    const qualitySelect = document.getElementById("chord-quality-select");
+    qualitySelect.value = "dim7";
+    fire(qualitySelect, "change");
+
+    const line = document.getElementById("chord-mixture");
+    assert.ok(line.classList.contains("is-chromatic"));
+    assert.equal(line.textContent, "Chromatic — no parallel church mode contains every tone");
+  });
+
+  test("AC-6.2.2 — Scales that support no diatonic verdict leave every quality unmarked: no mixture line either", () => {
+    selectScale("C", "minor-pentatonic");
+    assert.equal(document.getElementById("chord-mixture"), null);
+  });
+});
+
+describe("tap-to-set fret range (feature 006)", () => {
+  // jsdom performs no layout, so the track reports a zero-width rect. Stub it
+  // with a real 240px geometry: clientX 10 -> fret 1, 120 -> fret 12, 240 -> 24.
+  function stubTrackGeometry() {
+    const track = document.querySelector(".fret-range-track");
+    track.getBoundingClientRect = () => ({ left: 0, width: 240, right: 240, top: 0, bottom: 4, height: 4 });
+    return track;
+  }
+
+  function tapSlider(clientX) {
+    const slider = document.querySelector(".fret-range-slider");
+    slider.dispatchEvent(new dom.window.MouseEvent("pointerdown", { bubbles: true, clientX, clientY: 0 }));
+    // Release so no drag listener outlives the tap.
+    document.dispatchEvent(new dom.window.MouseEvent("pointerup", { bubbles: true }));
+  }
+
+  test("AC-6.4.1 — Tapping the slider moves the nearer handle to the tapped fret", () => {
+    document.getElementById("capo-select").value = "0";
+    fire(document.getElementById("capo-select"), "change");
+    document.getElementById("fret-range-reset").click();
+    stubTrackGeometry();
+    assert.deepEqual(state.getState().fretRange, { lowerBound: 0, upperBound: 24 });
+
+    // Fret 20 is nearer the upper handle (24) than the lower (0).
+    tapSlider(200);
+    assert.deepEqual(state.getState().fretRange, { lowerBound: 0, upperBound: 20 });
+    assert.equal(document.getElementById("fret-range-right").textContent, "20");
+
+    // Fret 4 is now nearer the lower handle (0) than the upper (20).
+    tapSlider(40);
+    assert.deepEqual(state.getState().fretRange, { lowerBound: 4, upperBound: 20 });
+    assert.equal(document.getElementById("fret-range-left").textContent, "4");
+
+    // No drag was required for either move.
+    document.getElementById("fret-range-reset").click();
+  });
+
+  test("AC-6.4.2 — A capo-locked left handle is never the one a tap moves", () => {
+    document.getElementById("fret-range-reset").click();
+    const capoSelect = document.getElementById("capo-select");
+    capoSelect.value = "5";
+    fire(capoSelect, "change");
+    stubTrackGeometry();
+    assert.equal(state.getState().fretRange.lowerBound, 5, "capo locks the lower bound (FR-035)");
+
+    // Tapping at fret 2 — below the capo, and nearest the locked left handle.
+    tapSlider(20);
+    assert.equal(state.getState().fretRange.lowerBound, 5, "the locked lower bound must not move");
+    assert.equal(state.getState().fretRange.upperBound, 5, "the right handle moved instead, clamped by FR-026");
+    assert.equal(document.getElementById("fret-range-left").textContent, "Capo");
+
+    capoSelect.value = "0";
+    fire(capoSelect, "change");
+    document.getElementById("fret-range-reset").click();
+  });
+});

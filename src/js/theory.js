@@ -356,28 +356,40 @@ function formulaTokenToRoman(token) {
   return accidental + ROMAN_NUMERALS[number - 1];
 }
 
-// Borrowed-from sources for a non-diatonic offset (R-304): scan the parallel
-// church modes for membership; name the one sharing the most tones with the
-// current scale, then tag parallel minor/major when Aeolian/Ionian also
-// contains the offset.
-function getBorrowedSources(offset, scale) {
-  const churchModes = SCALES.filter((s) => s.category === "Church Modes" && s.id !== scale.id);
+// Every parallel church mode (same tonic, excluding the current scale) that
+// contains ALL of `offsets`, ranked by how many tones it shares with the
+// current scale — the closest relative first. Shared by the single-offset
+// borrowed-root analysis (R-304) and feature 006's whole-chord modal-mixture
+// analysis (R-601); both ask the same question of different tone sets.
+function parallelModesContaining(offsets, scale) {
+  const wanted = [...new Set(offsets.map((o) => mod12(o)))];
   const currentSet = new Set(scale.semitoneOffsets);
-  const containing = churchModes
-    .filter((m) => m.semitoneOffsets.includes(offset))
+  return SCALES.filter((s) => s.category === "Church Modes" && s.id !== scale.id)
+    .filter((m) => wanted.every((o) => m.semitoneOffsets.includes(o)))
     .map((m) => ({
       mode: m,
       shared: m.semitoneOffsets.filter((o) => currentSet.has(o)).length,
     }))
     .sort((a, b) => b.shared - a.shared);
+}
+
+// Display name for a parallel mode, tagging the two the guitarist names by
+// their relationship rather than their mode name.
+function modeShortName(mode) {
+  if (mode.id === "aeolian") return "Aeolian (parallel minor)";
+  if (mode.id === "ionian") return "Ionian (parallel major)";
+  return mode.label.split(" ")[0];
+}
+
+// Borrowed-from sources for a non-diatonic offset (R-304): name the parallel
+// mode sharing the most tones with the current scale, then tag parallel
+// minor/major when Aeolian/Ionian also contains the offset.
+function getBorrowedSources(offset, scale) {
+  const containing = parallelModesContaining([offset], scale);
   if (containing.length === 0) return null;
 
   const closest = containing[0].mode;
-  const shortName = (m) =>
-    m.id === "aeolian" ? "Aeolian (parallel minor)"
-    : m.id === "ionian" ? "Ionian (parallel major)"
-    : m.label.split(" ")[0];
-  const sources = [shortName(closest)];
+  const sources = [modeShortName(closest)];
   if (closest.id !== "ionian" && scale.id !== "ionian" && containing.some((c) => c.mode.id === "ionian")) {
     sources.push("parallel major");
   } else if (closest.id !== "aeolian" && scale.id !== "aeolian" && containing.some((c) => c.mode.id === "aeolian")) {
@@ -454,6 +466,85 @@ export function getDefaultChordQualityId(scaleId) {
   if (quality === "diminished") return "dim";
   if (quality === "augmented") return "aug";
   return getScale(scaleId).semitoneOffsets.includes(3) ? "minor" : "major";
+}
+
+// ---- Feature 006: key-aware chord quality ----
+
+const TRIAD_QUALITY_IDS = { major: "major", minor: "minor", diminished: "dim", augmented: "aug" };
+
+// The CHORD_QUALITIES id of the tertian triad `scale` stacks on `offset`, or
+// null when `offset` is not a degree of `scale` or the stack is not tertian
+// (which is what non-heptatonic scales produce).
+function triadQualityIdAt(offset, scale) {
+  const triad = computeDefaultTriad(offset, 0, scale.id);
+  if (!triad) return null;
+  return TRIAD_QUALITY_IDS[getTriadQuality(triad)] ?? null;
+}
+
+// Implements feature 006, FR-401 (AC-6.1.1, AC-6.1.2, research R-602): the
+// quality a chord root should carry by default in the current key. A diatonic
+// root takes the scale's OWN triad on that degree (ii in C Ionian is D minor,
+// never D major). A chromatic root takes the triad it carries in the closest
+// parallel church mode it is borrowed from (bIII in C Ionian is Eb major, from
+// Dorian) — the quality is borrowed alongside the root, not left behind.
+// Non-heptatonic scales stack no tertian triads, so they keep feature 003's
+// single tonic-quality default for every root.
+export function getDefaultChordQualityForRoot(chordRootOffset, scaleId) {
+  if (!scaleId) return "major";
+  const scale = getScale(scaleId);
+  const offset = mod12(chordRootOffset);
+  if (scale.semitoneOffsets.length !== 7) return getDefaultChordQualityId(scaleId);
+
+  const diatonic = triadQualityIdAt(offset, scale);
+  if (diatonic) return diatonic;
+
+  for (const { mode } of parallelModesContaining([offset], scale)) {
+    const borrowed = triadQualityIdAt(offset, mode);
+    if (borrowed) return borrowed;
+  }
+  return getDefaultChordQualityId(scaleId);
+}
+
+// Implements feature 006, FR-403 (AC-6.3.1, AC-6.3.2, AC-6.3.3, research
+// R-601): where a chord sits relative to the current key. `inScale` is true
+// only when EVERY chord tone is a scale member — Fmaj7 in C Ionian is
+// diatonic, F7 is not, because its Eb is outside the scale. When it is not,
+// `sources` names the parallel church modes that DO contain every tone
+// (F7's Eb-and-A pairing lives in C Dorian), closest relative first, or is
+// null when no single mode holds the whole chord. `analyzed` is false for
+// scales that are not 7-note, where parallel-mode mixture has no meaning.
+export function analyzeChordMixture(chordRootOffset, qualityId, keyContext) {
+  const { scaleId } = keyContext;
+  const scale = scaleId ? SCALES.find((s) => s.id === scaleId) : null;
+  if (scaleId && !scale) throw new Error(`Unknown scaleId: ${scaleId}`);
+  if (!scale || scale.semitoneOffsets.length !== 7) {
+    return { analyzed: false, inScale: false, sources: null };
+  }
+
+  const toneOffsets = getChordQuality(qualityId).intervals.map((i) => mod12(chordRootOffset + i));
+  const scaleSet = new Set(scale.semitoneOffsets);
+  if (toneOffsets.every((o) => scaleSet.has(o))) {
+    return { analyzed: true, inScale: true, sources: null };
+  }
+
+  const containing = parallelModesContaining(toneOffsets, scale);
+  return {
+    analyzed: true,
+    inScale: false,
+    sources: containing.length === 0 ? null : containing.map((c) => modeShortName(c.mode)),
+  };
+}
+
+// Implements feature 006, FR-402 (AC-6.2.1, AC-6.2.2): the chord-quality
+// vocabulary annotated for the chord root currently selected, so the picker
+// can show which qualities are diatonic to the key before one is chosen.
+// Mirrors getChordRootOptions' shape; `analyzed` false means the scale
+// supports no diatonic verdict and every entry must render unmarked.
+export function getChordQualityOptions(chordRootOffset, keyContext) {
+  return CHORD_QUALITIES.map((quality) => {
+    const { analyzed, inScale } = analyzeChordMixture(chordRootOffset, quality.id, keyContext);
+    return { id: quality.id, label: quality.label, analyzed, inScale };
+  });
 }
 
 // ---- Capo computation ----

@@ -715,3 +715,150 @@ describe("computeChordVoicing (feature 004)", () => {
     assert.throws(() => computeChordVoicing(0, "power5"));
   });
 });
+
+// ---- Feature 006: key-aware chord quality (T601, T604) ----
+
+import {
+  getDefaultChordQualityForRoot,
+  analyzeChordMixture,
+  getChordQualityOptions,
+} from "../src/js/theory.js";
+
+describe("getDefaultChordQualityForRoot (feature 006)", () => {
+  test("AC-6.1.1/1 — Degree ii of C Ionian yields a minor quality.", () => {
+    assert.equal(getDefaultChordQualityForRoot(2, "ionian"), "minor");
+  });
+
+  test("AC-6.1.1/2 — Degree vii of C Ionian yields a diminished quality.", () => {
+    assert.equal(getDefaultChordQualityForRoot(11, "ionian"), "dim");
+  });
+
+  test("AC-6.1.1/3 — Every degree of every 7-note scale yields that scale's own triad quality on that degree.", () => {
+    const TRIAD_IDS = { major: "major", minor: "minor", diminished: "dim", augmented: "aug" };
+    const heptatonic = SCALES.filter((s) => s.semitoneOffsets.length === 7);
+    assert.ok(heptatonic.length >= 9, "expected the church modes plus harmonic/melodic minor");
+
+    for (const scale of heptatonic) {
+      for (const offset of scale.semitoneOffsets) {
+        // The scale's own stacked-thirds triad on this degree is the answer.
+        const expected = TRIAD_IDS[getTriadQuality(computeDefaultTriad(offset, 0, scale.id))];
+        assert.equal(
+          getDefaultChordQualityForRoot(offset, scale.id),
+          expected,
+          `${scale.id} degree at +${offset} semitones`
+        );
+      }
+    }
+  });
+
+  test("AC-6.1.2 — A non-diatonic chord root defaults to its borrowed mode's triad", () => {
+    // bIII in C Ionian is the Eb of the parallel minor modes: major, from
+    // Dorian (the parallel church mode closest to Ionian that contains it).
+    assert.equal(getDefaultChordQualityForRoot(3, "ionian"), "major");
+    // bVI and bVII, the other everyday borrowings, are major too.
+    assert.equal(getDefaultChordQualityForRoot(8, "ionian"), "major");
+    assert.equal(getDefaultChordQualityForRoot(10, "ionian"), "major");
+    // The Neapolitan bII comes from Phrygian, where it is major.
+    assert.equal(getDefaultChordQualityForRoot(1, "ionian"), "major");
+
+    // Every chromatic offset of every 7-note scale resolves to a real quality.
+    const validIds = new Set(CHORD_QUALITIES.map((q) => q.id));
+    for (const scale of SCALES.filter((s) => s.semitoneOffsets.length === 7)) {
+      for (let offset = 0; offset < 12; offset++) {
+        if (scale.semitoneOffsets.includes(offset)) continue;
+        assert.ok(
+          validIds.has(getDefaultChordQualityForRoot(offset, scale.id)),
+          `${scale.id} chromatic +${offset} returned no valid quality`
+        );
+      }
+    }
+  });
+
+  test("AC-6.1.4 — Non-heptatonic scales keep one predictable default", () => {
+    for (const scale of SCALES.filter((s) => s.semitoneOffsets.length !== 7)) {
+      const tonicDefault = getDefaultChordQualityId(scale.id);
+      for (let offset = 0; offset < 12; offset++) {
+        assert.equal(
+          getDefaultChordQualityForRoot(offset, scale.id),
+          tonicDefault,
+          `${scale.id} +${offset} should keep the scale's single tonic default`
+        );
+      }
+    }
+    assert.equal(getDefaultChordQualityForRoot(5, null), "major"); // no scale selected
+  });
+});
+
+describe("analyzeChordMixture (feature 006)", () => {
+  const cIonian = { root: "C", accidentalPreference: "sharp", scaleId: "ionian" };
+
+  test("AC-6.3.1 — A chord entirely inside the key is reported as diatonic", () => {
+    // Fmaj7 (F A C E) — every tone is in C major.
+    assert.deepEqual(analyzeChordMixture(5, "maj7", cIonian), {
+      analyzed: true,
+      inScale: true,
+      sources: null,
+    });
+    // G7 (G B D F) — the maintainer's other diatonic example.
+    assert.deepEqual(analyzeChordMixture(7, "dom7", cIonian), {
+      analyzed: true,
+      inScale: true,
+      sources: null,
+    });
+    // Dm (D F A) — the degree-ii triad.
+    assert.equal(analyzeChordMixture(2, "minor", cIonian).inScale, true);
+  });
+
+  test("AC-6.3.2 — A chord outside the key names the parallel modes that contain it", () => {
+    // F7 (F A C Eb) — the Eb is outside C major, but F, A, C and Eb together
+    // are exactly what C Dorian holds. The root F alone would read diatonic.
+    const f7 = analyzeChordMixture(5, "dom7", cIonian);
+    assert.equal(f7.inScale, false);
+    assert.deepEqual(f7.sources, ["Dorian"]);
+
+    // D major (D F# A) in C: F# belongs to Lydian.
+    assert.deepEqual(analyzeChordMixture(2, "major", cIonian).sources, ["Lydian"]);
+
+    // Sources are ordered by closeness to the current scale, and the current
+    // scale is never named as a source of a chord it does not contain.
+    for (const source of f7.sources) assert.notEqual(source, "Ionian (parallel major)");
+  });
+
+  test("AC-6.3.3 — A chord no parallel mode contains is reported as chromatic", () => {
+    // Cdim7 (C Eb Gb A) — no church mode on C holds that tone set.
+    assert.deepEqual(analyzeChordMixture(0, "dim7", cIonian), {
+      analyzed: true,
+      inScale: false,
+      sources: null,
+    });
+    // Db7 (Db F Ab Cb/B) — likewise.
+    assert.equal(analyzeChordMixture(1, "dom7", cIonian).sources, null);
+  });
+
+  test("analyzed is false for scales parallel-mode mixture cannot describe", () => {
+    for (const scaleId of ["major-pentatonic", "minor-blues"]) {
+      const result = analyzeChordMixture(0, "major", { root: "C", accidentalPreference: "sharp", scaleId });
+      assert.equal(result.analyzed, false);
+      assert.equal(result.sources, null);
+    }
+    assert.equal(analyzeChordMixture(0, "major", { root: "C", accidentalPreference: "sharp", scaleId: null }).analyzed, false);
+    assert.throws(() => analyzeChordMixture(0, "major", { root: "C", scaleId: "not-a-scale" }));
+  });
+});
+
+describe("getChordQualityOptions (feature 006)", () => {
+  const cIonian = { root: "C", accidentalPreference: "sharp", scaleId: "ionian" };
+
+  test("annotates the whole vocabulary for the selected chord root", () => {
+    const options = getChordQualityOptions(5, cIonian); // chord root IV (F)
+    assert.equal(options.length, CHORD_QUALITIES.length);
+    const byId = Object.fromEntries(options.map((o) => [o.id, o]));
+    assert.equal(byId.maj7.inScale, true);
+    assert.equal(byId.dom7.inScale, false);
+    assert.ok(options.every((o) => o.analyzed));
+    assert.deepEqual(
+      options.map((o) => o.label),
+      CHORD_QUALITIES.map((q) => q.label)
+    );
+  });
+});

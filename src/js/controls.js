@@ -384,27 +384,66 @@ export function initFretRangeControls() {
     return clampFret(((clientX - rect.left) / width) * 24);
   }
 
-  function beginDrag(which) {
+  // Move one handle to an absolute fret, honouring the capo lock (FR-035) and
+  // the no-inversion constraint (FR-026).
+  function moveHandleTo(which, value) {
+    const { lowerBound, upperBound } = state.getState().fretRange;
+    if (which === "left") {
+      if (state.getState().capoFret > 0) return; // locked to capo (FR-035)
+      applyBounds(Math.min(value, upperBound), upperBound);
+    } else {
+      applyBounds(lowerBound, Math.max(value, lowerBound));
+    }
+  }
+
+  // `animateFirstJump` keeps the tap animation (AC-6.4.3) on for the initial
+  // leap to the tapped fret; from the first pointermove onwards the handle
+  // must track the pointer exactly, so the transition is suppressed.
+  function beginDrag(which, animateFirstJump = false) {
+    if (!animateFirstJump) slider.classList.add("is-dragging");
     const onMove = (event) => {
-      const { lowerBound, upperBound } = state.getState().fretRange;
-      const value = fractionToFret(event.clientX);
-      if (which === "left") {
-        if (state.getState().capoFret > 0) return; // locked to capo (FR-035)
-        applyBounds(Math.min(value, upperBound), upperBound);
-      } else {
-        applyBounds(lowerBound, Math.max(value, lowerBound));
-      }
+      slider.classList.add("is-dragging");
+      moveHandleTo(which, fractionToFret(event.clientX));
     };
     const onUp = () => {
+      slider.classList.remove("is-dragging");
       document.removeEventListener("pointermove", onMove);
       document.removeEventListener("pointerup", onUp);
+      document.removeEventListener("pointercancel", onUp);
     };
     document.addEventListener("pointermove", onMove);
     document.addEventListener("pointerup", onUp);
+    document.addEventListener("pointercancel", onUp);
   }
 
-  leftHandle.addEventListener("pointerdown", () => beginDrag("left"));
-  rightHandle.addEventListener("pointerdown", () => beginDrag("right"));
+  leftHandle.addEventListener("pointerdown", (event) => {
+    event.stopPropagation(); // the handle's own drag, not a track tap
+    beginDrag("left");
+  });
+  rightHandle.addEventListener("pointerdown", (event) => {
+    event.stopPropagation();
+    beginDrag("right");
+  });
+
+  // Implements feature 006, FR-404 (AC-6.4.1, AC-6.4.2): tapping anywhere on
+  // the slider moves the nearer handle there and then keeps following the
+  // pointer, so the range is reachable by a single tap on a TV remote or
+  // touchscreen where a precise drag from a 2.2rem thumb is not. The whole
+  // padded slider box is the target, not just the 4px track.
+  slider.addEventListener("pointerdown", (event) => {
+    const appState = state.getState();
+    const { lowerBound, upperBound } = appState.fretRange;
+    const value = fractionToFret(event.clientX);
+    // With the left handle capo-locked it cannot be the nearer one (FR-035).
+    const which =
+      appState.capoFret > 0
+        ? "right"
+        : Math.abs(value - lowerBound) <= Math.abs(value - upperBound)
+        ? "left"
+        : "right";
+    moveHandleTo(which, value);
+    beginDrag(which, true);
+  });
 
   function handleKey(which, event) {
     const appState = state.getState();
@@ -510,12 +549,20 @@ export function updateChordInfo() {
   rootGroup.appendChild(rootSelect);
   container.appendChild(rootGroup);
 
-  // Chord quality dropdown: the full 20-quality vocabulary (AC-3.1.2).
+  // Chord quality dropdown: the full 20-quality vocabulary (AC-3.1.2), each
+  // entry marked diatonic or not for the CURRENT chord root (AC-6.2.1) —
+  // Fmaj7 belongs to C major, F7 does not. The verdict is theory.js's, and
+  // scales it cannot analyse leave every entry unmarked (AC-6.2.2).
   const qualityGroup = el("div", { class: "chord-subcontrol" });
   qualityGroup.appendChild(controlLabel("Chord Quality"));
   const qualitySelect = el("select", { id: "chord-quality-select", "aria-label": "Chord quality" });
-  for (const quality of theory.CHORD_QUALITIES) {
-    qualitySelect.appendChild(el("option", { value: quality.id, text: quality.label }));
+  for (const quality of theory.getChordQualityOptions(appState.chordRootOffset, keyContext)) {
+    const optionEl = el("option", { value: quality.id, text: quality.label });
+    if (quality.analyzed) {
+      optionEl.classList.add(quality.inScale ? "diatonic" : "non-diatonic");
+      optionEl.title = quality.inScale ? "Diatonic to the key" : "Outside the key";
+    }
+    qualitySelect.appendChild(optionEl);
   }
   qualitySelect.value = appState.chordQualityId;
   qualitySelect.addEventListener("change", () => {
@@ -564,6 +611,26 @@ export function updateChordInfo() {
   const summary = el("p", { class: "chord-summary" });
   summary.textContent = `${chordName}: ${toneNames.join(", ")}`;
   summaryGroup.appendChild(summary);
+
+  // Modal-mixture readout (AC-6.3.1/6.3.2/6.3.3): where the WHOLE chord sits
+  // relative to the key, quality included — the root dropdown only ever spoke
+  // for the root. Analysis is theory.js's; this only renders the verdict.
+  const mixture = theory.analyzeChordMixture(appState.chordRootOffset, appState.chordQualityId, keyContext);
+  if (mixture.analyzed) {
+    const scaleLabel = theory.SCALES.find((s) => s.id === appState.scaleId).label;
+    const line = el("p", { class: "chord-mixture", id: "chord-mixture" });
+    if (mixture.inScale) {
+      line.classList.add("is-diatonic");
+      line.textContent = `Diatonic to ${appState.root} ${scaleLabel}`;
+    } else if (mixture.sources) {
+      line.classList.add("is-borrowed");
+      line.textContent = `Modal mixture — borrowed from ${appState.root} ${mixture.sources.join(", ")}`;
+    } else {
+      line.classList.add("is-chromatic");
+      line.textContent = "Chromatic — no parallel church mode contains every tone";
+    }
+    summaryGroup.appendChild(line);
+  }
 
   // Feature 004 (FR-201/FR-204, AC-4.1.x): strum the selected chord. Voicing
   // is computed from the TRUE root (like the summary above, never the
