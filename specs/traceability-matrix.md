@@ -14,14 +14,14 @@
 -->
 
 **Feature**: specs/001-fretboard-visualizer/spec.md, specs/002-default-root-scale/spec.md, specs/003-chord-mode/spec.md, specs/004-play-chord/spec.md, specs/005-display-overhaul/spec.md, specs/006-key-aware-chords/spec.md
-**Criteria**: 94 across 22 User Stories
+**Criteria**: 96 across 22 User Stories
 
-**Coverage**: 42 of 94 criteria proven (44.7%)
+**Coverage**: 44 of 96 criteria proven (45.8%)
 
 | | Criteria | Share |
 |---|---|---|
-| 🟢 Proven | 42 | 44.7% |
-| 🔴 Gap — CRITICAL | 52 | 55.3% |
+| 🟢 Proven | 44 | 45.8% |
+| 🔴 Gap — CRITICAL | 52 | 54.2% |
 
 A row is one *criterion*: an Acceptance Criterion that asserts one thing, or one Case of
 an AC that asserts several. 🖵 marks a criterion that describes something a person sees or
@@ -63,7 +63,7 @@ fail the build, and it is outstanding work — never a settled decision.
 | 🔴 US-1.5 | 2 | 0 | · | 2 | · | · | · |
 | 🔴 US-1.6 | 5 | 0 | · | 5 | · | · | · |
 | 🔴 US-1.7 | 6 | 0 | · | 6 | · | · | · |
-| 🔴 US-1.8 | 5 | 0 | · | 5 | · | · | · |
+| 🔴 US-1.8 | 7 | 2 | · | 5 | · | · | · |
 | 🔴 US-1.9 | 13 | 0 | · | 13 | · | · | · |
 | 🔴 US-2.1 | 3 | 0 | · | 3 | · | · | · |
 | 🟢 US-3.1 | 6 | **6** | · | · | · | · | · |
@@ -119,6 +119,8 @@ fail the build, and it is outstanding work — never a settled decision.
 | US-1.8 | `AC-1.8.3` | Playback works offline after samples are cached | P-009 | T080, T081, T082, T083, T084, T085, T086 (7/7 done) | T133 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
 | US-1.8 | `AC-1.8.4` | Rapid triggers play cleanly without cutoffs or lag | P-009 | T080, T081, T082, T083, T084, T085, T086 (7/7 done) | T133 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
 | US-1.8 | `AC-1.8.5` 🖵 | Audio always sounds the true physical pitch under capo | P-009 | T080, T081, T082, T083, T084, T085, T086 (7/7 done) | T133 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.8 | `AC-1.8.6/1` 🖵 | A suspended or interrupted context is resumed, and the resume awaited, before the note plays | P-011 | T136 (1/1 done) | T137 (1/1 done) | `audio.test.js`, `main.test.js` | 🟢 OK |
+| US-1.8 | `AC-1.8.6/2` 🖵 | A context that stays stuck after resume is replaced, and the instrument reloads on the replacement | P-011 | T136 (1/1 done) | T137 (1/1 done) | `audio.test.js`, `main.test.js` | 🟢 OK |
 | US-1.9 | `AC-1.9.1` 🖵 | Capo mutes lower frets and locks the left handle | P-010 | T087, T088, T089, T090, T091, T092, T093, T094, T095, T101, T102, T103, T104, T105, T106, T107, T108, T109, T113, T114, T115, T116 (22/22 done) | T134 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
 | US-1.9 | `AC-1.9.2` 🖵 | Absolute mode shows the true sounding pitch at the capo | P-010 | T087, T088, T089, T090, T091, T092, T093, T094, T095, T101, T102, T103, T104, T105, T106, T107, T108, T109, T113, T114, T115, T116 (22/22 done) | T134 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
 | US-1.9 | `AC-1.9.3` 🖵 | Relative mode shows the open-string name at the capo | P-010 | T087, T088, T089, T090, T091, T092, T093, T094, T095, T101, T102, T103, T104, T105, T106, T107, T108, T109, T113, T114, T115, T116 (22/22 done) | T134 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
@@ -142,7 +144,7 @@ fail the build, and it is outstanding work — never a settled decision.
 | US-3.1 | `AC-3.1.5` | Chord selection persists across reloads | P-203 | T312 (1/1 done) | T303 (1/1 done) | `state.test.js` | 🟢 OK |
 | US-3.1 | `AC-3.1.6` | Saved settings from the previous focal-point system load cleanly | P-203 | T312 (1/1 done) | T303 (1/1 done) | `state.test.js` | 🟢 OK |
 | US-3.2 | `AC-3.2.1` 🖵 | View toggle switches between Scale and Chord views | P-204 | T313 (1/1 done) | T304 (1/1 done) | `controls.test.js` | 🟢 OK |
-| US-3.2 | `AC-3.2.2` 🖵 | Chord view fully renders only the chord's tones | P-205 | T314 (1/1 done) | T305 (1/1 done) | `fretboard.test.js` | 🟢 OK |
+| US-3.2 | `AC-3.2.2` 🖵 | Chord view fully renders only the chord's tones | P-205 | T314 (1/1 done) | T305 (1/1 done) | `fretboard.test.js`, `styles.test.js` | 🟢 OK |
 | US-3.2 | `AC-3.2.3` 🖵 | Chord view ghosts the remaining scale tones | P-205 | T314 (1/1 done) | T305 (1/1 done) | `fretboard.test.js` | 🟢 OK |
 | US-3.2 | `AC-3.2.4` 🖵 | Chord view hides non-scale non-chord notes | P-205 | T314 (1/1 done) | T305 (1/1 done) | `fretboard.test.js` | 🟢 OK |
 | US-3.2 | `AC-3.2.5` 🖵 | Scale view is unchanged by chord selection | P-206 | T315 (1/1 done) | T306 (1/1 done) | `fretboard.test.js` | 🟢 OK |

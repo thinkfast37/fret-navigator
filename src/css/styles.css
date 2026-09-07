@@ -261,8 +261,13 @@ footer#credits a {
 
 /* Non-diatonic notes render as plain text only - no background shape or
    circle whatsoever (UAT round 1 section B2). The root is always exempted
-   so it stays highlighted even before a scale is selected (FR-008). */
-.note:not(.is-diatonic):not(.is-root) .note-marker {
+   so it stays highlighted even before a scale is selected (FR-008), and so
+   is a chord tone: in Chord view an out-of-scale tone (the F# of D major in
+   C Ionian) is part of the chord being shown and must carry its circle like
+   any other chord tone (AC-3.2.2). Without this exemption that rule and the
+   neutral-fill rule below tie on specificity, so the fill lands on a marker
+   this rule has already blanked. */
+.note:not(.is-diatonic):not(.is-root):not(.is-chord-tone) .note-marker {
   display: none;
 }
 

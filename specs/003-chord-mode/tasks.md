@@ -144,6 +144,23 @@ tests first within each group.
 
 ---
 
+## Phase 6: Bug fixes after landing
+
+- [X] T322 [US2] **Bug (AC-3.2.2)**: an out-of-scale chord tone rendered as bare text with
+  no marker circle — D major in C Ionian showed D and A as chord tones but left F# looking
+  like any other chromatic note. `src/js/fretboard.js` set `.is-chord-tone` correctly; the
+  defect was a CSS cascade tie in `src/css/styles.css`, where the UAT round 1 B2 rule
+  `.note:not(.is-diatonic):not(.is-root) .note-marker { display: none }` matched
+  out-of-scale chord tones at the same specificity as the neutral-fill rule below it, so
+  the fill applied to a marker already blanked. Exempted `.is-chord-tone` from the hiding
+  rule; out-of-scale chord tones now carry the full chord-tone ring on the
+  `--color-neutral` dark-grey fill with the white label. No spec change — AC-3.2.2 already
+  required this. Files: `src/css/styles.css`, `tests/styles.test.js` (two source-level
+  tests named for AC-3.2.2; the existing jsdom tests could not see this because they never
+  load the stylesheet).
+
+---
+
 ## Dependencies
 
 - T308/T309 (setup) before the gates can pass; T308 before superseded tests are removed (T306).

@@ -190,3 +190,4 @@ No violations. (The Principle IV testing-coverage gap previously tracked here wa
 | **P-008** | US-1.7 — Adjust visible fret range | AC-1.7.1–AC-1.7.6 | T075–T079 | T132 |
 | **P-009** | US-1.8 — Hear notes on the fretboard | AC-1.8.1–AC-1.8.5 | T080–T086 | T133 |
 | **P-010** | US-1.9 — Apply a capo | AC-1.9.1–AC-1.9.13 | T087–T095, T101–T109, T113–T116 | T134 |
+| **P-011** | US-1.8 — Stuck-audio-context recovery (added 2026-09-07, ported from rhythm-master AC-4.1.10) | AC-1.8.6 | T136 | T137 |

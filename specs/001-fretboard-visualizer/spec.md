@@ -519,6 +519,25 @@ I can connect the visual fretboard to actual sound.
   (Absolute-mode pitch) regardless of which label mode (Absolute or
   Relative) is currently displayed — labels are cosmetic; sound is not.
 
+- **AC-1.8.6** — A stuck audio context recovers on the next tap
+
+  *(Added 2026-09-07: ports rhythm-master's AC-4.1.10 recovery. TV
+  browsers can create the context in a state a fire-and-forget resume
+  never leaves, and iPadOS parks a backgrounded context in the
+  non-standard `interrupted` state — both sounded as taps that play
+  nothing, with no error. Recovery stays gesture-only, per constitution
+  Principle III.)*
+
+  **Given** the browser has suspended or interrupted the audio context
+  (app start on a TV browser, returning from another app on iPadOS),
+  **When** I tap a fret position or press Play, **Then** the context is
+  recovered before any note is requested, so the tap sounds instead of
+  playing silently into a dead context.
+
+  - **Cases**:
+    - **AC-1.8.6/1** — A suspended or interrupted context is resumed, and the resume awaited, before the note plays
+    - **AC-1.8.6/2** — A context that stays stuck after resume is replaced, and the instrument reloads on the replacement
+
 ---
 
 ### User Story 9 - Apply a capo (Priority: P1)

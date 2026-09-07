@@ -137,6 +137,37 @@ describe("unified degree palette (feature 005, FR-301/FR-302/FR-303)", () => {
   });
 });
 
+describe("out-of-scale chord tones (feature 003, FR-104)", () => {
+  // Source-level, because the marker was hidden by a CASCADE defect that no
+  // jsdom test can see: fretboard.js sets .is-chord-tone on out-of-scale
+  // positions correctly, but the "non-diatonic notes are plain text only"
+  // rule matched them too and blanked the circle at equal specificity.
+  test("AC-3.2.2 — Chord view fully renders only the chord's tones: out-of-scale chord tones keep their marker circle", () => {
+    const hidingRules =
+      css.match(/\.note[^{,]*:not\(\.is-diatonic\)[^{,]*\.note-marker\s*\{[^}]*display:\s*none[^}]*\}/g) || [];
+    for (const rule of hidingRules) {
+      assert.match(
+        rule.slice(0, rule.indexOf("{")),
+        /:not\(\.is-chord-tone\)/,
+        `a rule that hides non-diatonic markers must exempt chord tones, or an out-of-scale chord tone renders as bare text: ${rule}`
+      );
+    }
+    // ...and nothing else blanks the marker for a chord tone.
+    assert.doesNotMatch(css, /\.note\.is-chord-tone[^{]*\.note-marker\s*\{[^}]*display:\s*none/);
+  });
+
+  test("AC-3.2.2 — Chord view fully renders only the chord's tones: out-of-scale chord tones are filled neutral, white-labelled", () => {
+    const fill = css.match(/\.note\.is-chord-tone:not\(\.is-diatonic\) \.note-marker\s*\{([^}]*)\}/);
+    assert.ok(fill, "expected a neutral fill rule for out-of-scale chord tones");
+    assert.match(fill[1], /fill:\s*var\(--color-neutral\)/);
+    // The label sits on that fill and must stay readable (the AC-5.1.2 bar).
+    const neutral = rootBlock().match(/--color-neutral:\s*(#[0-9a-fA-F]{3,8});/);
+    assert.ok(neutral, "expected --color-neutral in :root");
+    const ratio = contrastRatio(neutral[1], "#ffffff");
+    assert.ok(ratio >= 4.5, `--color-neutral ${neutral[1]} vs white label: ${ratio.toFixed(2)} < 4.5`);
+  });
+});
+
 describe("TV layout + bounded chord selects (feature 005, FR-304/FR-305)", () => {
   test("AC-5.2.1 — Wide viewports get compact controls and a fretboard-first layout", () => {
     // The ≥768px no-scroll layout keeps the fretboard as the growing region...
