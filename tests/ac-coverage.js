@@ -26,6 +26,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SPECS = [
   join(ROOT, 'specs/001-fretboard-visualizer/spec.md'),
   join(ROOT, 'specs/002-default-root-scale/spec.md'),
+  join(ROOT, 'specs/003-chord-mode/spec.md'),
 ];
 const TEST_DIRS = [join(ROOT, 'tests')];
 

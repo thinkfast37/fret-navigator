@@ -13,8 +13,6 @@ import {
   getIntervalLabel,
   computeDefaultTriad,
   getTriadQuality,
-  isToggleableChordTone,
-  identifyChordQuality,
   getRelativeLabelSemitone,
   isFretPlayable,
   rootLetterToSemitone,
@@ -319,29 +317,6 @@ describe("getTriadQuality", () => {
   });
 });
 
-describe("isToggleableChordTone", () => {
-  test("true only for semitones diatonic to root+scale", () => {
-    // C Major (root=0): A (9) is diatonic -> Esus4 override valid
-    assert.equal(isToggleableChordTone(9, 0, "ionian"), true);
-    // F# (6) not diatonic to C Major
-    assert.equal(isToggleableChordTone(6, 0, "ionian"), false);
-    // F# (6) IS diatonic to C Lydian
-    assert.equal(isToggleableChordTone(6, 0, "lydian"), true);
-  });
-});
-
-describe("identifyChordQuality", () => {
-  test("recognized shapes map to canonical names", () => {
-    assert.equal(identifyChordQuality([4, 7, 11], 4), "Minor"); // E G B relative to E
-    assert.equal(identifyChordQuality([0, 4, 7], 0), "Major");
-    assert.equal(identifyChordQuality([4, 9, 11], 4), "Sus4"); // E A B (Esus4)
-  });
-
-  test("null for sets that don't map to one canonical name", () => {
-    assert.equal(identifyChordQuality([0, 1, 6], 0), null);
-  });
-});
-
 // ---- Capo computation (T031, T033, T035) ----
 
 describe("getRelativeLabelSemitone", () => {
@@ -399,24 +374,20 @@ describe("getHighlightRootSemitone", () => {
   });
 });
 
-describe("Scenario 10: highlighting-consistency - getDiatonicSemitones/computeDefaultTriad/isToggleableChordTone/identifyChordQuality all agree when fed getHighlightRootSemitone's output", () => {
+describe("Scenario 10: highlighting-consistency - getDiatonicSemitones/computeDefaultTriad agree when fed getHighlightRootSemitone's output", () => {
   test("root=C, capo=3, Relative mode -> every function is consistent with root=Eb, not C, not A", () => {
     const highlightRoot = getHighlightRootSemitone(0, 3, "relative"); // Eb (3)
     assert.equal(highlightRoot, 3);
 
-    // getDiatonicSemitones/isToggleableChordTone produce ABSOLUTE semitones
-    // and so meaningfully depend on which root they're fed.
+    // getDiatonicSemitones produces ABSOLUTE semitones and so meaningfully
+    // depends on which root it's fed.
     assert.deepEqual(getDiatonicSemitones(highlightRoot, "ionian"), new Set([3, 5, 7, 8, 10, 0, 2])); // Eb major
-    assert.equal(isToggleableChordTone(4, highlightRoot, "ionian"), true); // G (Eb+4=7) is diatonic to Eb major
 
-    // computeDefaultTriad/identifyChordQuality operate entirely in
-    // root-relative OFFSET space (their `root`/normalizer argument doesn't
-    // change which offsets come out) - the default triad off the root
-    // (focal=0) is [0,4,7] whether the underlying root is C or Eb; it's the
-    // absolute pitches those offsets map to (via getDiatonicSemitones, or via
-    // controls.js's own root-plus-offset conversion) that actually shift.
+    // computeDefaultTriad operates entirely in root-relative OFFSET space
+    // (its `root` argument doesn't change which offsets come out) - the
+    // default triad off the root is [0,4,7] whether the underlying root is C
+    // or Eb; it's the absolute pitches those offsets map to that shift.
     assert.deepEqual(computeDefaultTriad(0, highlightRoot, "ionian"), [0, 4, 7]);
-    assert.equal(identifyChordQuality([0, 4, 7], 0), "Major");
 
     // Sanity: the ABSOLUTE diatonic set is distinct from root=C(0) or the
     // old -capoFret result A(9).
@@ -448,11 +419,11 @@ describe("Scenario 11: audio anchoring - noteAt never takes a root/capo-shift pa
 // and only the caller's responsibility, never smuggled in as a hidden default.
 
 describe("root stability under capo + Relative mode (regression, UAT round 1 section A)", () => {
-  test("getDiatonicSemitones/computeDefaultTriad/isToggleableChordTone/identifyChordQuality never take a capo-shifted root", () => {
+  test("getDiatonicSemitones/computeDefaultTriad never take a capo-shifted root", () => {
     const trueRoot = 0; // C
     const scaleId = "ionian";
 
-    // These four functions have no capoFret/pitchReferenceMode parameter at
+    // These functions have no capoFret/pitchReferenceMode parameter at
     // all - calling them with the literal selected root produces identical
     // output whether or not a capo happens to be active elsewhere in state.
     const diatonic = getDiatonicSemitones(trueRoot, scaleId);
@@ -460,12 +431,209 @@ describe("root stability under capo + Relative mode (regression, UAT round 1 sec
 
     const triad = computeDefaultTriad(0, trueRoot, scaleId);
     assert.deepEqual(triad, [0, 4, 7]); // C E G, not A C# E
+  });
+});
 
-    // F# (6) is not diatonic to C major and must stay non-toggleable
-    // regardless of any capo/Relative-mode context a caller might be in.
-    assert.equal(isToggleableChordTone(6, trueRoot, scaleId), false);
+// ---- Feature 003: chord vocabulary + tone computation (T301, P-201) ----
 
-    const brightSet = [0, 4, 7];
-    assert.equal(identifyChordQuality(brightSet, trueRoot), "Major");
+import {
+  CHORD_QUALITIES,
+  computeChordTones,
+  getChordName,
+  getChordRootOptions,
+  getDefaultChordQualityId,
+} from "../src/js/theory.js";
+
+describe("CHORD_QUALITIES reference data (feature 003)", () => {
+  test("AC-3.1.2 — Chord quality dropdown offers the full vocabulary", () => {
+    const ids = CHORD_QUALITIES.map((q) => q.id);
+    assert.deepEqual(ids, [
+      "major", "minor", "dim", "aug", "sus2", "sus4",
+      "dom7", "maj7", "min7", "m7b5", "dim7", "six", "m6",
+      "dom9", "min9", "maj9", "add9", "dom11", "dom13", "7sus4",
+    ]);
+    assert.equal(CHORD_QUALITIES.length, 20);
+    for (const q of CHORD_QUALITIES) {
+      assert.equal(typeof q.label, "string");
+      assert.equal(typeof q.suffix, "string");
+      assert.ok(Array.isArray(q.intervals) && q.intervals[0] === 0);
+      for (const i of q.intervals) assert.ok(Number.isInteger(i) && i >= 0 && i <= 11);
+    }
+  });
+
+  test("AC-3.1.2 — Chord quality dropdown offers the full vocabulary: canonical interval formulas", () => {
+    const byId = Object.fromEntries(CHORD_QUALITIES.map((q) => [q.id, q.intervals]));
+    assert.deepEqual(byId.major, [0, 4, 7]);
+    assert.deepEqual(byId.minor, [0, 3, 7]);
+    assert.deepEqual(byId.dim, [0, 3, 6]);
+    assert.deepEqual(byId.aug, [0, 4, 8]);
+    assert.deepEqual(byId.sus2, [0, 2, 7]);
+    assert.deepEqual(byId.sus4, [0, 5, 7]);
+    assert.deepEqual(byId.dom7, [0, 4, 7, 10]);
+    assert.deepEqual(byId.maj7, [0, 4, 7, 11]);
+    assert.deepEqual(byId.min7, [0, 3, 7, 10]);
+    assert.deepEqual(byId.m7b5, [0, 3, 6, 10]);
+    assert.deepEqual(byId.dim7, [0, 3, 6, 9]);
+    assert.deepEqual(byId.six, [0, 4, 7, 9]);
+    assert.deepEqual(byId.m6, [0, 3, 7, 9]);
+    assert.deepEqual(byId.dom9, [0, 2, 4, 7, 10]);
+    assert.deepEqual(byId.min9, [0, 2, 3, 7, 10]);
+    assert.deepEqual(byId.maj9, [0, 2, 4, 7, 11]);
+    assert.deepEqual(byId.add9, [0, 2, 4, 7]);
+    assert.deepEqual(byId.dom11, [0, 2, 4, 5, 7, 10]);
+    assert.deepEqual(byId.dom13, [0, 2, 4, 7, 9, 10]);
+    assert.deepEqual(byId["7sus4"], [0, 5, 7, 10]);
+  });
+});
+
+describe("computeChordTones (feature 003)", () => {
+  test("AC-3.1.3 — Selected chord's tones are computed from root + quality", () => {
+    // E7 -> E, G#, B, D (semitones 4, 8, 11, 2)
+    assert.deepEqual(computeChordTones(4, "dom7"), [4, 8, 11, 2]);
+    // C major -> C E G
+    assert.deepEqual(computeChordTones(0, "major"), [0, 4, 7]);
+    // Bb major (modal mixture in C) -> Bb D F
+    assert.deepEqual(computeChordTones(10, "major"), [10, 2, 5]);
+  });
+
+  test("AC-3.1.3 — Selected chord's tones are computed from root + quality: octave wraparound for every quality on every root", () => {
+    for (const q of CHORD_QUALITIES) {
+      for (let root = 0; root < 12; root++) {
+        const tones = computeChordTones(root, q.id);
+        assert.equal(tones.length, q.intervals.length);
+        tones.forEach((t, i) => {
+          assert.equal(t, (root + q.intervals[i]) % 12);
+          assert.ok(t >= 0 && t <= 11);
+        });
+      }
+    }
+  });
+
+  test("AC-3.1.3 — Selected chord's tones are computed from root + quality: independent of scale membership", () => {
+    // F#dim7 in the context of C Ionian: none of the scale matters to the formula.
+    assert.deepEqual(computeChordTones(6, "dim7"), [6, 9, 0, 3]);
+  });
+
+  test("throws on an unknown quality id", () => {
+    assert.throws(() => computeChordTones(0, "power5"));
+  });
+});
+
+describe("getChordName (feature 003)", () => {
+  const cIonian = { root: "C", accidentalPreference: "sharp", scaleId: "ionian" };
+  test("AC-3.2.9 — Chord summary line names the chord and its tones: name spelling", () => {
+    assert.equal(getChordName(4, "dom7", cIonian), "E7");
+    assert.equal(getChordName(0, "major", cIonian), "C");
+    assert.equal(getChordName(2, "minor", cIonian), "Dm");
+    assert.equal(getChordName(10, "major", cIonian), "Bb");
+    assert.equal(getChordName(11, "m7b5", cIonian), "Bm7b5");
+    const fLydian = { root: "F", accidentalPreference: "flat", scaleId: "lydian" };
+    assert.equal(getChordName(11, "dim", fLydian), "Bdim");
+  });
+});
+
+// ---- Feature 003: chord-root degree labelling (T302, P-202) ----
+
+describe("getChordRootOptions (feature 003)", () => {
+  const cIonian = { root: "C", accidentalPreference: "sharp", scaleId: "ionian" };
+
+  test("AC-3.1.1 — Chord root dropdown lists all 12 chromatic roots as degrees of the current scale", () => {
+    const options = getChordRootOptions(cIonian);
+    assert.equal(options.length, 12);
+    options.forEach((o, offset) => {
+      assert.equal(o.offset, offset);
+      assert.equal(o.semitone, (0 + offset) % 12);
+      assert.equal(typeof o.noteName, "string");
+      assert.equal(typeof o.inScale, "boolean");
+    });
+    // Diatonic entries carry degree labels and note names
+    const d = options[2];
+    assert.equal(d.noteName, "D");
+    assert.equal(d.degreeLabel, "ii");
+    assert.equal(d.inScale, true);
+    const bb = options[10];
+    assert.equal(bb.noteName, "Bb"); // borrowed roots spell per their degree (bVII), not the root's sharp preference
+    assert.equal(bb.inScale, false);
+  });
+
+  test("AC-3.3.1 — Diatonic chord roots are labelled with case-correct Roman numerals", () => {
+    const ionian = getChordRootOptions(cIonian);
+    const diatonicLabels = ionian.filter((o) => o.inScale).map((o) => o.degreeLabel);
+    assert.deepEqual(diatonicLabels, ["I", "ii", "iii", "IV", "V", "vi", "vii°"]);
+
+    const aeolian = getChordRootOptions({ root: "A", accidentalPreference: "sharp", scaleId: "aeolian" });
+    assert.deepEqual(
+      aeolian.filter((o) => o.inScale).map((o) => o.degreeLabel),
+      ["i", "ii°", "bIII", "iv", "v", "bVI", "bVII"]
+    );
+
+    const lydian = getChordRootOptions({ root: "F", accidentalPreference: "flat", scaleId: "lydian" });
+    assert.deepEqual(
+      lydian.filter((o) => o.inScale).map((o) => o.degreeLabel),
+      ["I", "II", "iii", "#iv°", "V", "vi", "vii"]
+    );
+  });
+
+  test("AC-3.3.2 — Non-diatonic chord roots are labelled as borrowed with a source when one is common", () => {
+    const options = getChordRootOptions(cIonian);
+    const bVII = options[10];
+    assert.equal(bVII.degreeLabel, "bVII");
+    assert.deepEqual(bVII.borrowedFrom, ["Mixolydian", "parallel minor"]);
+    const bIII = options[3];
+    assert.equal(bIII.degreeLabel, "bIII");
+    assert.ok(bIII.borrowedFrom.includes("parallel minor"));
+    const bVI = options[8];
+    assert.equal(bVI.degreeLabel, "bVI");
+    assert.equal(bVI.borrowedFrom[0], "Aeolian (parallel minor)");
+    // Diatonic entries never carry a borrowed source
+    for (const o of options.filter((x) => x.inScale)) assert.equal(o.borrowedFrom, null);
+  });
+
+  test("AC-3.3.2 — Non-diatonic chord roots are labelled as borrowed with a source when one is common: parallel major from a minor context", () => {
+    const aeolian = getChordRootOptions({ root: "A", accidentalPreference: "sharp", scaleId: "aeolian" });
+    const majorThird = aeolian[4]; // natural 3 in a minor key
+    assert.equal(majorThird.inScale, false);
+    assert.ok(majorThird.borrowedFrom.some((s) => s.includes("parallel major")));
+  });
+
+  test("AC-3.3.3 — Non-seven-note scales fall back to degree-only labels", () => {
+    const pent = getChordRootOptions({ root: "A", accidentalPreference: "sharp", scaleId: "minor-pentatonic" });
+    assert.equal(pent.length, 12);
+    // In-scale entries flagged; labels are interval degrees, not Roman numerals
+    assert.equal(pent[0].inScale, true);
+    assert.equal(pent[3].inScale, true); // b3 of A minor pentatonic (C)
+    assert.equal(pent[3].degreeLabel, "b3");
+    assert.equal(pent[2].inScale, false);
+    for (const o of pent) assert.equal(o.borrowedFrom, null);
+  });
+
+  test("AC-3.3.3 — Non-seven-note scales fall back to degree-only labels: no scale selected", () => {
+    const none = getChordRootOptions({ root: "C", accidentalPreference: "sharp", scaleId: null });
+    assert.equal(none.length, 12);
+    for (const o of none) {
+      assert.equal(o.degreeLabel, null);
+      assert.equal(o.inScale, false);
+      assert.equal(o.borrowedFrom, null);
+      assert.equal(typeof o.noteName, "string");
+    }
+  });
+});
+
+describe("getDefaultChordQualityId (feature 003)", () => {
+  test("AC-3.1.4 — Chord selection defaults to the scale root with a diatonic quality: per-scale degree-1 triad quality", () => {
+    assert.equal(getDefaultChordQualityId("ionian"), "major");
+    assert.equal(getDefaultChordQualityId("lydian"), "major");
+    assert.equal(getDefaultChordQualityId("mixolydian"), "major");
+    assert.equal(getDefaultChordQualityId("aeolian"), "minor");
+    assert.equal(getDefaultChordQualityId("dorian"), "minor");
+    assert.equal(getDefaultChordQualityId("phrygian"), "minor");
+    assert.equal(getDefaultChordQualityId("locrian"), "dim");
+    assert.equal(getDefaultChordQualityId("harmonic-minor"), "minor");
+    assert.equal(getDefaultChordQualityId("melodic-minor"), "minor");
+    // Non-tertian degree-1 stacks fall back on scale color (b3 => minor)
+    assert.equal(getDefaultChordQualityId("minor-pentatonic"), "minor");
+    assert.equal(getDefaultChordQualityId("major-pentatonic"), "major");
+    assert.equal(getDefaultChordQualityId("minor-blues"), "minor");
+    assert.equal(getDefaultChordQualityId(null), "major");
   });
 });

@@ -44,8 +44,9 @@ function baseState(overrides = {}) {
     root: null,
     accidentalPreference: "sharp",
     scaleId: null,
-    focalDegreeSemitone: 0,
-    chordToneOverrides: [],
+    chordRootOffset: 0,
+    chordQualityId: "major",
+    viewMode: "scale",
     labelMode: "notes",
     capoFret: 0,
     capoLabelMode: "absolute",
@@ -103,27 +104,25 @@ describe("getHighlightRootSemitone (UAT round 2 section A)", () => {
   });
 });
 
-describe("computeActiveBrightSet", () => {
-  test("returns an empty set when no root/scale selected", () => {
-    assert.deepEqual(fretboard.computeActiveBrightSet(baseState()), new Set());
+// (computeActiveBrightSet tests removed 2026-09-07: the focal-triad/override criteria were
+// superseded by feature 003's computeChordToneSet below.)
+
+describe("computeChordToneSet (feature 003)", () => {
+  test("returns an empty set when no root is selected", () => {
+    assert.deepEqual(fretboard.computeChordToneSet(baseState()), new Set());
   });
 
-  test("US5 Scenario 2: default triad for root focal in C Major is {C,E,G}", () => {
-    const s = baseState({ root: "C", scaleId: "ionian", focalDegreeSemitone: 0 });
-    assert.deepEqual(fretboard.computeActiveBrightSet(s), new Set([0, 4, 7]));
+  test("AC-3.1.3 — Selected chord's tones are computed from root + quality: absolute pitch classes for E7 in A Ionian", () => {
+    const s = baseState({ root: "A", scaleId: "ionian", chordRootOffset: 7, chordQualityId: "dom7" });
+    assert.deepEqual(fretboard.computeChordToneSet(s), new Set([4, 8, 11, 2])); // E G# B D
   });
 
-  test("US5 Scenario 5: chord-tone override builds an Esus4-type voicing (E,A,B)", () => {
+  test("AC-3.2.8 — Chord view shifts with the capo highlight root in Relative mode: set computation", () => {
     const s = baseState({
-      root: "C",
-      scaleId: "ionian",
-      focalDegreeSemitone: 4, // E
-      chordToneOverrides: [
-        { semitone: 7, on: false }, // remove G (default 5th of E minor triad)
-        { semitone: 9, on: true }, // add A
-      ],
+      root: "C", scaleId: "ionian", chordRootOffset: 0, chordQualityId: "major",
+      capoFret: 3, capoLabelMode: "relative",
     });
-    assert.deepEqual(fretboard.computeActiveBrightSet(s), new Set([4, 9, 11]));
+    assert.deepEqual(fretboard.computeChordToneSet(s), new Set([3, 7, 10])); // Eb G Bb
   });
 });
 
@@ -255,43 +254,115 @@ describe("render (US4: scale/mode highlighting)", () => {
   });
 });
 
-describe("render (US5: focal-point + chord tones)", () => {
-  test("US5 Scenario 2: C Major default focal (root) renders C,E,G bright+bordered and D,F,A,B dark only", () => {
-    fretboard.render(baseState({ root: "C", scaleId: "ionian", focalDegreeSemitone: 0 }));
-    const brightSemitones = new Set([0, 4, 7]);
-    for (let f = 0; f <= 11; f++) {
+// (The US5 focal-point render tests that stood here were removed 2026-09-07:
+// the focal-point criteria were superseded by feature 003's Chord view, tested below.)
+
+describe("render (feature 003: Chord view filtering)", () => {
+  const gMajorInC = { root: "C", scaleId: "ionian", viewMode: "chord", chordRootOffset: 7, chordQualityId: "major" };
+
+  test("AC-3.2.2 — Chord view fully renders only the chord's tones", () => {
+    fretboard.render(baseState(gMajorInC)); // G B D
+    const chordSemitones = new Set([7, 11, 2]);
+    for (let f = 0; f <= 24; f++) {
       const g = noteEl(0, f);
       const semitone = Number(g.dataset.pitchClassSemitone);
-      if (!g.classList.contains("is-diatonic")) continue;
-      assert.equal(g.classList.contains("is-bright"), brightSemitones.has(semitone));
+      assert.equal(g.classList.contains("is-chord-tone"), chordSemitones.has(semitone));
+      if (chordSemitones.has(semitone)) {
+        assert.notEqual(g.querySelector(".note-label").textContent, "", "chord tones keep their label");
+        assert.ok(!g.classList.contains("is-ghost"));
+        assert.ok(!g.classList.contains("chord-hidden"));
+      }
     }
   });
 
-  test("US5 Scenario 3: clicking E (via focal click simulation) makes E,G,B the new bright (minor) triad", () => {
-    state.setRoot("C");
-    state.setScaleId("ionian");
-    fretboard.render(state.getState());
+  test("AC-3.2.2 — Chord view fully renders only the chord's tones: out-of-scale chord tones render fully too", () => {
+    // Bb major (bVII borrowed) in C Ionian: Bb (10) is outside the scale.
+    fretboard.render(baseState({ root: "C", scaleId: "ionian", viewMode: "chord", chordRootOffset: 10, chordQualityId: "major" }));
+    const bb = [...document.querySelectorAll(".note")].find((el) => el.dataset.pitchClassSemitone === "10");
+    assert.ok(bb.classList.contains("is-chord-tone"));
+    assert.ok(!bb.classList.contains("chord-hidden"));
+    assert.notEqual(bb.querySelector(".note-label").textContent, "");
+  });
 
-    // Find a diatonic E (semitone 4) note and click it.
-    let clicked = null;
-    outer: for (let s = 0; s < 6; s++) {
-      for (let f = 0; f <= 24; f++) {
-        const g = noteEl(s, f);
-        if (g.dataset.pitchClassSemitone === "4" && g.classList.contains("is-diatonic")) {
-          clicked = g;
-          break outer;
-        }
+  test("AC-3.2.3 — Chord view ghosts the remaining scale tones", () => {
+    fretboard.render(baseState(gMajorInC));
+    const ghostSemitones = new Set([0, 4, 5, 9]); // C E F A: in scale, not in G major
+    for (let f = 0; f <= 24; f++) {
+      const g = noteEl(0, f);
+      const semitone = Number(g.dataset.pitchClassSemitone);
+      assert.equal(g.classList.contains("is-ghost"), ghostSemitones.has(semitone));
+      if (ghostSemitones.has(semitone)) {
+        assert.equal(g.querySelector(".note-label").textContent, "", "ghosts are unlabelled");
       }
     }
-    assert.ok(clicked, "expected to find a diatonic E note");
-    clicked.dispatchEvent(new dom.window.Event("click", { bubbles: true }));
+  });
 
-    assert.equal(state.getState().focalDegreeSemitone, 4);
-    const brightSemitones = new Set([4, 7, 11]); // E minor triad
-    for (let f = 0; f <= 11; f++) {
+  test("AC-3.2.4 — Chord view hides non-scale non-chord notes", () => {
+    fretboard.render(baseState(gMajorInC));
+    const hiddenSemitones = new Set([1, 3, 6, 8, 10]); // chromatic to C major, not in G major
+    for (let f = 0; f <= 24; f++) {
       const g = noteEl(0, f);
-      if (!g.classList.contains("is-diatonic")) continue;
-      assert.equal(g.classList.contains("is-bright"), brightSemitones.has(Number(g.dataset.pitchClassSemitone)));
+      const semitone = Number(g.dataset.pitchClassSemitone);
+      assert.equal(g.classList.contains("chord-hidden"), hiddenSemitones.has(semitone));
+    }
+  });
+
+  test("AC-3.2.7 — Ghost dots remain non-interactive for selection but stay accessible", async () => {
+    fretboard.render(baseState(gMajorInC));
+    const ghost = [...document.querySelectorAll(".note.is-ghost")].find(
+      (el) => !el.classList.contains("fret-hidden") && el.dataset.isPlayable === "true"
+    );
+    assert.ok(ghost, "expected a visible playable ghost");
+    assert.ok(ghost.getAttribute("aria-label").length > 0, "ghost keeps an accessible name");
+    const expectedMidi = Number(ghost.dataset.midiNote);
+    const before = instrumentPlayCalls.length;
+    ghost.dispatchEvent(new dom.window.Event("click", { bubbles: true }));
+    await flush();
+    assert.equal(instrumentPlayCalls.length, before + 1);
+    assert.equal(instrumentPlayCalls[before], expectedMidi);
+
+    const hidden = [...document.querySelectorAll(".note.chord-hidden")];
+    assert.ok(hidden.length > 0);
+    for (const el of hidden) assert.equal(el.getAttribute("tabindex"), "-1", "hidden notes leave the tab order");
+  });
+
+  test("AC-3.2.5 — Scale view is unchanged by chord selection", () => {
+    fretboard.render(baseState({ root: "C", scaleId: "ionian", viewMode: "scale", chordRootOffset: 7, chordQualityId: "major" }));
+    const withChordA = [...document.querySelectorAll(".note")].map((el) => `${el.className.baseVal || el.getAttribute("class")}|${el.textContent}`);
+    fretboard.render(baseState({ root: "C", scaleId: "ionian", viewMode: "scale", chordRootOffset: 2, chordQualityId: "min9" }));
+    const withChordB = [...document.querySelectorAll(".note")].map((el) => `${el.className.baseVal || el.getAttribute("class")}|${el.textContent}`);
+    assert.deepEqual(withChordA, withChordB);
+    // And no chord-view or legacy bright classes leak into Scale view.
+    assert.equal(document.querySelectorAll(".is-chord-tone, .is-ghost, .chord-hidden, .is-bright").length, 0);
+  });
+
+  test("AC-3.2.6 — Clicking a note plays its pitch in both views", async () => {
+    for (const viewMode of ["scale", "chord"]) {
+      state.load();
+      fretboard.render(baseState({ root: "C", scaleId: "ionian", viewMode }));
+      const g = noteEl(0, 5);
+      const expectedMidi = Number(g.dataset.midiNote);
+      const before = instrumentPlayCalls.length;
+      const stateBefore = JSON.stringify(state.getState());
+      g.dispatchEvent(new dom.window.Event("click", { bubbles: true }));
+      await flush();
+      assert.equal(instrumentPlayCalls.length, before + 1, `${viewMode}: audio played`);
+      assert.equal(instrumentPlayCalls[before], expectedMidi);
+      assert.equal(JSON.stringify(state.getState()), stateBefore, `${viewMode}: click never changes any selection`);
+    }
+  });
+
+  test("AC-3.2.8 — Chord view shifts with the capo highlight root in Relative mode", () => {
+    fretboard.render(baseState({
+      root: "C", scaleId: "ionian", viewMode: "chord", chordRootOffset: 0, chordQualityId: "major",
+      capoFret: 3, capoLabelMode: "relative", fretRange: { lowerBound: 3, upperBound: 24 },
+    }));
+    const chordSemitones = new Set([3, 7, 10]); // Eb G Bb — shifted with the highlight root
+    for (const el of document.querySelectorAll(".note")) {
+      assert.equal(
+        el.classList.contains("is-chord-tone"),
+        chordSemitones.has(Number(el.dataset.pitchClassSemitone))
+      );
     }
   });
 });
@@ -470,7 +541,7 @@ describe("render (US9: capo mechanics)", () => {
       pitchClassSemitone: el.dataset.pitchClassSemitone,
       isDiatonic: el.classList.contains("is-diatonic"),
       isRoot: el.classList.contains("is-root"),
-      isBright: el.classList.contains("is-bright"),
+      isChordTone: el.classList.contains("is-chord-tone"),
       role: [...el.classList].find((c) => c.startsWith("role-")) || null,
     }));
   }
@@ -496,18 +567,18 @@ describe("render (US9: capo mechanics)", () => {
     assert.deepEqual(capoAbsoluteSnapshot, unshiftedSnapshot);
   });
 
-  test("Scenarios 9/10: capo=3, Relative mode - root marker/diatonic set/bright set all shift to Eb (3), never stay on C (0) or shift to A (9)", () => {
-    fretboard.render(baseState({ root: "C", scaleId: "ionian", capoFret: 3, capoLabelMode: "relative", focalDegreeSemitone: 0 }));
+  test("Scenarios 9/10: capo=3, Relative mode - root marker/diatonic set/chord-tone set all shift to Eb (3), never stay on C (0) or shift to A (9)", () => {
+    fretboard.render(baseState({ root: "C", scaleId: "ionian", capoFret: 3, capoLabelMode: "relative", viewMode: "chord", chordRootOffset: 0, chordQualityId: "major" }));
 
     const eb = [...document.querySelectorAll(".note")].find((el) => el.dataset.pitchClassSemitone === "3");
     const c = [...document.querySelectorAll(".note")].find((el) => el.dataset.pitchClassSemitone === "0");
     const a = [...document.querySelectorAll(".note")].find((el) => el.dataset.pitchClassSemitone === "9");
 
-    // Eb is now the highlighted root: root marker, role-1, and (default
-    // focal=root) part of the bright triad.
+    // Eb is now the highlighted root: root marker, role-1, and (chord view,
+    // degree-I major chord) part of the chord-tone set.
     assert.ok(eb.classList.contains("is-root"));
     assert.ok(eb.classList.contains("role-1"));
-    assert.ok(eb.classList.contains("is-bright"));
+    assert.ok(eb.classList.contains("is-chord-tone"));
 
     // C (the true root) is no longer marked as root once shifted.
     assert.ok(!c.classList.contains("is-root"));

@@ -1,10 +1,10 @@
 // App state shape, defaults, and localStorage load/save/migrate.
 // Owns the `fret-navigator-settings` localStorage key exclusively (FR-039, FR-040).
 
-import { getDiatonicSemitones, rootLetterToSemitone, ROOTS } from "./theory.js";
+import { ROOTS, CHORD_QUALITIES, getDefaultChordQualityId } from "./theory.js";
 
 const STORAGE_KEY = "fret-navigator-settings";
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 // UAT round 1 section C3: all 12 canonical roots, not naturals-only.
 const VALID_ROOTS = ROOTS.map((r) => r.label);
@@ -12,6 +12,8 @@ const ROOT_ACCIDENTAL_PREFERENCE = Object.fromEntries(ROOTS.map((r) => [r.label,
 const LABEL_MODES = ["notes", "degrees", "intervals"];
 const ACCIDENTAL_PREFERENCES = ["sharp", "flat"];
 const CAPO_LABEL_MODES = ["absolute", "relative"];
+const VIEW_MODES = ["scale", "chord"];
+const VALID_CHORD_QUALITY_IDS = CHORD_QUALITIES.map((q) => q.id);
 
 function defaultState() {
   return {
@@ -21,8 +23,11 @@ function defaultState() {
     root: "C",
     accidentalPreference: "sharp",
     scaleId: "ionian",
-    focalDegreeSemitone: 0,
-    chordToneOverrides: [],
+    // Feature 003 (AC-3.1.4): chord selection defaults to the scale root with
+    // the scale's own tonic-triad quality; the fretboard starts in Scale view.
+    chordRootOffset: 0,
+    chordQualityId: getDefaultChordQualityId("ionian"),
+    viewMode: "scale",
     labelMode: "notes",
     capoFret: 0,
     capoLabelMode: "absolute",
@@ -45,12 +50,12 @@ export function setTuning(presetId, customOpenPitchClasses = null, customOpenOct
   save();
 }
 
-// Edge Case: switching root or scale/mode resets focal point to the new root
-// (degree 1) and clears any custom chord-tone override, since degree-role
-// assignment is fully recalculated from scratch (Story 5).
-function resetFocalPointAndOverrides() {
-  state.focalDegreeSemitone = 0;
-  state.chordToneOverrides = [];
+// Feature 003 (AC-3.1.4, mirrors the old focal-point reset rule): switching
+// root or scale/mode resets the chord selection to degree I with the new
+// scale's own tonic-triad quality.
+function resetChordSelection() {
+  state.chordRootOffset = 0;
+  state.chordQualityId = getDefaultChordQualityId(state.scaleId);
 }
 
 // Implements Story 3, FR-008/FR-009; Edge Case (focal/override reset on root change)
@@ -60,31 +65,33 @@ function resetFocalPointAndOverrides() {
 export function setRoot(root) {
   state.root = root;
   state.accidentalPreference = ROOT_ACCIDENTAL_PREFERENCE[root];
-  resetFocalPointAndOverrides();
+  resetChordSelection();
   save();
 }
 
-// Implements Story 4, FR-012; Edge Case (focal/override reset on scale change)
+// Implements Story 4, FR-012; feature 003 AC-3.1.4 (chord reset on scale change)
 export function setScaleId(scaleId) {
   state.scaleId = scaleId;
-  resetFocalPointAndOverrides();
+  resetChordSelection();
   save();
 }
 
-// Implements Story 5, FR-017: focal-point selection
-export function setFocalDegreeSemitone(semitone) {
-  state.focalDegreeSemitone = semitone;
+// Implements feature 003, FR-101 (AC-3.1.1): chord root as a degree offset
+// (semitones above the scale root, 0-11)
+export function setChordRootOffset(offset) {
+  state.chordRootOffset = offset;
   save();
 }
 
-// Implements Story 5, FR-020: custom chord-tone bright-set override
-export function setChordToneOverride(semitone, on) {
-  const existing = state.chordToneOverrides.find((o) => o.semitone === semitone);
-  if (existing) {
-    existing.on = on;
-  } else {
-    state.chordToneOverrides.push({ semitone, on });
-  }
+// Implements feature 003, FR-102 (AC-3.1.2): chord quality selection
+export function setChordQualityId(qualityId) {
+  state.chordQualityId = qualityId;
+  save();
+}
+
+// Implements feature 003, FR-104 (AC-3.2.1): Scale/Chord view mode
+export function setViewMode(viewMode) {
+  state.viewMode = viewMode;
   save();
 }
 
@@ -127,20 +134,6 @@ export function setFretRange(lowerBound, upperBound) {
   save();
 }
 
-// ---- Chord-tone override pruning (Edge Case: non-diatonic overrides dropped) ----
-
-function pruneChordToneOverrides() {
-  if (!state.root || !state.scaleId) {
-    state.chordToneOverrides = [];
-    return;
-  }
-  const rootSemitone = rootLetterToSemitone(state.root);
-  const diatonic = getDiatonicSemitones(rootSemitone, state.scaleId);
-  state.chordToneOverrides = state.chordToneOverrides.filter((o) =>
-    diatonic.has(((rootSemitone + o.semitone) % 12 + 12) % 12)
-  );
-}
-
 // ---- Validation ----
 
 function isValidTuning(tuning) {
@@ -162,19 +155,6 @@ function isValidFretRange(range) {
   return true;
 }
 
-function isValidChordToneOverrides(overrides) {
-  if (!Array.isArray(overrides)) return false;
-  return overrides.every(
-    (o) =>
-      typeof o === "object" &&
-      o !== null &&
-      Number.isInteger(o.semitone) &&
-      o.semitone >= 0 &&
-      o.semitone <= 11 &&
-      typeof o.on === "boolean"
-  );
-}
-
 function isValidStoredState(data) {
   if (typeof data !== "object" || data === null) return false;
   if (data.schemaVersion !== SCHEMA_VERSION) return false;
@@ -182,8 +162,9 @@ function isValidStoredState(data) {
   if (data.root !== null && !VALID_ROOTS.includes(data.root)) return false;
   if (!ACCIDENTAL_PREFERENCES.includes(data.accidentalPreference)) return false;
   if (data.scaleId !== null && typeof data.scaleId !== "string") return false;
-  if (!Number.isInteger(data.focalDegreeSemitone) || data.focalDegreeSemitone < 0 || data.focalDegreeSemitone > 11) return false;
-  if (!isValidChordToneOverrides(data.chordToneOverrides)) return false;
+  if (!Number.isInteger(data.chordRootOffset) || data.chordRootOffset < 0 || data.chordRootOffset > 11) return false;
+  if (!VALID_CHORD_QUALITY_IDS.includes(data.chordQualityId)) return false;
+  if (!VIEW_MODES.includes(data.viewMode)) return false;
   if (!LABEL_MODES.includes(data.labelMode)) return false;
   if (!Number.isInteger(data.capoFret) || data.capoFret < 0 || data.capoFret > 12) return false;
   if (!CAPO_LABEL_MODES.includes(data.capoLabelMode)) return false;
@@ -192,9 +173,31 @@ function isValidStoredState(data) {
   return true;
 }
 
-// ---- Migration (append-only, idempotent; no prior versions exist yet) ----
+// ---- Migration (append-only, idempotent) ----
+
+// v1 -> v2 (feature 003, AC-3.1.6 / research R-307): the focal-point fields
+// describe UI that no longer exists and cannot be mapped onto a named chord
+// reliably, so they are dropped; the chord selection starts at the degree-I
+// default for the stored scale. Every surviving v1 field passes through.
+function migrateV1ToV2(data) {
+  const { focalDegreeSemitone, chordToneOverrides, ...rest } = data;
+  let chordQualityId;
+  try {
+    chordQualityId = getDefaultChordQualityId(typeof rest.scaleId === "string" ? rest.scaleId : null);
+  } catch {
+    chordQualityId = "major"; // unknown scaleId: post-migration validation rejects the payload anyway
+  }
+  return {
+    ...rest,
+    schemaVersion: 2,
+    chordRootOffset: 0,
+    chordQualityId,
+    viewMode: "scale",
+  };
+}
 
 function migrate(data) {
+  if (data.schemaVersion === 1) data = migrateV1ToV2(data);
   return data;
 }
 
@@ -233,6 +236,5 @@ export function load() {
 
   const { schemaVersion, ...rest } = parsed;
   state = rest;
-  pruneChordToneOverrides();
   return state;
 }

@@ -245,30 +245,198 @@ export function getTriadQuality(triadSemitones) {
   return null;
 }
 
-// Implements Story 5, FR-020: gates chord-tone toggles to diatonic-only positions
-export function isToggleableChordTone(semitoneFromRoot, root, scaleId) {
-  const absolute = mod12(root + semitoneFromRoot);
-  return getDiatonicSemitones(root, scaleId).has(absolute);
-}
+// (isToggleableChordTone and identifyChordQuality, the Story 5 toggle/quality
+// helpers that stood here, were removed 2026-09-07 with the feature 003
+// supersession; computeDefaultTriad/getTriadQuality above survive because
+// Roman-numeral casing and the default chord quality still stack diatonic
+// triads.)
 
-const CHORD_SHAPES = [
-  { intervals: [0, 4, 7], name: "Major" },
-  { intervals: [0, 3, 7], name: "Minor" },
-  { intervals: [0, 3, 6], name: "Diminished" },
-  { intervals: [0, 4, 8], name: "Augmented" },
-  { intervals: [0, 5, 7], name: "Sus4" },
-  { intervals: [0, 2, 7], name: "Sus2" },
+// ---- Feature 003: chord vocabulary, tones, and degree labelling ----
+
+// Implements feature 003, FR-102 (research R-302): the full chord-quality
+// vocabulary as data. Intervals are semitones from the chord root; extended
+// qualities include their implied lower tones, and the 13 omits the 11 per
+// common practice (spec assumption).
+export const CHORD_QUALITIES = [
+  { id: "major", label: "Major", suffix: "", intervals: [0, 4, 7] },
+  { id: "minor", label: "Minor", suffix: "m", intervals: [0, 3, 7] },
+  { id: "dim", label: "Diminished", suffix: "dim", intervals: [0, 3, 6] },
+  { id: "aug", label: "Augmented", suffix: "aug", intervals: [0, 4, 8] },
+  { id: "sus2", label: "Sus2", suffix: "sus2", intervals: [0, 2, 7] },
+  { id: "sus4", label: "Sus4", suffix: "sus4", intervals: [0, 5, 7] },
+  { id: "dom7", label: "7", suffix: "7", intervals: [0, 4, 7, 10] },
+  { id: "maj7", label: "Maj7", suffix: "maj7", intervals: [0, 4, 7, 11] },
+  { id: "min7", label: "m7", suffix: "m7", intervals: [0, 3, 7, 10] },
+  { id: "m7b5", label: "m7b5", suffix: "m7b5", intervals: [0, 3, 6, 10] },
+  { id: "dim7", label: "Dim7", suffix: "dim7", intervals: [0, 3, 6, 9] },
+  { id: "six", label: "6", suffix: "6", intervals: [0, 4, 7, 9] },
+  { id: "m6", label: "m6", suffix: "m6", intervals: [0, 3, 7, 9] },
+  { id: "dom9", label: "9", suffix: "9", intervals: [0, 2, 4, 7, 10] },
+  { id: "min9", label: "m9", suffix: "m9", intervals: [0, 2, 3, 7, 10] },
+  { id: "maj9", label: "Maj9", suffix: "maj9", intervals: [0, 2, 4, 7, 11] },
+  { id: "add9", label: "Add9", suffix: "add9", intervals: [0, 2, 4, 7] },
+  { id: "dom11", label: "11", suffix: "11", intervals: [0, 2, 4, 5, 7, 10] },
+  { id: "dom13", label: "13", suffix: "13", intervals: [0, 2, 4, 7, 9, 10] },
+  { id: "7sus4", label: "7sus4", suffix: "7sus4", intervals: [0, 5, 7, 10] },
 ];
 
-// Implements Story 5, FR-021: recognized chord-quality label for a bright note set
-export function identifyChordQuality(brightSetSemitones, root) {
-  const intervals = [...new Set(brightSetSemitones.map((s) => mod12(s - root)))].sort((a, b) => a - b);
-  const match = CHORD_SHAPES.find(
-    (shape) =>
-      shape.intervals.length === intervals.length &&
-      shape.intervals.every((v, i) => v === intervals[i])
-  );
-  return match ? match.name : null;
+function getChordQuality(qualityId) {
+  const quality = CHORD_QUALITIES.find((q) => q.id === qualityId);
+  if (!quality) throw new Error(`Unknown chord qualityId: ${qualityId}`);
+  return quality;
+}
+
+// Implements feature 003, FR-103 (AC-3.1.3): chord-tone pitch classes from
+// root + quality formula, in interval order (chord root first).
+export function computeChordTones(chordRootSemitone, qualityId) {
+  return getChordQuality(qualityId).intervals.map((i) => mod12(chordRootSemitone + i));
+}
+
+// Implements feature 003, AC-3.2.9: display name for the selected chord,
+// root spelled through the key context (e.g. "E7", "Bbm7b5"). Non-diatonic
+// roots in a 7-note scale follow their chromatic degree's accidental (bVII in
+// C is Bb, never A#), regardless of the root's sharp/flat preference.
+export function getChordName(chordRootSemitone, qualityId, keyContext) {
+  return spellChordRoot(chordRootSemitone, keyContext) + getChordQuality(qualityId).suffix;
+}
+
+function spellChordRoot(semitone, keyContext) {
+  const { root, accidentalPreference, scaleId } = keyContext;
+  if (!root) return CHROMATIC_NAMES[mod12(semitone)][accidentalPreference || "sharp"];
+  if (!scaleId) {
+    return CHROMATIC_NAMES[mod12(semitone)][accidentalPreference || "sharp"];
+  }
+  const scale = getScale(scaleId);
+  const offset = mod12(semitone - PITCH_CLASS_SEMITONES[root]);
+  const isHeptatonic = scale.semitoneOffsets.length === 7;
+  if (isHeptatonic && !scale.semitoneOffsets.includes(offset)) {
+    const preference = CHROMATIC_DEGREE_LABELS[offset].startsWith("b") ? "flat" : "sharp";
+    return CHROMATIC_NAMES[mod12(semitone)][preference];
+  }
+  if (!isHeptatonic) {
+    // spellPitchClass's degree-position letter-walk assumes one letter per
+    // degree and misspells pentatonic/blues members (C in A minor pentatonic
+    // walks to "B#"); chord roots use the chromatic name keyed off the
+    // degree-role accidental instead.
+    const preference = DEGREE_ROLE_LABELS[offset].startsWith("b")
+      ? "flat"
+      : keyContext.accidentalPreference || "sharp";
+    return CHROMATIC_NAMES[mod12(semitone)][preference];
+  }
+  return spellPitchClass(semitone, keyContext);
+}
+
+const ROMAN_NUMERALS = ["I", "II", "III", "IV", "V", "VI", "VII"];
+
+// Chromatic degree spelling for non-diatonic chord roots in a 7-note scale
+// (major-scale-relative convention, R-304).
+const CHROMATIC_DEGREE_LABELS = ["I", "bII", "II", "bIII", "III", "IV", "bV", "V", "bVI", "VI", "bVII", "VII"];
+
+// degreeFormula token ("b3", "#4", "5") -> Roman numeral base ("bIII", "#IV", "V")
+function formulaTokenToRoman(token) {
+  const accidental = token.replace(/[0-9]/g, "");
+  const number = Number(token.replace(/[^0-9]/g, ""));
+  return accidental + ROMAN_NUMERALS[number - 1];
+}
+
+// Borrowed-from sources for a non-diatonic offset (R-304): scan the parallel
+// church modes for membership; name the one sharing the most tones with the
+// current scale, then tag parallel minor/major when Aeolian/Ionian also
+// contains the offset.
+function getBorrowedSources(offset, scale) {
+  const churchModes = SCALES.filter((s) => s.category === "Church Modes" && s.id !== scale.id);
+  const currentSet = new Set(scale.semitoneOffsets);
+  const containing = churchModes
+    .filter((m) => m.semitoneOffsets.includes(offset))
+    .map((m) => ({
+      mode: m,
+      shared: m.semitoneOffsets.filter((o) => currentSet.has(o)).length,
+    }))
+    .sort((a, b) => b.shared - a.shared);
+  if (containing.length === 0) return null;
+
+  const closest = containing[0].mode;
+  const shortName = (m) =>
+    m.id === "aeolian" ? "Aeolian (parallel minor)"
+    : m.id === "ionian" ? "Ionian (parallel major)"
+    : m.label.split(" ")[0];
+  const sources = [shortName(closest)];
+  if (closest.id !== "ionian" && scale.id !== "ionian" && containing.some((c) => c.mode.id === "ionian")) {
+    sources.push("parallel major");
+  } else if (closest.id !== "aeolian" && scale.id !== "aeolian" && containing.some((c) => c.mode.id === "aeolian")) {
+    sources.push("parallel minor");
+  }
+  return sources;
+}
+
+// Implements feature 003, FR-101/FR-109 (AC-3.1.1, AC-3.3.1, AC-3.3.2,
+// AC-3.3.3): the 12 chord-root options for the current key context. Each
+// entry: { offset, semitone, noteName, degreeLabel, inScale, borrowedFrom }.
+// 7-note scales get Roman-numeral analysis (cased by the diatonic triad, "°"
+// for diminished, "+" for augmented) and borrowed-from sources on chromatic
+// roots; other scales fall back to interval-degree labels; no scale yields
+// note names only.
+export function getChordRootOptions(keyContext) {
+  const { root, scaleId } = keyContext;
+  const rootSemitone = PITCH_CLASS_SEMITONES[root];
+  const scale = scaleId ? SCALES.find((s) => s.id === scaleId) : null;
+  if (scaleId && !scale) throw new Error(`Unknown scaleId: ${scaleId}`);
+  const isHeptatonic = scale !== null && scale.semitoneOffsets.length === 7;
+
+  const options = [];
+  for (let offset = 0; offset < 12; offset++) {
+    const semitone = mod12(rootSemitone + offset);
+    const noteName = spellChordRoot(semitone, keyContext);
+    if (!scale) {
+      options.push({ offset, semitone, noteName, degreeLabel: null, inScale: false, borrowedFrom: null });
+      continue;
+    }
+
+    const degreeIndex = scale.semitoneOffsets.indexOf(offset);
+    const inScale = degreeIndex !== -1;
+    if (!isHeptatonic) {
+      options.push({
+        offset,
+        semitone,
+        noteName,
+        degreeLabel: DEGREE_ROLE_LABELS[offset].split("/")[0],
+        inScale,
+        borrowedFrom: null,
+      });
+      continue;
+    }
+
+    let degreeLabel;
+    let borrowedFrom = null;
+    if (inScale) {
+      const roman = formulaTokenToRoman(scale.degreeFormula[degreeIndex]);
+      const quality = getTriadQuality(computeDefaultTriad(offset, rootSemitone, scaleId) ?? []);
+      degreeLabel =
+        quality === "minor" ? roman.toLowerCase()
+        : quality === "diminished" ? roman.toLowerCase() + "°"
+        : quality === "augmented" ? roman + "+"
+        : roman;
+    } else {
+      degreeLabel = CHROMATIC_DEGREE_LABELS[offset];
+      borrowedFrom = getBorrowedSources(offset, scale);
+    }
+    options.push({ offset, semitone, noteName, degreeLabel, inScale, borrowedFrom });
+  }
+  return options;
+}
+
+// Implements feature 003, AC-3.1.4 (research R-305): quality for the default
+// degree-1 chord after a root/scale change — the scale's own tonic triad when
+// tertian, otherwise minor if the scale carries a b3, else major.
+export function getDefaultChordQualityId(scaleId) {
+  if (!scaleId) return "major";
+  const triad = computeDefaultTriad(0, 0, scaleId);
+  const quality = triad ? getTriadQuality(triad) : null;
+  if (quality === "major") return "major";
+  if (quality === "minor") return "minor";
+  if (quality === "diminished") return "dim";
+  if (quality === "augmented") return "aug";
+  return getScale(scaleId).semitoneOffsets.includes(3) ? "minor" : "major";
 }
 
 // ---- Capo computation ----

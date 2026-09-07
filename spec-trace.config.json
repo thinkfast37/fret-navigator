@@ -9,6 +9,11 @@
       "spec": "specs/002-default-root-scale/spec.md",
       "plan": "specs/002-default-root-scale/plan.md",
       "tasks": "specs/002-default-root-scale/tasks.md"
+    },
+    {
+      "spec": "specs/003-chord-mode/spec.md",
+      "plan": "specs/003-chord-mode/plan.md",
+      "tasks": "specs/003-chord-mode/tasks.md"
     }
   ],
   "matrix": "specs/traceability-matrix.md",

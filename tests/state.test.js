@@ -59,18 +59,9 @@ describe("setRoot", () => {
     }
   });
 
-  test("Edge Case: changing root resets focal point to root and clears chord-tone overrides", () => {
-    state.setRoot("C");
-    state.setScaleId("ionian");
-    state.setFocalDegreeSemitone(4);
-    state.setChordToneOverride(9, true);
-    assert.equal(state.getState().focalDegreeSemitone, 4);
-    assert.equal(state.getState().chordToneOverrides.length, 1);
-
-    state.setRoot("D");
-    assert.equal(state.getState().focalDegreeSemitone, 0);
-    assert.deepEqual(state.getState().chordToneOverrides, []);
-  });
+  // (The focal-point/override reset test that stood here was removed 2026-09-07:
+  // the focal-point criteria were superseded by feature 003 — the chord-selection reset is covered by
+  // the AC-3.1.4 tests below.)
 
   test("US3 Scenario 2 (UAT round 1 section C3): accidentalPreference is derived automatically from the root's circle-of-fifths side, not user-toggled", () => {
     for (const root of ["C", "G", "D", "A", "E", "B", "F#"]) {
@@ -85,36 +76,57 @@ describe("setRoot", () => {
 });
 
 describe("setScaleId", () => {
-  test("US4 Scenario 2: switching scale updates scaleId with no stale focal/override state", () => {
+  test("US4 Scenario 2: switching scale updates scaleId", () => {
     state.setRoot("C");
     state.setScaleId("ionian");
-    state.setFocalDegreeSemitone(7);
-    state.setChordToneOverride(2, true);
-
     state.setScaleId("dorian");
     assert.equal(state.getState().scaleId, "dorian");
-    assert.equal(state.getState().focalDegreeSemitone, 0);
-    assert.deepEqual(state.getState().chordToneOverrides, []);
   });
 });
 
-describe("setFocalDegreeSemitone", () => {
-  test("US5 Scenario 3: clicking a diatonic note updates the focal point", () => {
-    state.setFocalDegreeSemitone(4);
-    assert.equal(state.getState().focalDegreeSemitone, 4);
-  });
-});
+// (setFocalDegreeSemitone/setChordToneOverride describes removed 2026-09-07:
+// the focal-point/toggle criteria were superseded by feature 003's chord selection, below.)
 
-describe("setChordToneOverride", () => {
-  test("US5 Scenario 5: toggling a chord tone on adds an override entry", () => {
-    state.setChordToneOverride(9, true);
-    assert.deepEqual(state.getState().chordToneOverrides, [{ semitone: 9, on: true }]);
+describe("chord selection (feature 003)", () => {
+  test("AC-3.1.4 — Chord selection defaults to the scale root with a diatonic quality", () => {
+    const s = state.getState(); // fresh C Ionian defaults
+    assert.equal(s.chordRootOffset, 0);
+    assert.equal(s.chordQualityId, "major");
+    assert.equal(s.viewMode, "scale");
   });
 
-  test("toggling the same semitone again updates the existing entry rather than duplicating", () => {
-    state.setChordToneOverride(9, true);
-    state.setChordToneOverride(9, false);
-    assert.deepEqual(state.getState().chordToneOverrides, [{ semitone: 9, on: false }]);
+  test("AC-3.1.4 — Chord selection defaults to the scale root with a diatonic quality: reset on root change", () => {
+    state.setChordRootOffset(7);
+    state.setChordQualityId("dom7");
+    state.setRoot("D");
+    assert.equal(state.getState().chordRootOffset, 0);
+    assert.equal(state.getState().chordQualityId, "major");
+  });
+
+  test("AC-3.1.4 — Chord selection defaults to the scale root with a diatonic quality: reset on scale change picks that scale's tonic quality", () => {
+    state.setChordRootOffset(7);
+    state.setChordQualityId("maj9");
+    state.setScaleId("aeolian");
+    assert.equal(state.getState().chordRootOffset, 0);
+    assert.equal(state.getState().chordQualityId, "minor");
+    state.setScaleId("locrian");
+    assert.equal(state.getState().chordQualityId, "dim");
+  });
+
+  test("setters store chord root offset, quality, and view mode", () => {
+    state.setChordRootOffset(10);
+    state.setChordQualityId("m7b5");
+    state.setViewMode("chord");
+    const s = state.getState();
+    assert.equal(s.chordRootOffset, 10);
+    assert.equal(s.chordQualityId, "m7b5");
+    assert.equal(s.viewMode, "chord");
+  });
+
+  test("view mode survives a root/scale change (only the chord resets)", () => {
+    state.setViewMode("chord");
+    state.setRoot("E");
+    assert.equal(state.getState().viewMode, "chord");
   });
 });
 
@@ -205,7 +217,7 @@ describe("save/load persistence", () => {
 
     const raw = localStorage.getItem("fret-navigator-settings");
     const parsed = JSON.parse(raw);
-    assert.equal(parsed.schemaVersion, 1);
+    assert.equal(parsed.schemaVersion, 2);
     assert.equal(parsed.root, "A");
 
     const restored = state.load();
@@ -262,6 +274,63 @@ describe("save/load persistence", () => {
     assert.equal(restored.scaleId, null);
   });
 
+  test("AC-3.1.5 — Chord selection persists across reloads", () => {
+    state.setChordRootOffset(4);
+    state.setChordQualityId("dom7");
+    state.setViewMode("chord");
+    const restored = state.load();
+    assert.equal(restored.chordRootOffset, 4);
+    assert.equal(restored.chordQualityId, "dom7");
+    assert.equal(restored.viewMode, "chord");
+  });
+
+  test("AC-3.1.6 — Saved settings from the previous focal-point system load cleanly", () => {
+    localStorage.setItem(
+      "fret-navigator-settings",
+      JSON.stringify({
+        schemaVersion: 1,
+        tuning: { presetId: "drop-d", customOpenPitchClasses: null, customOpenOctaves: null },
+        root: "A",
+        accidentalPreference: "sharp",
+        scaleId: "aeolian",
+        focalDegreeSemitone: 7,
+        chordToneOverrides: [{ semitone: 2, on: true }],
+        labelMode: "degrees",
+        capoFret: 3,
+        capoLabelMode: "relative",
+        fretRange: { lowerBound: 3, upperBound: 15 },
+      })
+    );
+    const restored = state.load();
+    // Surviving v1 fields preserved
+    assert.equal(restored.tuning.presetId, "drop-d");
+    assert.equal(restored.root, "A");
+    assert.equal(restored.scaleId, "aeolian");
+    assert.equal(restored.labelMode, "degrees");
+    assert.equal(restored.capoFret, 3);
+    assert.equal(restored.capoLabelMode, "relative");
+    assert.deepEqual(restored.fretRange, { lowerBound: 3, upperBound: 15 });
+    // Removed fields dropped; new fields at their defaults for the stored scale
+    assert.equal("focalDegreeSemitone" in restored, false);
+    assert.equal("chordToneOverrides" in restored, false);
+    assert.equal(restored.chordRootOffset, 0);
+    assert.equal(restored.chordQualityId, "minor"); // aeolian tonic triad
+    assert.equal(restored.viewMode, "scale");
+    // Re-saved payload is schemaVersion 2
+    state.save();
+    assert.equal(JSON.parse(localStorage.getItem("fret-navigator-settings")).schemaVersion, 2);
+  });
+
+  test("AC-3.1.6 — Saved settings from the previous focal-point system load cleanly: v2 validation rejects junk chord fields", () => {
+    state.setRoot("A");
+    const raw = JSON.parse(localStorage.getItem("fret-navigator-settings"));
+    raw.chordQualityId = "power5";
+    localStorage.setItem("fret-navigator-settings", JSON.stringify(raw));
+    const restored = state.load();
+    assert.equal(restored.root, "C"); // fell back to defaults
+    assert.equal(restored.chordQualityId, "major");
+  });
+
   test("feature 002, FR-005: a previously persisted non-default root/scaleId is honored, not overridden to C Ionian", () => {
     state.setRoot("A");
     state.setScaleId("mixolydian");
@@ -270,17 +339,6 @@ describe("save/load persistence", () => {
     assert.equal(restored.scaleId, "mixolydian");
   });
 
-  test("Edge Case: chord-tone overrides that become non-diatonic on reload are pruned", () => {
-    state.setRoot("C");
-    state.setScaleId("ionian");
-    state.setChordToneOverride(9, true); // A: diatonic to C major
-
-    const raw = JSON.parse(localStorage.getItem("fret-navigator-settings"));
-    raw.scaleId = "major-pentatonic"; // A (9) is still diatonic; use a scale where it's not
-    raw.chordToneOverrides = [{ semitone: 1, on: true }]; // C# is not diatonic to any scale relative to C
-    localStorage.setItem("fret-navigator-settings", JSON.stringify(raw));
-
-    const restored = state.load();
-    assert.deepEqual(restored.chordToneOverrides, []);
-  });
+  // (The chord-tone-override pruning test that stood here was removed 2026-09-07:
+  // overrides no longer exist; their criteria were superseded by feature 003.)
 });
