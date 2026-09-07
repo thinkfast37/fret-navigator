@@ -13,15 +13,15 @@
   marked with what is true right now.
 -->
 
-**Feature**: specs/001-fretboard-visualizer/spec.md, specs/002-default-root-scale/spec.md, specs/003-chord-mode/spec.md
-**Criteria**: 71 across 14 User Stories
+**Feature**: specs/001-fretboard-visualizer/spec.md, specs/002-default-root-scale/spec.md, specs/003-chord-mode/spec.md, specs/004-play-chord/spec.md
+**Criteria**: 75 across 15 User Stories
 
-**Coverage**: 19 of 71 criteria proven (26.8%)
+**Coverage**: 23 of 75 criteria proven (30.7%)
 
 | | Criteria | Share |
 |---|---|---|
-| 🟢 Proven | 19 | 26.8% |
-| 🔴 Gap — CRITICAL | 52 | 73.2% |
+| 🟢 Proven | 23 | 30.7% |
+| 🔴 Gap — CRITICAL | 52 | 69.3% |
 
 A row is one *criterion*: an Acceptance Criterion that asserts one thing, or one Case of
 an AC that asserts several. 🖵 marks a criterion that describes something a person sees or
@@ -70,6 +70,7 @@ fail the build, and it is outstanding work — never a settled decision.
 | 🟢 US-3.2 | 9 | **9** | · | · | · | · | · |
 | 🟢 US-3.3 | 3 | **3** | · | · | · | · | · |
 | 🟢 US-3.4 | 1 | **1** | · | · | · | · | · |
+| 🟢 US-4.1 | 4 | **4** | · | · | · | · | · |
 
 ## Every criterion
 
@@ -146,3 +147,7 @@ fail the build, and it is outstanding work — never a settled decision.
 | US-3.3 | `AC-3.3.2` 🖵 | Non-diatonic chord roots are labelled as borrowed with a source when one is common | P-202 | T311 (1/1 done) | T302 (1/1 done) | `controls.test.js`, `theory.test.js` | 🟢 OK |
 | US-3.3 | `AC-3.3.3` 🖵 | Non-seven-note scales fall back to degree-only labels | P-202 | T311 (1/1 done) | T302 (1/1 done) | `controls.test.js`, `theory.test.js` | 🟢 OK |
 | US-3.4 | `AC-3.4.1` 🖵 | Root control is labelled "Scale Root" and chord picker "Chord Root" | P-204 | T313 (1/1 done) | T304 (1/1 done) | `controls.test.js` | 🟢 OK |
+| US-4.1 | `AC-4.1.1` 🖵 | Play button strums the selected chord's tones ascending from its root | P-301 | T410, T411 (2/2 done) | T401 (1/1 done) | `audio.test.js`, `controls.test.js`, `theory.test.js` | 🟢 OK |
+| US-4.1 | `AC-4.1.2` | Extended chords voice their extensions above the octave | P-301 | T410, T411 (2/2 done) | T401 (1/1 done) | `theory.test.js` | 🟢 OK |
+| US-4.1 | `AC-4.1.3` | Playback is anchored to the true root, unaffected by capo Relative mode | P-302 | T412 (1/1 done) | T402 (1/1 done) | `controls.test.js` | 🟢 OK |
+| US-4.1 | `AC-4.1.4` 🖵 | Chord playback only ever fires on the Play gesture | P-302 | T412 (1/1 done) | T402 (1/1 done) | `controls.test.js` | 🟢 OK |

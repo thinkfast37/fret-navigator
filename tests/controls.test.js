@@ -23,6 +23,27 @@ globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 globalThis.localStorage = dom.window.localStorage;
 
+// Web Audio + soundfont-player mocks (feature 004): the Play-chord button
+// routes through audio.js, which needs both on window.
+const instrumentPlayCalls = [];
+class MockAudioContext {
+  constructor() {
+    this.state = "suspended";
+    this.currentTime = 0;
+  }
+  resume() {
+    this.state = "running";
+  }
+}
+dom.window.AudioContext = MockAudioContext;
+dom.window.Soundfont = {
+  instrument: () => Promise.resolve({ play: (midiNote) => instrumentPlayCalls.push(midiNote) }),
+};
+
+function flushAudio() {
+  return new Promise((resolve) => setTimeout(resolve, 10));
+}
+
 const state = await import("../src/js/state.js");
 const controls = await import("../src/js/controls.js");
 
@@ -403,5 +424,79 @@ describe("initCapoControls (Story 9, FR-033/FR-037)", () => {
 
     const summary = document.querySelector(".chord-summary");
     assert.match(summary.textContent, /C: C, E, G/); // true-root C major, never the shifted Eb
+  });
+});
+
+
+describe("play chord button (feature 004)", () => {
+  function selectCIonian() {
+    document.querySelector('.root-buttons button[data-root="C"]').click();
+    const scaleSelect = document.getElementById("scale-select");
+    scaleSelect.value = "ionian";
+    fire(scaleSelect, "change");
+  }
+
+  test("AC-4.1.4 — Chord playback only ever fires on the Play gesture", async () => {
+    selectCIonian();
+    const before = instrumentPlayCalls.length;
+
+    // Every kind of selection change: none may make a sound.
+    document.querySelector('.root-buttons button[data-root="G"]').click();
+    const scaleSelect = document.getElementById("scale-select");
+    scaleSelect.value = "aeolian";
+    fire(scaleSelect, "change");
+    const rootSelect = document.getElementById("chord-root-select");
+    rootSelect.value = "7";
+    fire(rootSelect, "change");
+    const qualitySelect = document.getElementById("chord-quality-select");
+    qualitySelect.value = "dom7";
+    fire(qualitySelect, "change");
+    document.querySelector('.view-mode-buttons button[data-view="chord"]').click();
+    document.querySelector('.view-mode-buttons button[data-view="scale"]').click();
+    await flushAudio();
+    assert.equal(instrumentPlayCalls.length, before, "no state change may trigger playback");
+
+    // The Play gesture does.
+    const playButton = document.getElementById("play-chord-button");
+    assert.ok(playButton, "play button exists in the chord panel");
+    assert.ok(playButton.getAttribute("aria-label").length > 0, "play button has an accessible name");
+    playButton.click();
+    await flushAudio();
+    assert.ok(instrumentPlayCalls.length > before, "Play click triggers playback");
+  });
+
+  test("AC-4.1.1 — Play button strums the selected chord's tones ascending from its root: button plays the voicing", async () => {
+    selectCIonian();
+    const rootSelect = document.getElementById("chord-root-select");
+    rootSelect.value = "4"; // iii — E
+    fire(rootSelect, "change");
+    const qualitySelect = document.getElementById("chord-quality-select");
+    qualitySelect.value = "dom7";
+    fire(qualitySelect, "change");
+
+    const before = instrumentPlayCalls.length;
+    document.getElementById("play-chord-button").click();
+    await flushAudio();
+    assert.deepEqual(instrumentPlayCalls.slice(before), [52, 56, 59, 62]); // E3 G#3 B3 D4
+  });
+
+  test("AC-4.1.3 — Playback is anchored to the true root, unaffected by capo Relative mode", async () => {
+    selectCIonian(); // resets chord to I — C major
+    const before = instrumentPlayCalls.length;
+    document.getElementById("play-chord-button").click();
+    await flushAudio();
+    const uncapoed = instrumentPlayCalls.slice(before);
+    assert.deepEqual(uncapoed, [48, 52, 55]); // C3 E3 G3
+
+    const capoSelect = document.getElementById("capo-select");
+    capoSelect.value = "3";
+    fire(capoSelect, "change");
+    const relativeBtn = document.querySelector('.capo-label-mode-buttons button[data-capo-mode="relative"]');
+    relativeBtn.click();
+
+    const mid = instrumentPlayCalls.length;
+    document.getElementById("play-chord-button").click();
+    await flushAudio();
+    assert.deepEqual(instrumentPlayCalls.slice(mid), uncapoed, "capo+Relative never shifts what Play sounds");
   });
 });

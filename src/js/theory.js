@@ -271,12 +271,12 @@ export const CHORD_QUALITIES = [
   { id: "dim7", label: "Dim7", suffix: "dim7", intervals: [0, 3, 6, 9] },
   { id: "six", label: "6", suffix: "6", intervals: [0, 4, 7, 9] },
   { id: "m6", label: "m6", suffix: "m6", intervals: [0, 3, 7, 9] },
-  { id: "dom9", label: "9", suffix: "9", intervals: [0, 2, 4, 7, 10] },
-  { id: "min9", label: "m9", suffix: "m9", intervals: [0, 2, 3, 7, 10] },
-  { id: "maj9", label: "Maj9", suffix: "maj9", intervals: [0, 2, 4, 7, 11] },
-  { id: "add9", label: "Add9", suffix: "add9", intervals: [0, 2, 4, 7] },
-  { id: "dom11", label: "11", suffix: "11", intervals: [0, 2, 4, 5, 7, 10] },
-  { id: "dom13", label: "13", suffix: "13", intervals: [0, 2, 4, 7, 9, 10] },
+  { id: "dom9", label: "9", suffix: "9", intervals: [0, 2, 4, 7, 10], voicingOffsets: [0, 4, 7, 10, 14] },
+  { id: "min9", label: "m9", suffix: "m9", intervals: [0, 2, 3, 7, 10], voicingOffsets: [0, 3, 7, 10, 14] },
+  { id: "maj9", label: "Maj9", suffix: "maj9", intervals: [0, 2, 4, 7, 11], voicingOffsets: [0, 4, 7, 11, 14] },
+  { id: "add9", label: "Add9", suffix: "add9", intervals: [0, 2, 4, 7], voicingOffsets: [0, 4, 7, 14] },
+  { id: "dom11", label: "11", suffix: "11", intervals: [0, 2, 4, 5, 7, 10], voicingOffsets: [0, 4, 7, 10, 14, 17] },
+  { id: "dom13", label: "13", suffix: "13", intervals: [0, 2, 4, 7, 9, 10], voicingOffsets: [0, 4, 7, 10, 14, 21] },
   { id: "7sus4", label: "7sus4", suffix: "7sus4", intervals: [0, 5, 7, 10] },
 ];
 
@@ -290,6 +290,18 @@ function getChordQuality(qualityId) {
 // root + quality formula, in interval order (chord root first).
 export function computeChordTones(chordRootSemitone, qualityId) {
   return getChordQuality(qualityId).intervals.map((i) => mod12(chordRootSemitone + i));
+}
+
+// Implements feature 004, FR-202 (AC-4.1.1/AC-4.1.2, research R-402): the
+// chord's ascending MIDI voicing for playback. Root anchored at `baseOctave`
+// (MIDI = semitone + (baseOctave+1)*12, matching noteAt's octave convention);
+// extended qualities carry explicit voicingOffsets that lift 9ths/11ths/13ths
+// above the octave, since pitch-class intervals alone cannot distinguish a
+// 9th from sus2's genuine low 2nd.
+export function computeChordVoicing(chordRootSemitone, qualityId, baseOctave = 3) {
+  const quality = getChordQuality(qualityId);
+  const rootMidi = mod12(chordRootSemitone) + (baseOctave + 1) * 12;
+  return (quality.voicingOffsets ?? quality.intervals).map((offset) => rootMidi + offset);
 }
 
 // Implements feature 003, AC-3.2.9: display name for the selected chord,

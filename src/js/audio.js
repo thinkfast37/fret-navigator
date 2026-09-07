@@ -66,3 +66,20 @@ export function play(midiNote) {
       // Load failure already surfaced via onLoadError; nothing further to do.
     });
 }
+
+// Implements feature 004, FR-201/FR-203 (AC-4.1.1, research R-403): strummed
+// chord playback. Schedules each MIDI note on the shared AudioContext clock,
+// low to high, `strumSeconds` apart, through the same lazily-loaded (and
+// retryable, FR-041) instrument as single-note play(). Must be called from
+// within a user-gesture handler (constitution Principle III).
+export function playChord(midiNotes, strumSeconds = 0.05) {
+  const ctx = ensureAudioContext();
+  loadInstrument()
+    .then((instrument) => {
+      const start = ctx.currentTime;
+      midiNotes.forEach((midiNote, i) => instrument.play(midiNote, start + i * strumSeconds));
+    })
+    .catch(() => {
+      // Load failure already surfaced via onLoadError; nothing further to do.
+    });
+}

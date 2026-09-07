@@ -637,3 +637,51 @@ describe("getDefaultChordQualityId (feature 003)", () => {
     assert.equal(getDefaultChordQualityId(null), "major");
   });
 });
+
+// ---- Feature 004: chord voicing (T401, P-301) ----
+
+import { computeChordVoicing } from "../src/js/theory.js";
+
+describe("computeChordVoicing (feature 004)", () => {
+  test("AC-4.1.1 — Play button strums the selected chord's tones ascending from its root: voicing math", () => {
+    // E7 rooted at octave 3: E3 G#3 B3 D4
+    assert.deepEqual(computeChordVoicing(4, "dom7"), [52, 56, 59, 62]);
+    // C major: C3 E3 G3
+    assert.deepEqual(computeChordVoicing(0, "major"), [48, 52, 55]);
+  });
+
+  test("AC-4.1.1 — Play button strums the selected chord's tones ascending from its root: 12x20 sweep matches the tone set, strictly ascending", () => {
+    for (const q of CHORD_QUALITIES) {
+      for (let root = 0; root < 12; root++) {
+        const voicing = computeChordVoicing(root, q.id);
+        const expectedPitchClasses = new Set(computeChordTones(root, q.id));
+        assert.equal(voicing.length, expectedPitchClasses.size, `${q.id} length`);
+        // Extended voicings reorder tones (extensions go on top), so the AC's
+        // claim is set equality of pitch classes plus strict ascent.
+        assert.deepEqual(new Set(voicing.map((m) => ((m % 12) + 12) % 12)), expectedPitchClasses, `${q.id} root ${root} tone set`);
+        voicing.forEach((midi, i) => {
+          if (i > 0) assert.ok(midi > voicing[i - 1], `${q.id} root ${root} ascending at ${i}`);
+        });
+        assert.equal(voicing[0], root + 48, `${q.id} root anchored at octave 3`);
+      }
+    }
+  });
+
+  test("AC-4.1.2 — Extended chords voice their extensions above the octave", () => {
+    // C9: the D (9th) is +14, not +2
+    assert.deepEqual(computeChordVoicing(0, "dom9"), [48, 52, 55, 58, 62]);
+    assert.deepEqual(computeChordVoicing(0, "min9"), [48, 51, 55, 58, 62]);
+    assert.deepEqual(computeChordVoicing(0, "maj9"), [48, 52, 55, 59, 62]);
+    assert.deepEqual(computeChordVoicing(0, "add9"), [48, 52, 55, 62]);
+    // C11: 9th +14 and 11th +17
+    assert.deepEqual(computeChordVoicing(0, "dom11"), [48, 52, 55, 58, 62, 65]);
+    // C13: 9th +14 and 13th +21 (11 omitted per the quality formula)
+    assert.deepEqual(computeChordVoicing(0, "dom13"), [48, 52, 55, 58, 62, 69]);
+    // sus2's 2 is a genuine low 2nd, never lifted
+    assert.deepEqual(computeChordVoicing(0, "sus2"), [48, 50, 55]);
+  });
+
+  test("throws on an unknown quality id", () => {
+    assert.throws(() => computeChordVoicing(0, "power5"));
+  });
+});
