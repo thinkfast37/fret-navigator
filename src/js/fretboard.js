@@ -11,7 +11,7 @@ const FRET_COUNT = 24; // frets 1-24; fret 0 is the open string
 const MARGIN = 24;
 const OPEN_COL_WIDTH = 56;
 const FRET_COL_WIDTH = 44;
-const ROW_HEIGHT = 40;
+const ROW_HEIGHT = 48; // feature 005: taller rows so the width-capped board uses more height on big screens
 const NOTE_RADIUS = 14;
 
 const SINGLE_DOT_FRETS = new Set([3, 5, 7, 9, 15, 17, 19, 21]);

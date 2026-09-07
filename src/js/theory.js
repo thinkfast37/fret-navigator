@@ -179,7 +179,12 @@ export function spellPitchClass(semitone, keyContext) {
 
   if (idx !== -1) {
     const rootLetterIndex = NATURAL_LETTERS.indexOf(rootBaseLetter);
-    const degreeNumber = idx + 1; // 1-based scale-degree position
+    // Bug fix 2026-09-07 (Principle I): the letter step comes from the
+    // scale's own degreeFormula token ("b3" -> 3rd letter), NOT the array
+    // position. On non-sequential formulas (pentatonic/blues) position and
+    // degree number diverge - A minor pentatonic's b3 sits at position 2,
+    // and the positional walk spelled C as "B#".
+    const degreeNumber = Number(scale.degreeFormula[idx].replace(/[^0-9]/g, ""));
     const letterIndex = (rootLetterIndex + (degreeNumber - 1)) % 7;
     const letter = NATURAL_LETTERS[letterIndex];
     const naturalSemitone = NATURAL_LETTER_SEMITONES[letter];

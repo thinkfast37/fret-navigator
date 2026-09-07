@@ -192,7 +192,7 @@ describe("initRootControls (Story 3, FR-008/FR-009, UAT round 1 section C3)", ()
     const css = readFileSync(cssPath, "utf8");
     const match = css.match(/\.root-buttons button\[aria-pressed="true"\]\s*\{([^}]*)\}/);
     assert.ok(match, "expected a .root-buttons button[aria-pressed=\"true\"] rule in styles.css");
-    assert.match(match[1], /var\(--role-1-bright\)/);
+    assert.match(match[1], /var\(--role-1\)/);
     assert.doesNotMatch(match[1], /#ffd54a/);
   });
 });

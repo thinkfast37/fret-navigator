@@ -13,15 +13,15 @@
   marked with what is true right now.
 -->
 
-**Feature**: specs/001-fretboard-visualizer/spec.md, specs/002-default-root-scale/spec.md, specs/003-chord-mode/spec.md, specs/004-play-chord/spec.md
-**Criteria**: 75 across 15 User Stories
+**Feature**: specs/001-fretboard-visualizer/spec.md, specs/002-default-root-scale/spec.md, specs/003-chord-mode/spec.md, specs/004-play-chord/spec.md, specs/005-display-overhaul/spec.md
+**Criteria**: 80 across 18 User Stories
 
-**Coverage**: 23 of 75 criteria proven (30.7%)
+**Coverage**: 28 of 80 criteria proven (35.0%)
 
 | | Criteria | Share |
 |---|---|---|
-| 🟢 Proven | 23 | 30.7% |
-| 🔴 Gap — CRITICAL | 52 | 69.3% |
+| 🟢 Proven | 28 | 35.0% |
+| 🔴 Gap — CRITICAL | 52 | 65.0% |
 
 A row is one *criterion*: an Acceptance Criterion that asserts one thing, or one Case of
 an AC that asserts several. 🖵 marks a criterion that describes something a person sees or
@@ -71,6 +71,9 @@ fail the build, and it is outstanding work — never a settled decision.
 | 🟢 US-3.3 | 3 | **3** | · | · | · | · | · |
 | 🟢 US-3.4 | 1 | **1** | · | · | · | · | · |
 | 🟢 US-4.1 | 4 | **4** | · | · | · | · | · |
+| 🟢 US-5.1 | 3 | **3** | · | · | · | · | · |
+| 🟢 US-5.2 | 1 | **1** | · | · | · | · | · |
+| 🟢 US-5.3 | 1 | **1** | · | · | · | · | · |
 
 ## Every criterion
 
@@ -151,3 +154,8 @@ fail the build, and it is outstanding work — never a settled decision.
 | US-4.1 | `AC-4.1.2` | Extended chords voice their extensions above the octave | P-301 | T410, T411 (2/2 done) | T401 (1/1 done) | `theory.test.js` | 🟢 OK |
 | US-4.1 | `AC-4.1.3` | Playback is anchored to the true root, unaffected by capo Relative mode | P-302 | T412 (1/1 done) | T402 (1/1 done) | `controls.test.js` | 🟢 OK |
 | US-4.1 | `AC-4.1.4` 🖵 | Chord playback only ever fires on the Play gesture | P-302 | T412 (1/1 done) | T402 (1/1 done) | `controls.test.js` | 🟢 OK |
+| US-5.1 | `AC-5.1.1` 🖵 | Each degree role has exactly one color, used identically in both views | P-401 | T510 (1/1 done) | T501 (1/1 done) | `styles.test.js` | 🟢 OK |
+| US-5.1 | `AC-5.1.2` | Note labels meet WCAG AA contrast on every role color | P-401 | T510 (1/1 done) | T501 (1/1 done) | `styles.test.js` | 🟢 OK |
+| US-5.1 | `AC-5.1.3` 🖵 | Chord tones are marked by ring and size, never by a color swap | P-401 | T510 (1/1 done) | T501 (1/1 done) | `styles.test.js` | 🟢 OK |
+| US-5.2 | `AC-5.2.1` 🖵 | Wide viewports get compact controls and a fretboard-first layout | P-402 | T511 (1/1 done) | T502 (1/1 done) | `styles.test.js` | 🟢 OK |
+| US-5.3 | `AC-5.3.1` 🖵 | Chord picker dropdowns have a bounded width | P-402 | T511 (1/1 done) | T502 (1/1 done) | `styles.test.js` | 🟢 OK |

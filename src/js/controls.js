@@ -481,7 +481,8 @@ export function updateChordInfo() {
   // (AC-3.1.1), non-diatonic ones marked and annotated with their borrowed
   // source (AC-3.3.2) or "(in scale)" flags for non-heptatonic scales
   // (AC-3.3.3). Degree analysis is theory.js's, never re-derived here.
-  container.appendChild(controlLabel("Chord Root"));
+  const rootGroup = el("div", { class: "chord-subcontrol" });
+  rootGroup.appendChild(controlLabel("Chord Root"));
   const rootSelect = el("select", { id: "chord-root-select", "aria-label": "Chord root" });
   const scale = appState.scaleId ? theory.SCALES.find((s) => s.id === appState.scaleId) : null;
   const isHeptatonic = scale !== null && scale !== undefined && scale.semitoneOffsets.length === 7;
@@ -506,10 +507,12 @@ export function updateChordInfo() {
     state.setChordRootOffset(Number(rootSelect.value));
     rerender();
   });
-  container.appendChild(rootSelect);
+  rootGroup.appendChild(rootSelect);
+  container.appendChild(rootGroup);
 
   // Chord quality dropdown: the full 20-quality vocabulary (AC-3.1.2).
-  container.appendChild(controlLabel("Chord Quality"));
+  const qualityGroup = el("div", { class: "chord-subcontrol" });
+  qualityGroup.appendChild(controlLabel("Chord Quality"));
   const qualitySelect = el("select", { id: "chord-quality-select", "aria-label": "Chord quality" });
   for (const quality of theory.CHORD_QUALITIES) {
     qualitySelect.appendChild(el("option", { value: quality.id, text: quality.label }));
@@ -519,10 +522,12 @@ export function updateChordInfo() {
     state.setChordQualityId(qualitySelect.value);
     rerender();
   });
-  container.appendChild(qualitySelect);
+  qualityGroup.appendChild(qualitySelect);
+  container.appendChild(qualityGroup);
 
   // Scale/Chord view toggle (AC-3.2.1).
-  container.appendChild(controlLabel("View"));
+  const viewGroup = el("div", { class: "chord-subcontrol" });
+  viewGroup.appendChild(controlLabel("View"));
   const viewRow = el("div", { class: "view-mode-buttons", role: "group", "aria-label": "Fretboard view" });
   for (const mode of [
     { value: "scale", label: "Scale" },
@@ -540,7 +545,8 @@ export function updateChordInfo() {
     });
     viewRow.appendChild(button);
   }
-  container.appendChild(viewRow);
+  viewGroup.appendChild(viewRow);
+  container.appendChild(viewGroup);
 
   // Chord summary (AC-3.2.9): name + spelled tones, ALWAYS anchored to the
   // TRUE root (FR-108) - it can legitimately diverge from the fretboard's
@@ -554,9 +560,10 @@ export function updateChordInfo() {
   const toneNames = theory
     .computeChordTones(chordRootSemitone, appState.chordQualityId)
     .map((semitone) => theory.spellPitchClass(semitone, spellContext));
+  const summaryGroup = el("div", { class: "chord-subcontrol" });
   const summary = el("p", { class: "chord-summary" });
   summary.textContent = `${chordName}: ${toneNames.join(", ")}`;
-  container.appendChild(summary);
+  summaryGroup.appendChild(summary);
 
   // Feature 004 (FR-201/FR-204, AC-4.1.x): strum the selected chord. Voicing
   // is computed from the TRUE root (like the summary above, never the
@@ -570,7 +577,8 @@ export function updateChordInfo() {
   playButton.addEventListener("click", () => {
     audio.playChord(theory.computeChordVoicing(chordRootSemitone, appState.chordQualityId));
   });
-  container.appendChild(playButton);
+  summaryGroup.appendChild(playButton);
+  container.appendChild(summaryGroup);
 }
 
 // Implements Story 9, FR-033/FR-037: capo fret selector + Absolute/Relative toggle

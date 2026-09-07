@@ -4,31 +4,25 @@
   --color-neutral: #3a3f47;
   --color-neutral-text: #d8d8d8;
 
-  /* Chromatic degree-role colors: one bright + one dark variant per role. */
-  --role-1-bright: #ff5252;
-  --role-1-dark: #7a2323;
-  --role-b2-bright: #ff8a3d;
-  --role-b2-dark: #7a4620;
-  --role-2-bright: #ffca3d;
-  --role-2-dark: #70591d;
-  --role-b3-bright: #e3ff3d;
-  --role-b3-dark: #5a631a;
-  --role-3-bright: #a3ff3d;
-  --role-3-dark: #41681b;
-  --role-4-bright: #3dff6b;
-  --role-4-dark: #1b6c33;
-  --role-4s5b-bright: #3dffd0;
-  --role-4s5b-dark: #1a6858;
-  --role-5-bright: #3dc7ff;
-  --role-5-dark: #1f5f7a;
-  --role-b6-bright: #3d8aff;
-  --role-b6-dark: #1f437a;
-  --role-6-bright: #8b68ff;
-  --role-6-dark: #351f7a;
-  --role-b7-bright: #c73dff;
-  --role-b7-dark: #601f7a;
-  --role-7-bright: #ff3dc7;
-  --role-7-dark: #7a1f60;
+  /* Chromatic degree-role colors (feature 005, FR-301/FR-302): ONE deep
+     saturated token per role, used identically in Scale and Chord view. Every
+     value is validated >= 4.5:1 against the white note label by
+     tests/styles.test.js (AC-5.1.2) - keep that gate green when re-tuning. */
+  --role-1: #c62828;
+  --role-b2: #b3541e;
+  --role-2: #8a6d00;
+  --role-b3: #66790a;
+  --role-3: #2e7d32;
+  --role-4: #00795c;
+  --role-4s5b: #00707e;
+  --role-5: #0b69b7;
+  --role-b6: #3f51b5;
+  --role-6: #673ab7;
+  --role-b7: #8e24aa;
+  --role-7: #c2185b;
+
+  /* Bold white note labels on the colored fills (feature 005, R-502). */
+  --color-note-label: #ffffff;
 
   /* Capo position indicator (UAT round 2 section C, FR-050): distinct color
      AND thickness from the true nut's indicator so the two are never
@@ -39,14 +33,13 @@
      colors that were previously duplicated as raw hex literals across
      multiple rules. Pure refactor of WHERE each color is defined - no
      rendered value changes. Excludes .root-buttons button[aria-pressed]
-     (section D changed that rule's color to var(--role-1-bright) instead -
+     (section D changed that rule's color to var(--role-1) instead -
      it never used this accent, so it's not part of this consolidation). */
   --color-root-accent: #ffd54a;
   --color-text-on-bright: var(--color-bg); /* already the same value (#14171c) */
-  /* Given its own literal (not aliased to --role-1-dark) even though the
-     values coincidentally match today - the error banner and the chromatic
-     degree-role palette are semantically unrelated and must stay free to
-     diverge independently. */
+  /* Given its own literal (never aliased to a degree-role token) - the
+     error banner and the chromatic degree-role palette are semantically
+     unrelated and must stay free to diverge independently. */
   --color-error-bg: #7a2323;
   --color-error-text: #fff;
 }
@@ -175,6 +168,50 @@ footer#credits a {
   }
 }
 
+/* Feature 005 (FR-304, AC-5.2.1): TV tier. At 1080p/4K fullscreen the
+   control strip compacts hard - tighter gaps, smaller type and inputs,
+   slimmer header - so the flex-growing fretboard container gets the large
+   majority of the viewport height. */
+@media (min-width: 1280px) {
+  header {
+    padding: 0.25rem 1rem;
+  }
+
+  header h1 {
+    font-size: 1.1rem;
+    margin: 0.2rem 0;
+  }
+
+  #controls {
+    gap: 0.4rem 0.75rem;
+    margin-bottom: 0.25rem;
+  }
+
+  #controls > div {
+    gap: 0.2rem;
+  }
+
+  .control-label {
+    font-size: 0.6rem;
+  }
+
+  #controls select,
+  #controls button {
+    font-size: 0.8rem;
+    padding: 0.2rem 0.4rem;
+  }
+
+  #chord-root-select,
+  #chord-quality-select {
+    max-width: 10rem;
+  }
+
+  footer#credits {
+    padding: 0.15rem 1rem;
+    font-size: 0.6rem;
+  }
+}
+
 .string-line {
   stroke: var(--color-neutral-text);
   stroke-width: 1.5;
@@ -261,47 +298,37 @@ footer#credits a {
 }
 
 .note.is-diatonic .note-label {
-  fill: var(--color-neutral-text);
+  fill: var(--color-note-label);
+  font-weight: 700;
 }
 
 /* Bright-variant fills are light; dark text keeps every role's label at or
    above WCAG AA contrast (4.5:1) against its own background. */
 .note.is-chord-tone .note-label {
-  fill: var(--color-text-on-bright);
+  fill: var(--color-note-label);
   font-weight: 700;
 }
 
 /* Diatonic degree-role coloring: dark by default; the bright variant now
    marks the selected chord's tones in Chord view (feature 003 - the old
    focal-point bright set is superseded). */
-.note.role-1 .note-marker { fill: var(--role-1-dark); }
-.note.role-1.is-chord-tone .note-marker { fill: var(--role-1-bright); }
-.note.role-b2 .note-marker { fill: var(--role-b2-dark); }
-.note.role-b2.is-chord-tone .note-marker { fill: var(--role-b2-bright); }
-.note.role-2 .note-marker { fill: var(--role-2-dark); }
-.note.role-2.is-chord-tone .note-marker { fill: var(--role-2-bright); }
-.note.role-b3 .note-marker { fill: var(--role-b3-dark); }
-.note.role-b3.is-chord-tone .note-marker { fill: var(--role-b3-bright); }
-.note.role-3 .note-marker { fill: var(--role-3-dark); }
-.note.role-3.is-chord-tone .note-marker { fill: var(--role-3-bright); }
-.note.role-4 .note-marker { fill: var(--role-4-dark); }
-.note.role-4.is-chord-tone .note-marker { fill: var(--role-4-bright); }
-.note.role-4s5b .note-marker { fill: var(--role-4s5b-dark); }
-.note.role-4s5b.is-chord-tone .note-marker { fill: var(--role-4s5b-bright); }
-.note.role-5 .note-marker { fill: var(--role-5-dark); }
-.note.role-5.is-chord-tone .note-marker { fill: var(--role-5-bright); }
-.note.role-b6 .note-marker { fill: var(--role-b6-dark); }
-.note.role-b6.is-chord-tone .note-marker { fill: var(--role-b6-bright); }
-.note.role-6 .note-marker { fill: var(--role-6-dark); }
-.note.role-6.is-chord-tone .note-marker { fill: var(--role-6-bright); }
-.note.role-b7 .note-marker { fill: var(--role-b7-dark); }
-.note.role-b7.is-chord-tone .note-marker { fill: var(--role-b7-bright); }
-.note.role-7 .note-marker { fill: var(--role-7-dark); }
-.note.role-7.is-chord-tone .note-marker { fill: var(--role-7-bright); }
+.note.role-1 .note-marker { fill: var(--role-1); }
+.note.role-b2 .note-marker { fill: var(--role-b2); }
+.note.role-2 .note-marker { fill: var(--role-2); }
+.note.role-b3 .note-marker { fill: var(--role-b3); }
+.note.role-3 .note-marker { fill: var(--role-3); }
+.note.role-4 .note-marker { fill: var(--role-4); }
+.note.role-4s5b .note-marker { fill: var(--role-4s5b); }
+.note.role-5 .note-marker { fill: var(--role-5); }
+.note.role-b6 .note-marker { fill: var(--role-b6); }
+.note.role-6 .note-marker { fill: var(--role-6); }
+.note.role-b7 .note-marker { fill: var(--role-b7); }
+.note.role-7 .note-marker { fill: var(--role-7); }
 
 .note.is-chord-tone .note-marker {
   stroke: var(--color-fg);
-  stroke-width: 3;
+  stroke-width: 4;
+  r: 16;
 }
 
 .note.is-chord-tone.is-root .note-marker {
@@ -316,7 +343,7 @@ footer#credits a {
      marker are the non-color distinguishers;
    - hidden notes render nothing at all. */
 .note.is-chord-tone:not(.is-diatonic) .note-marker {
-  fill: var(--color-neutral-text);
+  fill: var(--color-neutral);
 }
 
 .note.is-ghost .note-marker {
@@ -460,6 +487,36 @@ footer#credits a {
   gap: 0.4rem;
 }
 
+/* Feature 005 layout: the chord panel flows its sub-controls horizontally
+   like the rest of the control strip, instead of one tall column. */
+#controls > #chord-info {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.chord-subcontrol {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.chord-summary {
+  margin: 0;
+}
+
+/* Feature 005 (FR-305, AC-5.3.1): the chord pickers were sized by their
+   longest borrowed-from option label; cap them so the control strip stays
+   narrow. Long text may truncate collapsed but is full in the open list. */
+#chord-root-select,
+#chord-quality-select {
+  max-width: 12rem;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
 /* Visible label heading every control (UAT round 1 section E1). */
 .control-label {
   font-size: 0.7rem;
@@ -533,9 +590,9 @@ footer#credits a {
    role-1 bright variant), not a separate/generic selection color - for
    visual consistency between the control and the fretboard. */
 .root-buttons button[aria-pressed="true"] {
-  background: var(--role-1-bright);
+  background: var(--role-1);
   color: var(--color-text-on-bright);
-  border-color: var(--role-1-bright);
+  border-color: var(--role-1);
   font-weight: 700;
 }
 
