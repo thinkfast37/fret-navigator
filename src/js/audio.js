@@ -10,21 +10,52 @@ let instrumentPromise = null;
 let loadErrorListener = null;
 let loadSuccessListener = null;
 
-function ensureAudioContext() {
-  if (!audioContext) {
-    const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
-    audioContext = new AudioContextCtor();
+// iPadOS Safari parks a backgrounded context in the non-standard 'interrupted'
+// state rather than 'suspended'; both must be recovered alike (AC-1.8.6).
+const STUCK_STATES = ["suspended", "interrupted"];
+
+function createContext() {
+  const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+  return new AudioContextCtor();
+}
+
+// A context can refuse to come back — TV browsers and iOS sometimes leave one
+// permanently stuck — and scheduling into a dead context is silence with no
+// error. So a context still stuck after the resume attempt is closed and
+// replaced (AC-1.8.6/2); the cached instrument is bound to the old context and
+// must reload against the replacement.
+async function ensureRunningContext() {
+  if (!audioContext) audioContext = createContext();
+  if (STUCK_STATES.includes(audioContext.state)) {
+    try {
+      await audioContext.resume();
+    } catch {
+      // Replaced below: a context whose resume() rejects is as dead as one
+      // that resolves without leaving the stuck state.
+    }
   }
-  if (audioContext.state === "suspended") {
-    audioContext.resume();
+  if (STUCK_STATES.includes(audioContext.state)) {
+    try {
+      await audioContext.close?.();
+    } catch {
+      // A dead context may refuse even close(); replacement proceeds anyway.
+    }
+    audioContext = createContext();
+    instrumentPromise = null;
+    if (audioContext.state === "suspended") {
+      try {
+        await audioContext.resume();
+      } catch {
+        // The caller's gesture has done all it can; the next tap retries.
+      }
+    }
   }
   return audioContext;
 }
 
 function loadInstrument() {
   if (!instrumentPromise) {
-    const ctx = ensureAudioContext();
-    instrumentPromise = window.Soundfont.instrument(ctx, INSTRUMENT_NAME, { soundfont: SOUNDFONT })
+    instrumentPromise = window.Soundfont.instrument(audioContext, INSTRUMENT_NAME, { soundfont: SOUNDFONT })
       .then((instrument) => {
         if (loadSuccessListener) loadSuccessListener();
         return instrument;
@@ -59,8 +90,8 @@ export function onLoadSuccess(listener) {
 // off prior notes, so rapid sequential triggers play cleanly without
 // improper cutoff (FR-031).
 export function play(midiNote) {
-  ensureAudioContext();
-  loadInstrument()
+  ensureRunningContext()
+    .then(() => loadInstrument())
     .then((instrument) => instrument.play(midiNote))
     .catch(() => {
       // Load failure already surfaced via onLoadError; nothing further to do.
@@ -73,12 +104,13 @@ export function play(midiNote) {
 // retryable, FR-041) instrument as single-note play(). Must be called from
 // within a user-gesture handler (constitution Principle III).
 export function playChord(midiNotes, strumSeconds = 0.05) {
-  const ctx = ensureAudioContext();
-  loadInstrument()
-    .then((instrument) => {
-      const start = ctx.currentTime;
-      midiNotes.forEach((midiNote, i) => instrument.play(midiNote, start + i * strumSeconds));
-    })
+  ensureRunningContext()
+    .then((ctx) =>
+      loadInstrument().then((instrument) => {
+        const start = ctx.currentTime;
+        midiNotes.forEach((midiNote, i) => instrument.play(midiNote, start + i * strumSeconds));
+      })
+    )
     .catch(() => {
       // Load failure already surfaced via onLoadError; nothing further to do.
     });
