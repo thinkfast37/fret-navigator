@@ -14,12 +14,19 @@
       "spec": "specs/003-chord-mode/spec.md",
       "plan": "specs/003-chord-mode/plan.md",
       "tasks": "specs/003-chord-mode/tasks.md"
+    },
+    {
+      "spec": "specs/004-play-chord/spec.md",
+      "plan": "specs/004-play-chord/plan.md",
+      "tasks": "specs/004-play-chord/tasks.md"
     }
   ],
   "matrix": "specs/traceability-matrix.md",
   "baseline": "specs/traceability-baseline.json",
   "waivers": "specs/traceability-waivers.json",
-  "testDirs": ["tests"],
+  "testDirs": [
+    "tests"
+  ],
   "domCapable": [
     "tests/fretboard.test.js",
     "tests/controls.test.js",

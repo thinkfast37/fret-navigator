@@ -19,6 +19,7 @@ class MockAudioContext {
   constructor() {
     this.state = "suspended";
     this.resumeCallCount = 0;
+    this.currentTime = 0;
     audioContextInstances.push(this);
   }
   resume() {
@@ -35,7 +36,13 @@ function flush() {
 function installSoundfontMock({ shouldFail = false } = {}) {
   const instrumentCalls = [];
   const playCalls = [];
-  const instrument = { play: (midiNote) => playCalls.push(midiNote) };
+  const scheduleCalls = [];
+  const instrument = {
+    play: (midiNote, when) => {
+      playCalls.push(midiNote);
+      scheduleCalls.push({ midiNote, when });
+    },
+  };
   dom.window.Soundfont = {
     instrument: (ctx, name, opts) => {
       instrumentCalls.push({ ctx, name, opts });
@@ -44,7 +51,7 @@ function installSoundfontMock({ shouldFail = false } = {}) {
         : Promise.resolve(instrument);
     },
   };
-  return { instrumentCalls, playCalls, instrument };
+  return { instrumentCalls, playCalls, scheduleCalls, instrument };
 }
 
 const audio = await import("../src/js/audio.js");
@@ -109,6 +116,27 @@ describe("audio.js (Story 8, FR-028/FR-029/FR-030/FR-031/FR-032/FR-041)", () => 
     audio.play(59);
     await flush();
     assert.deepEqual(cached.playCalls.slice(startLen), [52, 55, 59]);
+  });
+
+  test("AC-4.1.1 — Play button strums the selected chord's tones ascending from its root: playChord schedules one voice per note at strum offsets", async () => {
+    const startPlay = cached.playCalls.length;
+    const startSched = cached.scheduleCalls.length;
+    audio.playChord([52, 56, 59, 62]); // E7 voicing
+    await flush();
+
+    assert.deepEqual(cached.playCalls.slice(startPlay), [52, 56, 59, 62]);
+    const scheduled = cached.scheduleCalls.slice(startSched);
+    // Mock clock sits at currentTime=0, so `when` IS the per-note offset:
+    // 50 ms apart, low to high (R-403).
+    assert.deepEqual(
+      scheduled.map((c) => ({ midiNote: c.midiNote, when: Number(c.when.toFixed(2)) })),
+      [
+        { midiNote: 52, when: 0 },
+        { midiNote: 56, when: 0.05 },
+        { midiNote: 59, when: 0.1 },
+        { midiNote: 62, when: 0.15 },
+      ]
+    );
   });
 
   test("constitution Principle III: the AudioContext is created lazily and reused, never duplicated", () => {

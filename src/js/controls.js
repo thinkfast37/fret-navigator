@@ -3,6 +3,7 @@
 import * as theory from "./theory.js";
 import * as state from "./state.js";
 import * as fretboard from "./fretboard.js";
+import * as audio from "./audio.js";
 
 const GROUP_ORDER = ["Standard", "D-Family", "G-Family", "C-Family"];
 const CHROMATIC_PITCH_CLASSES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
@@ -556,6 +557,20 @@ export function updateChordInfo() {
   const summary = el("p", { class: "chord-summary" });
   summary.textContent = `${chordName}: ${toneNames.join(", ")}`;
   container.appendChild(summary);
+
+  // Feature 004 (FR-201/FR-204, AC-4.1.x): strum the selected chord. Voicing
+  // is computed from the TRUE root (like the summary above, never the
+  // capo-shifted highlight root) and only inside this gesture handler.
+  const playButton = el("button", {
+    type: "button",
+    id: "play-chord-button",
+    text: "▶ Play chord",
+    "aria-label": `Play ${chordName} chord`,
+  });
+  playButton.addEventListener("click", () => {
+    audio.playChord(theory.computeChordVoicing(chordRootSemitone, appState.chordQualityId));
+  });
+  container.appendChild(playButton);
 }
 
 // Implements Story 9, FR-033/FR-037: capo fret selector + Absolute/Relative toggle
