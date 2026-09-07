@@ -173,3 +173,20 @@ bundler step is introduced anywhere in this tree.
 
 No violations. (The Principle IV testing-coverage gap previously tracked here was closed on
 2026-07-19 — see the Constitution Check table above.)
+
+## Traceability Matrix
+
+*(Added 2026-09-07 as part of the traceability retrofit: maps each User Story's Acceptance Criteria to the tasks that built and the tasks that prove them.)*
+
+| Plan item | Covers | Acceptance Criteria | Implementation tasks | Test tasks |
+|---|---|---|---|---|
+| **P-001** | Setup & foundational theory/state | — | T001–T041 | — |
+| **P-002** | US-1.1 — Visualize the fretboard layout | AC-1.1.1–AC-1.1.5 | T042–T049, T110–T112 | T126 |
+| **P-003** | US-1.2 — Change tuning | AC-1.2.1–AC-1.2.6 | T050–T054 | T127 |
+| **P-004** | US-1.3 — Select root note and enharmonic spelling | AC-1.3.1–AC-1.3.3 | T055–T058, T117–T119 | T128 |
+| **P-005** | US-1.4 — Choose scale or mode | AC-1.4.1–AC-1.4.4 | T059–T062 | T129 |
+| **P-006** | US-1.5 — Diatonic focal-point highlighting | AC-1.5.1–AC-1.5.7 | T063–T070 | T130 |
+| **P-007** | US-1.6 — Base layer & label display control | AC-1.6.1–AC-1.6.5 | T071–T074 | T131 |
+| **P-008** | US-1.7 — Adjust visible fret range | AC-1.7.1–AC-1.7.6 | T075–T079 | T132 |
+| **P-009** | US-1.8 — Hear notes on the fretboard | AC-1.8.1–AC-1.8.5 | T080–T086 | T133 |
+| **P-010** | US-1.9 — Apply a capo | AC-1.9.1–AC-1.9.13 | T087–T095, T101–T109, T113–T116 | T134 |

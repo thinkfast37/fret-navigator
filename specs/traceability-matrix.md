@@ -1,0 +1,130 @@
+# Traceability Matrix
+
+<!--
+  GENERATED FILE — do not edit by hand.
+
+  Regenerate with:  npm run trace:matrix
+  It is checked by  npm run check:trace  (check T8), so an out-of-date matrix fails
+  the build rather than sitting quietly out of step with the spec.
+
+  The decisions live elsewhere. Which AC belongs to which plan item, and which tasks
+  build and prove it, are authored in the plan's own Traceability Matrix. This file is
+  that expanded one row per criterion, cross-referenced against the test suite, and
+  marked with what is true right now.
+-->
+
+**Feature**: specs/001-fretboard-visualizer/spec.md, specs/002-default-root-scale/spec.md
+**Criteria**: 57 across 10 User Stories
+
+**Coverage**: 0 of 57 criteria proven (0.0%)
+
+| | Criteria | Share |
+|---|---|---|
+| 🟢 Proven | 0 | 0.0% |
+| 🔴 Gap — CRITICAL | 57 | 100.0% |
+
+A row is one *criterion*: an Acceptance Criterion that asserts one thing, or one Case of
+an AC that asserts several. 🖵 marks a criterion that describes something a person sees or
+does, which cannot be proved by a test with no document to look at.
+
+🟢 proven · 🔵 waived · and 🟡 → 🟠 → 🔴
+as a gap gets more serious. The colour only repeats what the row already says in words, so
+nothing is lost reading this in greyscale, in a plain diff, or by someone who cannot tell
+the red from the green.
+
+## How a gap is ranked
+
+Severity comes from the kind of gap, not from a judgement recorded per criterion, so it
+cannot be talked down when a deadline is close.
+
+| Severity | Gap | Why it ranks there |
+|---|---|---|
+| 🔴 **CRITICAL** | NO TEST — nothing names this criterion | Nobody has looked. This is the state an unbuilt requirement sits in. |
+| 🔴 **HIGH** | WRONG TEST — a test names it but proves something else | The claim is unproven while reporting as covered. This is what hid US-2.2 and US-11.1/11.2. |
+| 🔴 **HIGH** | NOT PROVABLE — UI-level, but only a pure unit test | Same failure, arrived at differently: `core/` cannot see a screen, whatever the test is named. |
+| 🟠 **MEDIUM** | NEEDS CASES — a compound AC not decomposed | Partly proven. One test stands in for several claims, so some of them are unchecked. |
+| 🟡 **LOW** | MISNAMED — right test, named in its own words | Proven. Clerical: the name has drifted from the spec's wording. |
+
+🔵 **WAIVED** marks a gap deliberately left open, with its reason shown in the row. Only LOW
+and MEDIUM may be waived — CRITICAL and HIGH are exactly the states that let unbuilt work
+report as complete, so no reason clears them (Constitution Principle IV).
+
+ᵃ marks a gap accepted as pre-existing debt (57 rows). It is reported but does not
+fail the build, and it is outstanding work — never a settled decision.
+
+## Coverage by User Story
+
+| User Story | Criteria | 🟢 Proven | 🔵 Waived | 🔴 CRITICAL | 🔴 HIGH | 🟠 MEDIUM | 🟡 LOW |
+|---|---|---|---|---|---|---|---|
+| 🔴 US-1.1 | 5 | 0 | · | 5 | · | · | · |
+| 🔴 US-1.2 | 6 | 0 | · | 6 | · | · | · |
+| 🔴 US-1.3 | 3 | 0 | · | 3 | · | · | · |
+| 🔴 US-1.4 | 4 | 0 | · | 4 | · | · | · |
+| 🔴 US-1.5 | 7 | 0 | · | 7 | · | · | · |
+| 🔴 US-1.6 | 5 | 0 | · | 5 | · | · | · |
+| 🔴 US-1.7 | 6 | 0 | · | 6 | · | · | · |
+| 🔴 US-1.8 | 5 | 0 | · | 5 | · | · | · |
+| 🔴 US-1.9 | 13 | 0 | · | 13 | · | · | · |
+| 🔴 US-2.1 | 3 | 0 | · | 3 | · | · | · |
+
+## Every criterion
+
+| Story | Criterion | What it requires | Plan | Implementation tasks | Test tasks | Proving test | Status |
+|---|---|---|---|---|---|---|---|
+| US-1.1 | `AC-1.1.1` 🖵 | Strings ordered high-E top to low-E bottom | P-002 | T042, T043, T044, T045, T046, T047, T048, T049, T110, T111, T112 (11/11 done) | T126 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.1 | `AC-1.1.2` 🖵 | Inlay dot markers at standard frets, double at 12 and 24 | P-002 | T042, T043, T044, T045, T046, T047, T048, T049, T110, T111, T112 (11/11 done) | T126 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.1 | `AC-1.1.3` 🖵 | Active notes distinguished by color and shape, not color alone | P-002 | T042, T043, T044, T045, T046, T047, T048, T049, T110, T111, T112 (11/11 done) | T126 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.1 | `AC-1.1.4` 🖵 | Open-string notes shown left of fret 1 past the nut | P-002 | T042, T043, T044, T045, T046, T047, T048, T049, T110, T111, T112 (11/11 done) | T126 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.1 | `AC-1.1.5` 🖵 | Inlay dots anchored to physical fret positions under capo Relative renumbering | P-002 | T042, T043, T044, T045, T046, T047, T048, T049, T110, T111, T112 (11/11 done) | T126 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.2 | `AC-1.2.1` | All 6 strings retune and every fretted note recalculates | P-003 | T050, T051, T052, T053, T054 (5/5 done) | T127 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.2 | `AC-1.2.2` | D-Family tunings reflected exactly | P-003 | T050, T051, T052, T053, T054 (5/5 done) | T127 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.2 | `AC-1.2.3` | G-Family tunings reflected exactly | P-003 | T050, T051, T052, T053, T054 (5/5 done) | T127 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.2 | `AC-1.2.4` | C-Family tunings reflected exactly | P-003 | T050, T051, T052, T053, T054 (5/5 done) | T127 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.2 | `AC-1.2.5` | Custom Tuning sets each string's pitch independently | P-003 | T050, T051, T052, T053, T054 (5/5 done) | T127 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.2 | `AC-1.2.6` | Enharmonic spelling stays consistent with key/scale context | P-003 | T050, T051, T052, T053, T054 (5/5 done) | T127 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.3 | `AC-1.3.1` 🖵 | Selected root highlighted as root everywhere it appears | P-004 | T055, T056, T057, T058, T117, T118, T119 (7/7 done) | T128 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.3 | `AC-1.3.2` 🖵 | Fixed circle-of-fifths spelling with no manual sharp/flat toggle | P-004 | T055, T056, T057, T058, T117, T118, T119 (7/7 done) | T128 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.3 | `AC-1.3.3` 🖵 | Selected root button uses the root color-role | P-004 | T055, T056, T057, T058, T117, T118, T119 (7/7 done) | T128 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.4 | `AC-1.4.1` 🖵 | Exactly the scale's semitone-offset notes highlighted | P-005 | T059, T060, T061, T062 (4/4 done) | T129 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.4 | `AC-1.4.2` 🖵 | Highlighted set updates immediately with no stale notes | P-005 | T059, T060, T061, T062 (4/4 done) | T129 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.4 | `AC-1.4.3` 🖵 | Degree labels use the exact formula notation | P-005 | T059, T060, T061, T062 (4/4 done) | T129 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.4 | `AC-1.4.4` | All scales and modes selectable, grouped by category | P-005 | T059, T060, T061, T062 (4/4 done) | T129 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.5 | `AC-1.5.1` 🖵 | Diatonic notes dark-colored, non-diatonic notes uncolored | P-006 | T063, T064, T065, T066, T067, T068, T069, T070 (8/8 done) | T130 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.5 | `AC-1.5.2` 🖵 | Default focal root triad bright and bordered | P-006 | T063, T064, T065, T066, T067, T068, T069, T070 (8/8 done) | T130 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.5 | `AC-1.5.3` 🖵 | Clicking E sets focal point shown as a minor triad | P-006 | T063, T064, T065, T066, T067, T068, T069, T070 (8/8 done) | T130 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.5 | `AC-1.5.4` | Degree labels always relative to the key root | P-006 | T063, T064, T065, T066, T067, T068, T069, T070 (8/8 done) | T130 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.5 | `AC-1.5.5` | Diatonic chord-tone toggles build a sus4 voicing | P-006 | T063, T064, T065, T066, T067, T068, T069, T070 (8/8 done) | T130 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.5 | `AC-1.5.6` 🖵 | Non-diatonic toggle unavailable | P-006 | T063, T064, T065, T066, T067, T068, T069, T070 (8/8 done) | T130 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.5 | `AC-1.5.7` 🖵 | Toggle availability follows the key change | P-006 | T063, T064, T065, T066, T067, T068, T069, T070 (8/8 done) | T130 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.6 | `AC-1.6.1` 🖵 | Base-layer note names always visible | P-007 | T071, T072, T073, T074 (4/4 done) | T131 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.6 | `AC-1.6.2` 🖵 | Notes mode shows letter names in colored markers | P-007 | T071, T072, T073, T074 (4/4 done) | T131 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.6 | `AC-1.6.3` 🖵 | Degrees mode shows scale-degree numbers | P-007 | T071, T072, T073, T074 (4/4 done) | T131 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.6 | `AC-1.6.4` 🖵 | Intervals mode shows interval names relative to root | P-007 | T071, T072, T073, T074 (4/4 done) | T131 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.6 | `AC-1.6.5` 🖵 | Root distinguished by color and secondary indicator in every label mode | P-007 | T071, T072, T073, T074 (4/4 done) | T131 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.7 | `AC-1.7.1` 🖵 | Default full range N to 24 visible | P-008 | T075, T076, T077, T078, T079 (5/5 done) | T132 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.7 | `AC-1.7.2` 🖵 | Left handle drag narrows the range from below | P-008 | T075, T076, T077, T078, T079 (5/5 done) | T132 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.7 | `AC-1.7.3` 🖵 | Right handle drag narrows the range from above | P-008 | T075, T076, T077, T078, T079 (5/5 done) | T132 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.7 | `AC-1.7.4` 🖵 | Both handles adjusted shows only the selected range | P-008 | T075, T076, T077, T078, T079 (5/5 done) | T132 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.7 | `AC-1.7.5` 🖵 | Handle drag constrained so the range never inverts | P-008 | T075, T076, T077, T078, T079 (5/5 done) | T132 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.7 | `AC-1.7.6` 🖵 | Reset control restores the default N-24 view | P-008 | T075, T076, T077, T078, T079 (5/5 done) | T132 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.8 | `AC-1.8.1` 🖵 | Correct pitch and octave plays from a real guitar sample | P-009 | T080, T081, T082, T083, T084, T085, T086 (7/7 done) | T133 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.8 | `AC-1.8.2` | Same pitch class sounds distinct at different octaves | P-009 | T080, T081, T082, T083, T084, T085, T086 (7/7 done) | T133 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.8 | `AC-1.8.3` | Playback works offline after samples are cached | P-009 | T080, T081, T082, T083, T084, T085, T086 (7/7 done) | T133 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.8 | `AC-1.8.4` | Rapid triggers play cleanly without cutoffs or lag | P-009 | T080, T081, T082, T083, T084, T085, T086 (7/7 done) | T133 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.8 | `AC-1.8.5` 🖵 | Audio always sounds the true physical pitch under capo | P-009 | T080, T081, T082, T083, T084, T085, T086 (7/7 done) | T133 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.9 | `AC-1.9.1` 🖵 | Capo mutes lower frets and locks the left handle | P-010 | T087, T088, T089, T090, T091, T092, T093, T094, T095, T101, T102, T103, T104, T105, T106, T107, T108, T109, T113, T114, T115, T116 (22/22 done) | T134 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.9 | `AC-1.9.2` 🖵 | Absolute mode shows the true sounding pitch at the capo | P-010 | T087, T088, T089, T090, T091, T092, T093, T094, T095, T101, T102, T103, T104, T105, T106, T107, T108, T109, T113, T114, T115, T116 (22/22 done) | T134 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.9 | `AC-1.9.3` 🖵 | Relative mode shows the open-string name at the capo | P-010 | T087, T088, T089, T090, T091, T092, T093, T094, T095, T101, T102, T103, T104, T105, T106, T107, T108, T109, T113, T114, T115, T116 (22/22 done) | T134 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.9 | `AC-1.9.4` 🖵 | Relative and Absolute labels diverge above the capo | P-010 | T087, T088, T089, T090, T091, T092, T093, T094, T095, T101, T102, T103, T104, T105, T106, T107, T108, T109, T113, T114, T115, T116 (22/22 done) | T134 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.9 | `AC-1.9.5` | Highlighting recalculates on capo change with no stale frets | P-010 | T087, T088, T089, T090, T091, T092, T093, T094, T095, T101, T102, T103, T104, T105, T106, T107, T108, T109, T113, T114, T115, T116 (22/22 done) | T134 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.9 | `AC-1.9.6` 🖵 | Capo 0 makes both modes identical and frees the left handle | P-010 | T087, T088, T089, T090, T091, T092, T093, T094, T095, T101, T102, T103, T104, T105, T106, T107, T108, T109, T113, T114, T115, T116 (22/22 done) | T134 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.9 | `AC-1.9.7` 🖵 | Highlight root unshifted at capo 0 in either mode | P-010 | T087, T088, T089, T090, T091, T092, T093, T094, T095, T101, T102, T103, T104, T105, T106, T107, T108, T109, T113, T114, T115, T116 (22/22 done) | T134 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.9 | `AC-1.9.8` 🖵 | Highlight root unshifted in Absolute mode with capo | P-010 | T087, T088, T089, T090, T091, T092, T093, T094, T095, T101, T102, T103, T104, T105, T106, T107, T108, T109, T113, T114, T115, T116 (22/22 done) | T134 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.9 | `AC-1.9.9` 🖵 | Relative mode shifts the highlight root by plus capo fret | P-010 | T087, T088, T089, T090, T091, T092, T093, T094, T095, T101, T102, T103, T104, T105, T106, T107, T108, T109, T113, T114, T115, T116 (22/22 done) | T134 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.9 | `AC-1.9.10` 🖵 | Diatonic set, triad, toggles, and quality computed against the shifted root | P-010 | T087, T088, T089, T090, T091, T092, T093, T094, T095, T101, T102, T103, T104, T105, T106, T107, T108, T109, T113, T114, T115, T116 (22/22 done) | T134 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.9 | `AC-1.9.11` 🖵 | Playback always sounds the true physical pitch | P-010 | T087, T088, T089, T090, T091, T092, T093, T094, T095, T101, T102, T103, T104, T105, T106, T107, T108, T109, T113, T114, T115, T116 (22/22 done) | T134 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.9 | `AC-1.9.12` 🖵 | Bright notes summary always shows the true root's chord tones | P-010 | T087, T088, T089, T090, T091, T092, T093, T094, T095, T101, T102, T103, T104, T105, T106, T107, T108, T109, T113, T114, T115, T116 (22/22 done) | T134 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.9 | `AC-1.9.13` 🖵 | Capo indicator visually distinct from the nut | P-010 | T087, T088, T089, T090, T091, T092, T093, T094, T095, T101, T102, T103, T104, T105, T106, T107, T108, T109, T113, T114, T115, T116 (22/22 done) | T134 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-2.1 | `AC-2.1.1` 🖵 | Root selector shows C and scale selector shows Ionian on first load | P-101 | T204, T205, T206, T207 (3/4 done) | T201, T202, T203 (3/3 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-2.1 | `AC-2.1.2` 🖵 | Fretboard shows C Ionian highlighted as if manually selected | P-101 | T204, T205, T206, T207 (3/4 done) | T201, T202, T203 (3/3 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-2.1 | `AC-2.1.3` | Changing root or scale after the default load updates the fretboard normally | P-101 | T204, T205, T206, T207 (3/4 done) | T201, T202, T203 (3/3 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |

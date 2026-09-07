@@ -5,6 +5,8 @@ description: "Task list template for feature implementation"
 
 # Tasks: Default Root & Scale on First Load
 
+*(Renumbered T001–T007 → T201–T207 on 2026-09-07: task IDs must be unique across feature folders now that traceability is checked whole-project. In the same change, T201–T206 were marked done — the feature shipped in "Default fretboard to C Ionian on first load" with `src/js/state.js` defaulting to C/ionian and `tests/main-default-selection.test.js` in place, but the boxes were never checked at the time. T207, the manual browser validation, has no record of having been performed and stays open.)*
+
 **Input**: Design documents from `/specs/002-default-root-scale/`
 
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, quickstart.md
@@ -43,14 +45,14 @@ description: "Task list template for feature implementation"
 
 > Write these first; confirm they FAIL against the current `null`/`null` defaults before making the implementation change.
 
-- [ ] T001 [P] [US1] In `tests/state.test.js`, update/add a case asserting `defaultState()` (via `getState()` after a fresh module load, or via `load()` with no `fret-navigator-settings` key in `localStorage`) returns `root: "C"` and `scaleId: "ionian"`
-- [ ] T002 [P] [US1] In `tests/state.test.js`, add/update a case asserting `load()` with an existing valid persisted `root`/`scaleId` (including a persisted `null`/`null` from a pre-change installation, if that's a representable stored state) still returns the persisted values, not the new "C"/"ionian" default
-- [ ] T003 [P] [US1] In `tests/main.test.js`, add/update a case asserting that on initial app bootstrap with no persisted settings, the rendered fretboard/controls reflect C Ionian as highlighted (same DOM assertions the suite already uses for a manually-selected root/scale), rather than a blank/unselected state
+- [X] T201 [P] [US1] In `tests/state.test.js`, update/add a case asserting `defaultState()` (via `getState()` after a fresh module load, or via `load()` with no `fret-navigator-settings` key in `localStorage`) returns `root: "C"` and `scaleId: "ionian"`
+- [X] T202 [P] [US1] In `tests/state.test.js`, add/update a case asserting `load()` with an existing valid persisted `root`/`scaleId` (including a persisted `null`/`null` from a pre-change installation, if that's a representable stored state) still returns the persisted values, not the new "C"/"ionian" default
+- [X] T203 [P] [US1] In `tests/main.test.js`, add/update a case asserting that on initial app bootstrap with no persisted settings, the rendered fretboard/controls reflect C Ionian as highlighted (same DOM assertions the suite already uses for a manually-selected root/scale), rather than a blank/unselected state
 
 ### Implementation for User Story 1
 
-- [ ] T004 [US1] In `src/js/state.js`, change `defaultState()` to return `root: "C"` and `scaleId: "ionian"` instead of `null`/`null` (depends on T001-T003 existing and failing first)
-- [ ] T005 [US1] Run `node --test tests/state.test.js tests/main.test.js tests/fretboard.test.js tests/controls.test.js` and confirm all pass, including the new/updated cases from T001-T003, with zero regressions in the untouched fretboard/controls tests
+- [X] T204 [US1] In `src/js/state.js`, change `defaultState()` to return `root: "C"` and `scaleId: "ionian"` instead of `null`/`null` (depends on T201-T203 existing and failing first)
+- [X] T205 [US1] Run `node --test` on `tests/state.test.js`, `tests/main.test.js`, `tests/fretboard.test.js`, `tests/controls.test.js` and confirm all pass, including the new/updated cases from T201-T203, with zero regressions in the untouched fretboard/controls tests
 
 **Checkpoint**: User Story 1 is fully functional and independently testable — this is the entire feature (single-story scope).
 
@@ -60,8 +62,8 @@ description: "Task list template for feature implementation"
 
 **Purpose**: Final validation across the whole automated + manual suite.
 
-- [ ] T006 Run the full automated test suite (`node --test`) and confirm no regressions anywhere
-- [ ] T007 Execute the manual validation steps in `specs/002-default-root-scale/quickstart.md` (fresh-profile load, change-and-reload, clear-and-reload) in an actual browser
+- [X] T206 Run the full automated test suite (`node --test`) and confirm no regressions anywhere
+- [ ] T207 Execute the manual validation steps in `specs/002-default-root-scale/quickstart.md` (fresh-profile load, change-and-reload, clear-and-reload) in an actual browser
 
 ---
 
@@ -75,13 +77,13 @@ description: "Task list template for feature implementation"
 
 ### Within User Story 1
 
-- Tests (T001-T003) MUST be written and observed failing before the implementation change (T004).
-- T004 depends on T001-T003 existing.
-- T005 depends on T004.
+- Tests (T201-T203) MUST be written and observed failing before the implementation change (T204).
+- T204 depends on T201-T203 existing.
+- T205 depends on T204.
 
 ### Parallel Opportunities
 
-- T001, T002, T003 touch different test cases (two in `tests/state.test.js`, one in `tests/main.test.js`) and can be drafted in parallel, though T001/T002 land in the same file so coordinate before committing.
+- T201, T202, T203 touch different test cases (two in `tests/state.test.js`, one in `tests/main.test.js`) and can be drafted in parallel, though T201/T202 land in the same file so coordinate before committing.
 
 ---
 
@@ -89,9 +91,9 @@ description: "Task list template for feature implementation"
 
 ```bash
 # Draft the new/updated test cases together:
-Task: "Add default-value test case to tests/state.test.js (T001)"
-Task: "Add persisted-value-precedence test case to tests/state.test.js (T002)"
-Task: "Add initial-render test case to tests/main.test.js (T003)"
+Task: "Add default-value test case to tests/state.test.js (T201)"
+Task: "Add persisted-value-precedence test case to tests/state.test.js (T202)"
+Task: "Add initial-render test case to tests/main.test.js (T203)"
 ```
 
 ---
@@ -100,10 +102,10 @@ Task: "Add initial-render test case to tests/main.test.js (T003)"
 
 ### MVP First (and only) — User Story 1
 
-1. Write/update tests (T001-T003); confirm they fail against current `null`/`null` defaults.
-2. Make the one-line-per-field change in `defaultState()` (T004).
-3. Run the full suite (T005-T006).
-4. Manually validate via `quickstart.md` (T007).
+1. Write/update tests (T201-T203); confirm they fail against current `null`/`null` defaults.
+2. Make the one-line-per-field change in `defaultState()` (T204).
+3. Run the full suite (T205-T206).
+4. Manually validate via `quickstart.md` (T207).
 5. Done — this feature has no further stories.
 
 ## Notes

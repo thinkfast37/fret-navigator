@@ -80,3 +80,11 @@ tests/
 ## Complexity Tracking
 
 Not applicable — no Constitution Check violations.
+
+## Traceability Matrix
+
+*(Added 2026-09-07 as part of the traceability retrofit.)*
+
+| Plan item | Covers | Acceptance Criteria | Implementation tasks | Test tasks |
+|---|---|---|---|---|
+| **P-101** | US-2.1 — Default root & scale on first load | AC-2.1.1–AC-2.1.3 | T204, T205, T206, T207 | T201, T202, T203 |

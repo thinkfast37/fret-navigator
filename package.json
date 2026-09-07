@@ -3,8 +3,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test",
-    "serve": "scripts/serve.sh"
+    "test": "node --test && node --test .claude/skills/spec-trace/tests/spec-trace.test.js",
+    "serve": "scripts/serve.sh",
+    "coverage:ac": "node tests/ac-coverage.js",
+    "check:trace": "node .claude/skills/spec-trace/spec-trace.mjs",
+    "trace:matrix": "node .claude/skills/spec-trace/spec-trace.mjs matrix",
+    "trace:changed": "node .claude/skills/spec-trace/spec-trace.mjs changed",
+    "trace:prune": "node .claude/skills/spec-trace/spec-trace.mjs prune-baseline"
   },
   "devDependencies": {
     "jsdom": "^29.1.1"
