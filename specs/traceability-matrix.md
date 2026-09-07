@@ -138,7 +138,7 @@ fail the build, and it is outstanding work — never a settled decision.
 | US-3.1 | `AC-3.1.5` | Chord selection persists across reloads | P-203 | T312 (1/1 done) | T303 (1/1 done) | `state.test.js` | 🟢 OK |
 | US-3.1 | `AC-3.1.6` | Saved settings from the previous focal-point system load cleanly | P-203 | T312 (1/1 done) | T303 (1/1 done) | `state.test.js` | 🟢 OK |
 | US-3.2 | `AC-3.2.1` 🖵 | View toggle switches between Scale and Chord views | P-204 | T313 (1/1 done) | T304 (1/1 done) | `controls.test.js` | 🟢 OK |
-| US-3.2 | `AC-3.2.2` 🖵 | Chord view fully renders only the chord's tones | P-205 | T314 (1/1 done) | T305 (1/1 done) | `fretboard.test.js` | 🟢 OK |
+| US-3.2 | `AC-3.2.2` 🖵 | Chord view fully renders only the chord's tones | P-205 | T314 (1/1 done) | T305 (1/1 done) | `fretboard.test.js`, `styles.test.js` | 🟢 OK |
 | US-3.2 | `AC-3.2.3` 🖵 | Chord view ghosts the remaining scale tones | P-205 | T314 (1/1 done) | T305 (1/1 done) | `fretboard.test.js` | 🟢 OK |
 | US-3.2 | `AC-3.2.4` 🖵 | Chord view hides non-scale non-chord notes | P-205 | T314 (1/1 done) | T305 (1/1 done) | `fretboard.test.js` | 🟢 OK |
 | US-3.2 | `AC-3.2.5` 🖵 | Scale view is unchanged by chord selection | P-206 | T315 (1/1 done) | T306 (1/1 done) | `fretboard.test.js` | 🟢 OK |
