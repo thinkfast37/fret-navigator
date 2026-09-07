@@ -185,7 +185,7 @@ No violations. (The Principle IV testing-coverage gap previously tracked here wa
 | **P-003** | US-1.2 — Change tuning | AC-1.2.1–AC-1.2.6 | T050–T054 | T127 |
 | **P-004** | US-1.3 — Select root note and enharmonic spelling | AC-1.3.1–AC-1.3.3 | T055–T058, T117–T119 | T128 |
 | **P-005** | US-1.4 — Choose scale or mode | AC-1.4.1–AC-1.4.4 | T059–T062 | T129 |
-| **P-006** | US-1.5 — Diatonic focal-point highlighting | AC-1.5.1–AC-1.5.7 | T063–T070 | T130 |
+| **P-006** | US-1.5 — Diatonic scale-degree coloring *(AC-1.5.2/3/5/6/7 deleted 2026-09-07, superseded by feature 003)* | AC-1.5.1, AC-1.5.4 | T063–T070 | T130 |
 | **P-007** | US-1.6 — Base layer & label display control | AC-1.6.1–AC-1.6.5 | T071–T074 | T131 |
 | **P-008** | US-1.7 — Adjust visible fret range | AC-1.7.1–AC-1.7.6 | T075–T079 | T132 |
 | **P-009** | US-1.8 — Hear notes on the fretboard | AC-1.8.1–AC-1.8.5 | T080–T086 | T133 |

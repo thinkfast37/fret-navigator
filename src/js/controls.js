@@ -201,7 +201,9 @@ export function initTuningControls() {
 export function initRootControls() {
   const container = document.getElementById("root-controls");
   container.textContent = "";
-  container.appendChild(controlLabel("Root"));
+  // Feature 003 (AC-3.4.1): "Scale Root", to distinguish it from the chord
+  // picker's "Chord Root".
+  container.appendChild(controlLabel("Scale Root"));
 
   const buttonRow = el("div", { class: "root-buttons", role: "group", "aria-label": "Root note" });
   for (const root of theory.ROOTS) {
@@ -455,68 +457,104 @@ function mod12(n) {
   return ((n % 12) + 12) % 12;
 }
 
-// Implements Story 5, FR-020/FR-021: chord-tone toggle UI + bright-set/quality display
+// Implements feature 003, FR-101/FR-102/FR-104 (AC-3.1.1, AC-3.1.2,
+// AC-3.2.1, AC-3.2.9, AC-3.3.x): chord picker (root-as-degree + quality),
+// Scale/Chord view toggle, and the chord summary that replaces the removed
+// "Bright notes" text. Rebuilt after every render, like the toggle row it
+// replaces.
 export function updateChordInfo() {
   const container = document.getElementById("chord-info");
   container.textContent = "";
 
   const appState = state.getState();
-  // Two distinct root inputs (UAT round 2 section A / FR-047-048): toggle
-  // eligibility must match what's actually diatonic ON THE FRETBOARD (the
-  // highlight root), while the "Bright notes" text below must always name
-  // the TRUE root's own chord tones, regardless of any capo+Relative shift.
   const trueRootSemitone = fretboard.getEffectiveRootSemitone(appState);
-  if (trueRootSemitone === null || !appState.scaleId) return;
-  const highlightRootSemitone = fretboard.getHighlightRootSemitone(appState);
-
-  const activeBrightSet = fretboard.computeActiveBrightSet(appState);
-
-  container.appendChild(controlLabel("Chord Tones"));
-  const toggleRow = el("div", { class: "chord-tone-toggles", role: "group", "aria-label": "Chord tones" });
-  for (const role of theory.DEGREE_ROLES) {
-    const semitone = role.semitoneFromRoot;
-    const toggleable = theory.isToggleableChordTone(semitone, highlightRootSemitone, appState.scaleId);
-    const isBright = activeBrightSet.has(semitone);
-    const button = el("button", {
-      type: "button",
-      text: role.roleLabel,
-      "data-semitone": semitone,
-      "aria-pressed": String(isBright),
-    });
-    // Implements FR-045 (UAT round 1 section C4): toggle colors match the
-    // fretboard's own role colors - bright variant when on, dark variant
-    // when off; non-diatonic (non-toggleable) stays plain/disabled.
-    if (!toggleable) {
-      button.setAttribute("disabled", "true");
-    } else {
-      button.classList.add(`role-${role.colorRoleId}`);
-      button.classList.toggle("is-bright", isBright);
-    }
-    button.addEventListener("click", () => {
-      const isOn = fretboard.computeActiveBrightSet(state.getState()).has(semitone);
-      state.setChordToneOverride(semitone, !isOn);
-      rerender();
-    });
-    toggleRow.appendChild(button);
-  }
-  container.appendChild(toggleRow);
+  if (trueRootSemitone === null) return;
 
   const keyContext = {
     root: appState.root,
     accidentalPreference: appState.accidentalPreference,
     scaleId: appState.scaleId,
   };
-  // FR-048: always the TRUE root's own chord tones, never the shifted
-  // highlight root - this text can legitimately diverge from what's actually
-  // rendered bright on the fretboard when a capo+Relative shift is active
-  // (Story 9 Acceptance Scenario 12).
-  const brightNames = [...activeBrightSet]
-    .sort((a, b) => a - b)
-    .map((semitone) => theory.spellPitchClass(mod12(trueRootSemitone + semitone), keyContext));
-  const quality = theory.identifyChordQuality([...activeBrightSet], appState.focalDegreeSemitone);
 
+  // Chord root dropdown: 12 chromatic roots as degrees of the current scale
+  // (AC-3.1.1), non-diatonic ones marked and annotated with their borrowed
+  // source (AC-3.3.2) or "(in scale)" flags for non-heptatonic scales
+  // (AC-3.3.3). Degree analysis is theory.js's, never re-derived here.
+  container.appendChild(controlLabel("Chord Root"));
+  const rootSelect = el("select", { id: "chord-root-select", "aria-label": "Chord root" });
+  const scale = appState.scaleId ? theory.SCALES.find((s) => s.id === appState.scaleId) : null;
+  const isHeptatonic = scale !== null && scale !== undefined && scale.semitoneOffsets.length === 7;
+  for (const option of theory.getChordRootOptions(keyContext)) {
+    let text;
+    if (option.degreeLabel === null) {
+      text = option.noteName;
+    } else if (isHeptatonic) {
+      text = `${option.degreeLabel} — ${option.noteName}`;
+      if (!option.inScale) {
+        text += option.borrowedFrom ? ` (borrowed: ${option.borrowedFrom.join(" / ")})` : " (chromatic)";
+      }
+    } else {
+      text = `${option.degreeLabel} — ${option.noteName}${option.inScale ? " (in scale)" : ""}`;
+    }
+    const optionEl = el("option", { value: String(option.offset), text });
+    if (option.degreeLabel !== null && !option.inScale) optionEl.classList.add("non-diatonic");
+    rootSelect.appendChild(optionEl);
+  }
+  rootSelect.value = String(appState.chordRootOffset);
+  rootSelect.addEventListener("change", () => {
+    state.setChordRootOffset(Number(rootSelect.value));
+    rerender();
+  });
+  container.appendChild(rootSelect);
+
+  // Chord quality dropdown: the full 20-quality vocabulary (AC-3.1.2).
+  container.appendChild(controlLabel("Chord Quality"));
+  const qualitySelect = el("select", { id: "chord-quality-select", "aria-label": "Chord quality" });
+  for (const quality of theory.CHORD_QUALITIES) {
+    qualitySelect.appendChild(el("option", { value: quality.id, text: quality.label }));
+  }
+  qualitySelect.value = appState.chordQualityId;
+  qualitySelect.addEventListener("change", () => {
+    state.setChordQualityId(qualitySelect.value);
+    rerender();
+  });
+  container.appendChild(qualitySelect);
+
+  // Scale/Chord view toggle (AC-3.2.1).
+  container.appendChild(controlLabel("View"));
+  const viewRow = el("div", { class: "view-mode-buttons", role: "group", "aria-label": "Fretboard view" });
+  for (const mode of [
+    { value: "scale", label: "Scale" },
+    { value: "chord", label: "Chord" },
+  ]) {
+    const button = el("button", {
+      type: "button",
+      "data-view": mode.value,
+      text: mode.label,
+      "aria-pressed": String(appState.viewMode === mode.value),
+    });
+    button.addEventListener("click", () => {
+      state.setViewMode(mode.value);
+      rerender();
+    });
+    viewRow.appendChild(button);
+  }
+  container.appendChild(viewRow);
+
+  // Chord summary (AC-3.2.9): name + spelled tones, ALWAYS anchored to the
+  // TRUE root (FR-108) - it can legitimately diverge from the fretboard's
+  // capo+Relative-shifted highlighting, matching the FR-047/FR-048 split.
+  const chordRootSemitone = mod12(trueRootSemitone + appState.chordRootOffset);
+  const chordName = theory.getChordName(chordRootSemitone, appState.chordQualityId, keyContext);
+  // spellPitchClass needs a concrete scale for letter-walking; with "(No
+  // scale)" selected fall back to ionian, mirroring fretboard.js's
+  // effectiveKeyContext convention.
+  const spellContext = appState.scaleId ? keyContext : { ...keyContext, scaleId: "ionian" };
+  const toneNames = theory
+    .computeChordTones(chordRootSemitone, appState.chordQualityId)
+    .map((semitone) => theory.spellPitchClass(semitone, spellContext));
   const summary = el("p", { class: "chord-summary" });
-  summary.textContent = `Bright notes: ${brightNames.join(", ")}${quality ? ` (${quality})` : ""}`;
+  summary.textContent = `${chordName}: ${toneNames.join(", ")}`;
   container.appendChild(summary);
 }
 

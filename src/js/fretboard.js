@@ -2,7 +2,6 @@
 // Visual state is a pure function of the current app state (constitution Principle II).
 
 import * as theory from "./theory.js";
-import * as state from "./state.js";
 import * as audio from "./audio.js";
 
 const ALL_ROLE_IDS = ["1", "b2", "2", "b3", "3", "4", "4s5b", "5", "b6", "6", "b7", "7"];
@@ -89,31 +88,18 @@ export function getHighlightRootSemitone(appState) {
   return theory.getHighlightRootSemitone(trueRoot, appState.capoFret, appState.capoLabelMode);
 }
 
-// Default focal triad merged with user chord-tone overrides -> Set of
-// root-relative semitones (0=root) currently in the "bright" set. Note:
-// theory.computeDefaultTriad's own math is root-agnostic (it operates
-// entirely in offset space via focalSemitone), so this Set of offsets is
-// identical whichever root variant is passed in below - the true root vs.
-// getHighlightRootSemitone divergence (UAT round 2 section A) only shows up
-// downstream, when a caller converts these offsets to absolute pitches
-// (fretboard rendering uses getHighlightRootSemitone; the "Bright notes"
-// text summary must use getEffectiveRootSemitone/true root instead, FR-048).
-// Implements Story 5, FR-018/FR-020: default triad merged with chord-tone overrides
-export function computeActiveBrightSet(appState) {
-  const rootSemitone = getEffectiveRootSemitone(appState);
-  if (rootSemitone === null || !appState.scaleId) return new Set();
-
-  const defaultTriad = theory.computeDefaultTriad(
-    appState.focalDegreeSemitone,
-    rootSemitone,
-    appState.scaleId
+// Implements feature 003, FR-103/FR-108: the selected chord's absolute
+// pitch-class set for ON-FRETBOARD rendering. Anchored to the HIGHLIGHT root
+// (capo binding rule: shifts with capo+Relative exactly like the diatonic
+// set). The chord summary text (controls.js) must instead run the same
+// arithmetic on getEffectiveRootSemitone (true root) - the FR-047/FR-048
+// split of feature 001.
+export function computeChordToneSet(appState) {
+  const highlightRoot = getHighlightRootSemitone(appState);
+  if (highlightRoot === null) return new Set();
+  return new Set(
+    theory.computeChordTones(mod12(highlightRoot + appState.chordRootOffset), appState.chordQualityId)
   );
-  const brightSet = new Set(defaultTriad || []);
-  for (const override of appState.chordToneOverrides) {
-    if (override.on) brightSet.add(override.semitone);
-    else brightSet.delete(override.semitone);
-  }
-  return brightSet;
 }
 
 function svgEl(tag, attrs = {}) {
@@ -124,26 +110,13 @@ function svgEl(tag, attrs = {}) {
   return el;
 }
 
-// Every fret click/tap plays its true sounding pitch (FR-028). Only
-// diatonically-colored notes additionally become the new focal point
-// (FR-017) - non-diatonic notes still play audio, just don't affect focus.
-// Frets muted by an active capo (below it) are fully inert (FR-033).
+// Every fret click/tap plays its true sounding pitch (FR-028) and does
+// nothing else - the focal-point selection that used to live here is
+// superseded by feature 003's chord picker (AC-3.2.6). Frets muted by an
+// active capo (below it) are fully inert (FR-033).
 function onNoteActivated(g) {
   if (g.dataset.isPlayable === "false") return;
-
   audio.play(Number(g.dataset.midiNote));
-
-  if (!g.classList.contains("is-diatonic")) return;
-  const appState = state.getState();
-  // Uses the HIGHLIGHT root (UAT round 2 section A), not the true root: a
-  // clicked note's "is-diatonic" class was itself assigned on the highlight
-  // basis in updateNotes() below, so the resulting focal offset must be
-  // computed relative to that same basis to stay consistent.
-  const highlightRootSemitone = getHighlightRootSemitone(appState);
-  const pitchClassSemitone = Number(g.dataset.pitchClassSemitone);
-  const semitoneFromRoot = mod12(pitchClassSemitone - highlightRootSemitone);
-  state.setFocalDegreeSemitone(semitoneFromRoot);
-  render(state.getState());
 }
 
 function resolveTuning(state) {
@@ -321,7 +294,10 @@ function updateNotes(state, layout) {
     rootSemitone !== null && state.scaleId
       ? theory.getDiatonicSemitones(rootSemitone, state.scaleId)
       : new Set();
-  const activeBrightSet = computeActiveBrightSet(state);
+  // Feature 003 (FR-104): Chord view partitions every note into exactly one
+  // of chord-tone (full), ghost (in scale, unlabelled), or hidden.
+  const isChordView = state.viewMode === "chord";
+  const chordToneSet = isChordView ? computeChordToneSet(state) : new Set();
   const isRelativeLabelMode = state.capoFret > 0 && state.capoLabelMode === "relative";
 
   for (let s = 0; s < STRING_COUNT; s++) {
@@ -343,7 +319,9 @@ function updateNotes(state, layout) {
       const isRoot = rootSemitone !== null && pitchClassSemitone === rootSemitone;
       const isDiatonic = diatonicSemitones.has(pitchClassSemitone);
       const semitoneFromRoot = rootSemitone !== null ? mod12(pitchClassSemitone - rootSemitone) : null;
-      const isFocalChordTone = isDiatonic && activeBrightSet.has(semitoneFromRoot);
+      const isChordTone = isChordView && chordToneSet.has(pitchClassSemitone);
+      const isGhost = isChordView && !isChordTone && isDiatonic;
+      const isChordHidden = isChordView && !isChordTone && !isDiatonic;
 
       // Relative-mode note NAMES are a distinct computation from the
       // diatonic/degree-role layer above: the string's own static open
@@ -368,10 +346,14 @@ function updateNotes(state, layout) {
 
       g.classList.toggle("is-root", isRoot);
       g.classList.toggle("is-diatonic", isDiatonic);
-      g.classList.toggle("is-bright", isFocalChordTone);
+      g.classList.toggle("is-chord-tone", isChordTone);
+      g.classList.toggle("is-ghost", isGhost);
+      g.classList.toggle("chord-hidden", isChordHidden);
       g.classList.toggle("is-muted", !isPlayable);
       g.classList.toggle("fret-hidden", !isVisibleInRange);
-      g.setAttribute("tabindex", isVisibleInRange && isPlayable ? "0" : "-1");
+      // Hidden chord-view notes leave the tab order entirely (AC-3.2.7);
+      // ghosts stay reachable for audio.
+      g.setAttribute("tabindex", isVisibleInRange && isPlayable && !isChordHidden ? "0" : "-1");
 
       for (const roleId of ALL_ROLE_IDS) g.classList.remove(`role-${roleId}`);
       if (isDiatonic) {
@@ -379,10 +361,12 @@ function updateNotes(state, layout) {
         g.classList.add(`role-${role.colorRoleId}`);
       }
 
-      text.textContent = label;
+      // Ghosts render as unlabelled faint dots (AC-3.2.3); the missing label
+      // doubles as their non-color distinguisher (FR-111).
+      text.textContent = isGhost ? "" : label;
       g.setAttribute(
         "aria-label",
-        `${label}${isRoot ? ", root" : ""}${isFocalChordTone ? ", chord tone" : isDiatonic ? ", in scale" : ""}${isPlayable ? "" : ", muted"}, fret ${f === 0 ? "open" : f}, string ${s + 1}`
+        `${label}${isRoot ? ", root" : ""}${isChordTone ? ", chord tone" : isDiatonic ? ", in scale" : ""}${isPlayable ? "" : ", muted"}, fret ${f === 0 ? "open" : f}, string ${s + 1}`
       );
       g.dataset.midiNote = midiNote;
       g.dataset.pitchClassSemitone = pitchClassSemitone;

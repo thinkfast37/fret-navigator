@@ -53,7 +53,7 @@ describe("control labels (UAT round 1 section E1)", () => {
   test("every control container shows a visible label above its interactive element", () => {
     const expected = {
       "tuning-controls": "Tuning",
-      "root-controls": "Root",
+      "root-controls": "Scale Root",
       "scale-controls": "Scale / Mode",
       "label-mode-controls": "Label Mode",
       "fret-range-controls": "Visible Frets",
@@ -68,15 +68,16 @@ describe("control labels (UAT round 1 section E1)", () => {
     assert.deepEqual(capoLabels, ["Capo", "Fret Reference"]);
   });
 
-  test("the chord-tone toggle row shows a 'Chord Tones' label once a root and scale are selected", () => {
+  test('AC-3.4.1 — Root control is labelled "Scale Root" and chord picker "Chord Root"', () => {
     document.querySelector('.root-buttons button[data-root="C"]').click();
     const scaleSelect = document.getElementById("scale-select");
     scaleSelect.value = "ionian";
     fire(scaleSelect, "change");
 
-    const label = document.querySelector("#chord-info .control-label");
-    assert.ok(label);
-    assert.equal(label.textContent, "Chord Tones");
+    assert.equal(document.querySelector("#root-controls .control-label").textContent, "Scale Root");
+    const chordLabels = [...document.querySelectorAll("#chord-info .control-label")].map((l) => l.textContent);
+    assert.ok(chordLabels.includes("Chord Root"));
+    assert.ok(chordLabels.includes("Chord Quality"));
   });
 
   test("the custom-tuning modal heading reads 'Custom Tuning'", () => {
@@ -249,67 +250,116 @@ describe("initFretRangeControls / syncFretRangeControls (Story 7, FR-025/FR-026/
   });
 });
 
-describe("updateChordInfo (Story 5, FR-020/FR-021)", () => {
-  test("US5 Scenario 6: gates chord-tone toggles to diatonic-only positions and shows the recognized chord quality", () => {
+// (The Story 5 updateChordInfo describe that stood here — chord-tone toggles,
+// bright set, "Bright notes" summary — was removed 2026-09-07: its criteria were
+// superseded by feature 003's chord picker, tested below.)
+
+describe("chord picker + view toggle (feature 003)", () => {
+  function selectCIonian() {
     document.querySelector('.root-buttons button[data-root="C"]').click();
     const scaleSelect = document.getElementById("scale-select");
     scaleSelect.value = "ionian";
     fire(scaleSelect, "change");
+  }
 
-    const toggles = document.querySelectorAll(".chord-tone-toggles button");
-    assert.equal(toggles.length, 12);
-    const fSharpToggle = [...toggles].find((b) => Number(b.dataset.semitone) === 6);
-    assert.equal(fSharpToggle.hasAttribute("disabled"), true); // F# not diatonic to C major
-
-    const summary = document.querySelector(".chord-summary");
-    assert.match(summary.textContent, /Bright notes: C, E, G \(Major\)/);
+  test("AC-3.1.1 — Chord root dropdown lists all 12 chromatic roots as degrees of the current scale: controls", () => {
+    selectCIonian();
+    const rootSelect = document.getElementById("chord-root-select");
+    const options = [...rootSelect.querySelectorAll("option")];
+    assert.equal(options.length, 12);
+    assert.equal(options[0].textContent, "I — C");
+    assert.equal(options[2].textContent, "ii — D");
+    assert.match(options[10].textContent, /^bVII — Bb/);
   });
 
-  test("US5 Scenario 7: F# becomes an available toggle once the key changes to C Lydian", () => {
-    const scaleSelect = document.getElementById("scale-select");
-    scaleSelect.value = "lydian";
-    fire(scaleSelect, "change");
-    const fSharpToggle = [...document.querySelectorAll(".chord-tone-toggles button")].find(
-      (b) => Number(b.dataset.semitone) === 6
-    );
-    assert.equal(fSharpToggle.hasAttribute("disabled"), false);
+  test("AC-3.1.2 — Chord quality dropdown offers the full vocabulary: controls", () => {
+    selectCIonian();
+    const qualitySelect = document.getElementById("chord-quality-select");
+    const values = [...qualitySelect.querySelectorAll("option")].map((o) => o.value);
+    assert.equal(values.length, 20);
+    for (const id of ["major", "minor", "dim", "aug", "sus2", "sus4", "dom7", "maj7", "min7", "m7b5", "dim7", "six", "m6", "dom9", "min9", "maj9", "add9", "dom11", "dom13", "7sus4"]) {
+      assert.ok(values.includes(id), `quality ${id} offered`);
+    }
   });
 
-  test("US5 Scenario 5: clicking an enabled, off chord-tone toggle adds it to the bright set", () => {
-    const scaleSelect = document.getElementById("scale-select");
-    scaleSelect.value = "ionian";
-    fire(scaleSelect, "change");
-
-    const aToggle = [...document.querySelectorAll(".chord-tone-toggles button")].find(
-      (b) => Number(b.dataset.semitone) === 9
-    );
-    assert.equal(aToggle.getAttribute("aria-pressed"), "false");
-    aToggle.click();
-    const aToggleAfter = [...document.querySelectorAll(".chord-tone-toggles button")].find(
-      (b) => Number(b.dataset.semitone) === 9
-    );
-    assert.equal(aToggleAfter.getAttribute("aria-pressed"), "true");
+  test("AC-3.3.1 — Diatonic chord roots are labelled with case-correct Roman numerals: controls", () => {
+    selectCIonian();
+    const options = [...document.querySelectorAll("#chord-root-select option")];
+    const diatonicTexts = options.filter((o) => !o.classList.contains("non-diatonic")).map((o) => o.textContent);
+    assert.deepEqual(diatonicTexts, ["I — C", "ii — D", "iii — E", "IV — F", "V — G", "vi — A", "vii° — B"]);
   });
 
-  test("FR-045 (UAT round 1 section C4): toggle colors match fretboard role colors - bright role class when on, dark (no is-bright) when off, plain when disabled", () => {
+  test("AC-3.3.2 — Non-diatonic chord roots are labelled as borrowed with a source when one is common: controls", () => {
+    selectCIonian();
+    const options = [...document.querySelectorAll("#chord-root-select option")];
+    assert.equal(options[10].textContent, "bVII — Bb (borrowed: Mixolydian / parallel minor)");
+    assert.ok(options[10].classList.contains("non-diatonic"));
+    assert.ok(!options[0].classList.contains("non-diatonic"));
+  });
+
+  test("picking a chord root and quality updates state and the summary", () => {
+    selectCIonian();
+    const rootSelect = document.getElementById("chord-root-select");
+    rootSelect.value = "7"; // V — G
+    fire(rootSelect, "change");
+    const qualitySelect = document.getElementById("chord-quality-select");
+    qualitySelect.value = "dom7";
+    fire(qualitySelect, "change");
+    assert.equal(state.getState().chordRootOffset, 7);
+    assert.equal(state.getState().chordQualityId, "dom7");
+    assert.match(document.querySelector(".chord-summary").textContent, /G7: G, B, D, F/);
+  });
+
+  test("AC-3.2.1 — View toggle switches between Scale and Chord views", () => {
+    selectCIonian();
+    const chordBtn = document.querySelector('.view-mode-buttons button[data-view="chord"]');
+    const scaleBtn = document.querySelector('.view-mode-buttons button[data-view="scale"]');
+    assert.equal(scaleBtn.getAttribute("aria-pressed"), "true");
+    chordBtn.click();
+    assert.equal(state.getState().viewMode, "chord");
+    assert.equal(
+      document.querySelector('.view-mode-buttons button[data-view="chord"]').getAttribute("aria-pressed"),
+      "true"
+    );
+    document.querySelector('.view-mode-buttons button[data-view="scale"]').click();
+    assert.equal(state.getState().viewMode, "scale");
+  });
+
+  test("AC-3.2.9 — Chord summary line names the chord and its tones", () => {
+    selectCIonian();
+    const rootSelect = document.getElementById("chord-root-select");
+    rootSelect.value = "4"; // iii — E
+    fire(rootSelect, "change");
+    const qualitySelect = document.getElementById("chord-quality-select");
+    qualitySelect.value = "dom7";
+    fire(qualitySelect, "change");
+    assert.match(document.querySelector(".chord-summary").textContent, /E7: E, G#, B, D/);
+  });
+
+  test("AC-3.1.4 — Chord selection defaults to the scale root with a diatonic quality: picker resets with the scale", () => {
+    selectCIonian();
+    const rootSelect = document.getElementById("chord-root-select");
+    rootSelect.value = "9";
+    fire(rootSelect, "change");
     const scaleSelect = document.getElementById("scale-select");
-    scaleSelect.value = "ionian";
+    scaleSelect.value = "aeolian";
     fire(scaleSelect, "change");
+    assert.equal(state.getState().chordRootOffset, 0);
+    assert.equal(state.getState().chordQualityId, "minor");
+    assert.equal(document.getElementById("chord-root-select").value, "0");
+    assert.equal(document.getElementById("chord-quality-select").value, "minor");
+  });
 
-    const toggles = [...document.querySelectorAll(".chord-tone-toggles button")];
-    const rootToggle = toggles.find((b) => Number(b.dataset.semitone) === 0); // on (default C major triad)
-    const secondToggle = toggles.find((b) => Number(b.dataset.semitone) === 2); // diatonic, off
-    const fSharpToggle = toggles.find((b) => Number(b.dataset.semitone) === 6); // non-diatonic, disabled
-
-    assert.ok(rootToggle.classList.contains("role-1"));
-    assert.ok(rootToggle.classList.contains("is-bright"));
-
-    assert.ok(secondToggle.classList.contains("role-2"));
-    assert.ok(!secondToggle.classList.contains("is-bright"));
-
-    assert.ok(!fSharpToggle.classList.contains("role-4s5b"));
-    assert.ok(!fSharpToggle.classList.contains("is-bright"));
-    assert.equal(fSharpToggle.hasAttribute("disabled"), true);
+  test("AC-3.3.3 — Non-seven-note scales fall back to degree-only labels: controls", () => {
+    document.querySelector('.root-buttons button[data-root="A"]').click();
+    const scaleSelect = document.getElementById("scale-select");
+    scaleSelect.value = "minor-pentatonic";
+    fire(scaleSelect, "change");
+    const options = [...document.querySelectorAll("#chord-root-select option")];
+    assert.equal(options.length, 12);
+    assert.match(options[3].textContent, /^b3 — C \(in scale\)/);
+    assert.ok(!options[3].classList.contains("non-diatonic"));
+    assert.ok(options[2].classList.contains("non-diatonic"));
   });
 });
 
@@ -340,7 +390,7 @@ describe("initCapoControls (Story 9, FR-033/FR-037)", () => {
     assert.equal(absoluteBtn.getAttribute("aria-pressed"), "false");
   });
 
-  test("Scenario 12 (UAT round 2 section A, FR-048): with capo=3 + Relative mode active, the 'Bright notes' text summary still always names the TRUE root's own chord tones", () => {
+  test("Scenario 12 (UAT round 2 section A, FR-048/FR-108): with capo=3 + Relative mode active, the chord summary still always names the TRUE root's own chord tones", () => {
     document.querySelector('.root-buttons button[data-root="C"]').click();
     const scaleSelect = document.getElementById("scale-select");
     scaleSelect.value = "ionian";
@@ -352,6 +402,6 @@ describe("initCapoControls (Story 9, FR-033/FR-037)", () => {
     assert.equal(state.getState().capoLabelMode, "relative"); // set by the earlier test in this block
 
     const summary = document.querySelector(".chord-summary");
-    assert.match(summary.textContent, /Bright notes: C, E, G \(Major\)/);
+    assert.match(summary.textContent, /C: C, E, G/); // true-root C major, never the shifted Eb
   });
 });

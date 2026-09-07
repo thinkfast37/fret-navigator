@@ -13,15 +13,15 @@
   marked with what is true right now.
 -->
 
-**Feature**: specs/001-fretboard-visualizer/spec.md, specs/002-default-root-scale/spec.md
-**Criteria**: 57 across 10 User Stories
+**Feature**: specs/001-fretboard-visualizer/spec.md, specs/002-default-root-scale/spec.md, specs/003-chord-mode/spec.md
+**Criteria**: 71 across 14 User Stories
 
-**Coverage**: 0 of 57 criteria proven (0.0%)
+**Coverage**: 19 of 71 criteria proven (26.8%)
 
 | | Criteria | Share |
 |---|---|---|
-| 🟢 Proven | 0 | 0.0% |
-| 🔴 Gap — CRITICAL | 57 | 100.0% |
+| 🟢 Proven | 19 | 26.8% |
+| 🔴 Gap — CRITICAL | 52 | 73.2% |
 
 A row is one *criterion*: an Acceptance Criterion that asserts one thing, or one Case of
 an AC that asserts several. 🖵 marks a criterion that describes something a person sees or
@@ -49,7 +49,7 @@ cannot be talked down when a deadline is close.
 and MEDIUM may be waived — CRITICAL and HIGH are exactly the states that let unbuilt work
 report as complete, so no reason clears them (Constitution Principle IV).
 
-ᵃ marks a gap accepted as pre-existing debt (57 rows). It is reported but does not
+ᵃ marks a gap accepted as pre-existing debt (52 rows). It is reported but does not
 fail the build, and it is outstanding work — never a settled decision.
 
 ## Coverage by User Story
@@ -60,12 +60,16 @@ fail the build, and it is outstanding work — never a settled decision.
 | 🔴 US-1.2 | 6 | 0 | · | 6 | · | · | · |
 | 🔴 US-1.3 | 3 | 0 | · | 3 | · | · | · |
 | 🔴 US-1.4 | 4 | 0 | · | 4 | · | · | · |
-| 🔴 US-1.5 | 7 | 0 | · | 7 | · | · | · |
+| 🔴 US-1.5 | 2 | 0 | · | 2 | · | · | · |
 | 🔴 US-1.6 | 5 | 0 | · | 5 | · | · | · |
 | 🔴 US-1.7 | 6 | 0 | · | 6 | · | · | · |
 | 🔴 US-1.8 | 5 | 0 | · | 5 | · | · | · |
 | 🔴 US-1.9 | 13 | 0 | · | 13 | · | · | · |
 | 🔴 US-2.1 | 3 | 0 | · | 3 | · | · | · |
+| 🟢 US-3.1 | 6 | **6** | · | · | · | · | · |
+| 🟢 US-3.2 | 9 | **9** | · | · | · | · | · |
+| 🟢 US-3.3 | 3 | **3** | · | · | · | · | · |
+| 🟢 US-3.4 | 1 | **1** | · | · | · | · | · |
 
 ## Every criterion
 
@@ -89,13 +93,8 @@ fail the build, and it is outstanding work — never a settled decision.
 | US-1.4 | `AC-1.4.2` 🖵 | Highlighted set updates immediately with no stale notes | P-005 | T059, T060, T061, T062 (4/4 done) | T129 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
 | US-1.4 | `AC-1.4.3` 🖵 | Degree labels use the exact formula notation | P-005 | T059, T060, T061, T062 (4/4 done) | T129 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
 | US-1.4 | `AC-1.4.4` | All scales and modes selectable, grouped by category | P-005 | T059, T060, T061, T062 (4/4 done) | T129 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
-| US-1.5 | `AC-1.5.1` 🖵 | Diatonic notes dark-colored, non-diatonic notes uncolored | P-006 | T063, T064, T065, T066, T067, T068, T069, T070 (8/8 done) | T130 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
-| US-1.5 | `AC-1.5.2` 🖵 | Default focal root triad bright and bordered | P-006 | T063, T064, T065, T066, T067, T068, T069, T070 (8/8 done) | T130 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
-| US-1.5 | `AC-1.5.3` 🖵 | Clicking E sets focal point shown as a minor triad | P-006 | T063, T064, T065, T066, T067, T068, T069, T070 (8/8 done) | T130 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
-| US-1.5 | `AC-1.5.4` | Degree labels always relative to the key root | P-006 | T063, T064, T065, T066, T067, T068, T069, T070 (8/8 done) | T130 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
-| US-1.5 | `AC-1.5.5` | Diatonic chord-tone toggles build a sus4 voicing | P-006 | T063, T064, T065, T066, T067, T068, T069, T070 (8/8 done) | T130 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
-| US-1.5 | `AC-1.5.6` 🖵 | Non-diatonic toggle unavailable | P-006 | T063, T064, T065, T066, T067, T068, T069, T070 (8/8 done) | T130 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
-| US-1.5 | `AC-1.5.7` 🖵 | Toggle availability follows the key change | P-006 | T063, T064, T065, T066, T067, T068, T069, T070 (8/8 done) | T130 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.5 | `AC-1.5.1` 🖵 | Diatonic notes colored by degree role, non-diatonic notes uncolored | P-006 | T063, T064, T065, T066, T067, T068, T069, T070 (8/8 done) | T130 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.5 | `AC-1.5.4` 🖵 | Degree labels always relative to the key root | P-006 | T063, T064, T065, T066, T067, T068, T069, T070 (8/8 done) | T130 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
 | US-1.6 | `AC-1.6.1` 🖵 | Base-layer note names always visible | P-007 | T071, T072, T073, T074 (4/4 done) | T131 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
 | US-1.6 | `AC-1.6.2` 🖵 | Notes mode shows letter names in colored markers | P-007 | T071, T072, T073, T074 (4/4 done) | T131 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
 | US-1.6 | `AC-1.6.3` 🖵 | Degrees mode shows scale-degree numbers | P-007 | T071, T072, T073, T074 (4/4 done) | T131 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
@@ -128,3 +127,22 @@ fail the build, and it is outstanding work — never a settled decision.
 | US-2.1 | `AC-2.1.1` 🖵 | Root selector shows C and scale selector shows Ionian on first load | P-101 | T204, T205, T206, T207 (3/4 done) | T201, T202, T203 (3/3 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
 | US-2.1 | `AC-2.1.2` 🖵 | Fretboard shows C Ionian highlighted as if manually selected | P-101 | T204, T205, T206, T207 (3/4 done) | T201, T202, T203 (3/3 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
 | US-2.1 | `AC-2.1.3` | Changing root or scale after the default load updates the fretboard normally | P-101 | T204, T205, T206, T207 (3/4 done) | T201, T202, T203 (3/3 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-3.1 | `AC-3.1.1` 🖵 | Chord root dropdown lists all 12 chromatic roots as degrees of the current scale | P-202 | T311 (1/1 done) | T302 (1/1 done) | `controls.test.js`, `theory.test.js` | 🟢 OK |
+| US-3.1 | `AC-3.1.2` 🖵 | Chord quality dropdown offers the full vocabulary | P-201 | T310 (1/1 done) | T301 (1/1 done) | `controls.test.js`, `theory.test.js` | 🟢 OK |
+| US-3.1 | `AC-3.1.3` 🖵 | Selected chord's tones are computed from root + quality | P-201 | T310 (1/1 done) | T301 (1/1 done) | `fretboard.test.js`, `theory.test.js` | 🟢 OK |
+| US-3.1 | `AC-3.1.4` 🖵 | Chord selection defaults to the scale root with a diatonic quality | P-203 | T312 (1/1 done) | T303 (1/1 done) | `controls.test.js`, `state.test.js`, `theory.test.js` | 🟢 OK |
+| US-3.1 | `AC-3.1.5` | Chord selection persists across reloads | P-203 | T312 (1/1 done) | T303 (1/1 done) | `state.test.js` | 🟢 OK |
+| US-3.1 | `AC-3.1.6` | Saved settings from the previous focal-point system load cleanly | P-203 | T312 (1/1 done) | T303 (1/1 done) | `state.test.js` | 🟢 OK |
+| US-3.2 | `AC-3.2.1` 🖵 | View toggle switches between Scale and Chord views | P-204 | T313 (1/1 done) | T304 (1/1 done) | `controls.test.js` | 🟢 OK |
+| US-3.2 | `AC-3.2.2` 🖵 | Chord view fully renders only the chord's tones | P-205 | T314 (1/1 done) | T305 (1/1 done) | `fretboard.test.js` | 🟢 OK |
+| US-3.2 | `AC-3.2.3` 🖵 | Chord view ghosts the remaining scale tones | P-205 | T314 (1/1 done) | T305 (1/1 done) | `fretboard.test.js` | 🟢 OK |
+| US-3.2 | `AC-3.2.4` 🖵 | Chord view hides non-scale non-chord notes | P-205 | T314 (1/1 done) | T305 (1/1 done) | `fretboard.test.js` | 🟢 OK |
+| US-3.2 | `AC-3.2.5` 🖵 | Scale view is unchanged by chord selection | P-206 | T315 (1/1 done) | T306 (1/1 done) | `fretboard.test.js` | 🟢 OK |
+| US-3.2 | `AC-3.2.6` 🖵 | Clicking a note plays its pitch in both views | P-206 | T315 (1/1 done) | T306 (1/1 done) | `fretboard.test.js` | 🟢 OK |
+| US-3.2 | `AC-3.2.7` 🖵 | Ghost dots remain non-interactive for selection but stay accessible | P-205 | T314 (1/1 done) | T305 (1/1 done) | `fretboard.test.js` | 🟢 OK |
+| US-3.2 | `AC-3.2.8` 🖵 | Chord view shifts with the capo highlight root in Relative mode | P-207 | T316 (1/1 done) | T307 (1/1 done) | `fretboard.test.js` | 🟢 OK |
+| US-3.2 | `AC-3.2.9` 🖵 | Chord summary line names the chord and its tones | P-204 | T313 (1/1 done) | T304 (1/1 done) | `controls.test.js`, `theory.test.js` | 🟢 OK |
+| US-3.3 | `AC-3.3.1` 🖵 | Diatonic chord roots are labelled with case-correct Roman numerals | P-202 | T311 (1/1 done) | T302 (1/1 done) | `controls.test.js`, `theory.test.js` | 🟢 OK |
+| US-3.3 | `AC-3.3.2` 🖵 | Non-diatonic chord roots are labelled as borrowed with a source when one is common | P-202 | T311 (1/1 done) | T302 (1/1 done) | `controls.test.js`, `theory.test.js` | 🟢 OK |
+| US-3.3 | `AC-3.3.3` 🖵 | Non-seven-note scales fall back to degree-only labels | P-202 | T311 (1/1 done) | T302 (1/1 done) | `controls.test.js`, `theory.test.js` | 🟢 OK |
+| US-3.4 | `AC-3.4.1` 🖵 | Root control is labelled "Scale Root" and chord picker "Chord Root" | P-204 | T313 (1/1 done) | T304 (1/1 done) | `controls.test.js` | 🟢 OK |

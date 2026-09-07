@@ -266,89 +266,87 @@ footer#credits a {
 
 /* Bright-variant fills are light; dark text keeps every role's label at or
    above WCAG AA contrast (4.5:1) against its own background. */
-.note.is-bright .note-label {
+.note.is-chord-tone .note-label {
   fill: var(--color-text-on-bright);
   font-weight: 700;
 }
 
-/* Diatonic degree-role coloring: dark by default, bright + bordered when the
-   note is part of the active focal-point chord-tone set (Story 5). */
+/* Diatonic degree-role coloring: dark by default; the bright variant now
+   marks the selected chord's tones in Chord view (feature 003 - the old
+   focal-point bright set is superseded). */
 .note.role-1 .note-marker { fill: var(--role-1-dark); }
-.note.role-1.is-bright .note-marker { fill: var(--role-1-bright); }
+.note.role-1.is-chord-tone .note-marker { fill: var(--role-1-bright); }
 .note.role-b2 .note-marker { fill: var(--role-b2-dark); }
-.note.role-b2.is-bright .note-marker { fill: var(--role-b2-bright); }
+.note.role-b2.is-chord-tone .note-marker { fill: var(--role-b2-bright); }
 .note.role-2 .note-marker { fill: var(--role-2-dark); }
-.note.role-2.is-bright .note-marker { fill: var(--role-2-bright); }
+.note.role-2.is-chord-tone .note-marker { fill: var(--role-2-bright); }
 .note.role-b3 .note-marker { fill: var(--role-b3-dark); }
-.note.role-b3.is-bright .note-marker { fill: var(--role-b3-bright); }
+.note.role-b3.is-chord-tone .note-marker { fill: var(--role-b3-bright); }
 .note.role-3 .note-marker { fill: var(--role-3-dark); }
-.note.role-3.is-bright .note-marker { fill: var(--role-3-bright); }
+.note.role-3.is-chord-tone .note-marker { fill: var(--role-3-bright); }
 .note.role-4 .note-marker { fill: var(--role-4-dark); }
-.note.role-4.is-bright .note-marker { fill: var(--role-4-bright); }
+.note.role-4.is-chord-tone .note-marker { fill: var(--role-4-bright); }
 .note.role-4s5b .note-marker { fill: var(--role-4s5b-dark); }
-.note.role-4s5b.is-bright .note-marker { fill: var(--role-4s5b-bright); }
+.note.role-4s5b.is-chord-tone .note-marker { fill: var(--role-4s5b-bright); }
 .note.role-5 .note-marker { fill: var(--role-5-dark); }
-.note.role-5.is-bright .note-marker { fill: var(--role-5-bright); }
+.note.role-5.is-chord-tone .note-marker { fill: var(--role-5-bright); }
 .note.role-b6 .note-marker { fill: var(--role-b6-dark); }
-.note.role-b6.is-bright .note-marker { fill: var(--role-b6-bright); }
+.note.role-b6.is-chord-tone .note-marker { fill: var(--role-b6-bright); }
 .note.role-6 .note-marker { fill: var(--role-6-dark); }
-.note.role-6.is-bright .note-marker { fill: var(--role-6-bright); }
+.note.role-6.is-chord-tone .note-marker { fill: var(--role-6-bright); }
 .note.role-b7 .note-marker { fill: var(--role-b7-dark); }
-.note.role-b7.is-bright .note-marker { fill: var(--role-b7-bright); }
+.note.role-b7.is-chord-tone .note-marker { fill: var(--role-b7-bright); }
 .note.role-7 .note-marker { fill: var(--role-7-dark); }
-.note.role-7.is-bright .note-marker { fill: var(--role-7-bright); }
+.note.role-7.is-chord-tone .note-marker { fill: var(--role-7-bright); }
 
-.note.is-bright .note-marker {
+.note.is-chord-tone .note-marker {
   stroke: var(--color-fg);
   stroke-width: 3;
 }
 
-.note.is-bright.is-root .note-marker {
+.note.is-chord-tone.is-root .note-marker {
   stroke: var(--color-root-accent);
   stroke-width: 4;
 }
 
-.chord-tone-toggles {
+/* Feature 003 Chord view (AC-3.2.2-AC-3.2.4, FR-111):
+   - chord tones outside the current scale still render fully, on a neutral
+     light fill (they carry no degree-role class);
+   - ghosts are small, faint, unlabelled dots - the missing label and reduced
+     marker are the non-color distinguishers;
+   - hidden notes render nothing at all. */
+.note.is-chord-tone:not(.is-diatonic) .note-marker {
+  fill: var(--color-neutral-text);
+}
+
+.note.is-ghost .note-marker {
+  fill: var(--color-neutral-text);
+  opacity: 0.22;
+  stroke: none;
+  r: 6;
+}
+
+.note.chord-hidden {
+  display: none;
+}
+
+/* Feature 003 chord picker: the toggle-row styles that stood here were
+   removed with the Story 5 supersession. */
+.view-mode-buttons {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
+  gap: 0.3rem;
+  margin-top: 0.4rem;
 }
 
-.chord-tone-toggles button:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
-
-/* Chord-tone toggle colors match the fretboard's own role colors (UAT round
-   1 section C4): dark variant when off, bright variant + dark text when on. */
-.chord-tone-toggles button.role-1 { background: var(--role-1-dark); }
-.chord-tone-toggles button.role-1.is-bright { background: var(--role-1-bright); }
-.chord-tone-toggles button.role-b2 { background: var(--role-b2-dark); }
-.chord-tone-toggles button.role-b2.is-bright { background: var(--role-b2-bright); }
-.chord-tone-toggles button.role-2 { background: var(--role-2-dark); }
-.chord-tone-toggles button.role-2.is-bright { background: var(--role-2-bright); }
-.chord-tone-toggles button.role-b3 { background: var(--role-b3-dark); }
-.chord-tone-toggles button.role-b3.is-bright { background: var(--role-b3-bright); }
-.chord-tone-toggles button.role-3 { background: var(--role-3-dark); }
-.chord-tone-toggles button.role-3.is-bright { background: var(--role-3-bright); }
-.chord-tone-toggles button.role-4 { background: var(--role-4-dark); }
-.chord-tone-toggles button.role-4.is-bright { background: var(--role-4-bright); }
-.chord-tone-toggles button.role-4s5b { background: var(--role-4s5b-dark); }
-.chord-tone-toggles button.role-4s5b.is-bright { background: var(--role-4s5b-bright); }
-.chord-tone-toggles button.role-5 { background: var(--role-5-dark); }
-.chord-tone-toggles button.role-5.is-bright { background: var(--role-5-bright); }
-.chord-tone-toggles button.role-b6 { background: var(--role-b6-dark); }
-.chord-tone-toggles button.role-b6.is-bright { background: var(--role-b6-bright); }
-.chord-tone-toggles button.role-6 { background: var(--role-6-dark); }
-.chord-tone-toggles button.role-6.is-bright { background: var(--role-6-bright); }
-.chord-tone-toggles button.role-b7 { background: var(--role-b7-dark); }
-.chord-tone-toggles button.role-b7.is-bright { background: var(--role-b7-bright); }
-.chord-tone-toggles button.role-7 { background: var(--role-7-dark); }
-.chord-tone-toggles button.role-7.is-bright { background: var(--role-7-bright); }
-
-.chord-tone-toggles button.is-bright {
+.view-mode-buttons button[aria-pressed="true"] {
+  background: var(--color-fg);
   color: var(--color-text-on-bright);
   font-weight: 700;
+}
+
+#chord-root-select option.non-diatonic {
+  font-style: italic;
+  color: var(--color-neutral-text);
 }
 
 .capo-label-mode-buttons {

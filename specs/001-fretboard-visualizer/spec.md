@@ -262,7 +262,18 @@ different layers, per our music-theory-correctness principle.
 
 ---
 
-### User Story 5 - Diatonic focal-point highlighting (Priority: P1)
+### User Story 5 - Diatonic scale-degree coloring (Priority: P1)
+
+*(Revised 2026-09-07: feature 003 — specs/003-chord-mode — supersedes the focal-point
+and chord-tone-toggle system this story originally specified. The focal-point click
+behaviour, the default stacked triad, the per-degree chord-tone toggles, the bright/dark
+rendering split, and the "Bright notes"/chord-quality summary are removed and replaced by
+feature 003's chord picker and Scale/Chord view. AC-1.5.2, AC-1.5.3, AC-1.5.5, AC-1.5.6
+and AC-1.5.7 are deleted as superseded — their replacements are AC-3.1.x/AC-3.2.x. What
+survives here: the fixed degree-role coloring of diatonic notes (AC-1.5.1, retitled to
+drop the now-removed dark-variant language) and key-root-relative degree labels
+(AC-1.5.4). The story title changed from "Diatonic focal-point highlighting"
+accordingly.)*
 
 As a guitarist, having selected a root note and scale/mode (Stories 2-4),
 I want the fretboard to color-code every diatonic note by its fixed
@@ -277,7 +288,9 @@ the key without losing the key's context.
 **Color & Degree Model**
 - The app defines up to 12 color roles, one per possible chromatic
   scale-degree position relative to the key root: 1, b2, 2, b3, 3, 4,
-  #4/b5, 5, b6, 6, b7, 7. Each role has a bright and a dark variant.
+  #4/b5, 5, b6, 6, b7, 7. *(Revised 2026-09-07: the bright/dark variant
+  pair is superseded by feature 003 — one colored rendering per role;
+  chord emphasis is feature 003's Chord view.)*
 - Once root + scale/mode are selected, every note on the fretboard is
   assigned its scale-degree role relative to THAT key root. This
   assignment is fixed until the root or scale/mode changes — it never
@@ -287,80 +300,35 @@ the key without losing the key's context.
 - Notes NOT diatonic to the selected scale/mode receive no color at all
   — they remain in the neutral base layer only (see Story 6).
 
-**Focal Point behavior**
-- On scale/mode selection, focal point defaults to the root (degree 1).
-- The user changes focal point by clicking/tapping any diatonically
-  colored note. Non-diatonic (uncolored) notes cannot be set as focal.
-- Given a focal point, the app computes its diatonic triad by stacking
-  the nearest diatonic thirds above it within the current scale, with
-  triad quality (major/minor/diminished/augmented) derived from actual
-  key content — never assumed independent of key.
-- The focal triad's notes render BRIGHT + a secondary visual indicator
-  (e.g. border), distinguishing them from non-focal diatonic notes.
-- All other notes diatonic to the key (but outside the current focal
-  chord/extension selection) render DARK — visible, but receding.
-
-**Custom chord-tone override**
-- The user may toggle individual diatonic scale members belonging to
-  the focal point's diatonic scale into/out of the bright ("chord tone")
-  set — e.g. toggling off the diatonic 3rd and toggling on the diatonic
-  4th to build a sus4 voicing from the default triad.
-- Only scale positions diatonic to the CURRENTLY selected key/scale can
-  be toggled into the bright set. Chromatic alterations not present in
-  the current mode cannot be enabled this way.
-- A UI element displays the active bright note set (e.g. "E, G, B")
-  alongside a recognized chord-quality label (e.g. "Minor") when the
-  set matches a standard triad shape.
-- (Lower priority) When the active set doesn't map cleanly to one
-  canonical chord name (e.g. ambiguity between a sus2 voicing and a
-  rootless 9th), the app may leave the name blank or show multiple
-  candidates rather than guessing incorrectly.
+*(Removed 2026-09-07: the "Focal Point behavior" and "Custom chord-tone override"
+requirement blocks that stood here are superseded by feature 003's chord picker,
+Scale/Chord view, and chord summary — see specs/003-chord-mode/spec.md.)*
 
 **Acceptance Scenarios**:
 
-- **AC-1.5.1** — Diatonic notes dark-colored, non-diatonic notes uncolored
+- **AC-1.5.1** — Diatonic notes colored by degree role, non-diatonic notes uncolored
+
+  *(Retitled 2026-09-07: was "Diatonic notes dark-colored, non-diatonic notes
+  uncolored" — feature 003 removed the bright/dark variant split.)*
 
   **Given** C Major is selected, **When** the fretboard renders,
   **Then** all 7 diatonic notes (C D E F G A B) display in their
-  assigned dark color-role, and the 5 non-diatonic notes (C#/Db,
+  assigned color-role, and the 5 non-diatonic notes (C#/Db,
   D#/Eb, F#/Gb, G#/Ab, A#/Bb) display with no color.
-
-- **AC-1.5.2** — Default focal root triad bright and bordered
-
-  **Given** C Major with focal point defaulted to root (C),
-  **When** the fretboard renders, **Then** C, E, G display bright +
-  bordered (C major triad), and D, F, A, B display dark.
-
-- **AC-1.5.3** — Clicking E sets focal point shown as a minor triad
-
-  **Given** C Major, **When** the user clicks E, **Then** focal point
-  becomes E, and E, G, B display bright + bordered — correctly shown
-  as a minor triad (the diatonic quality of the 3rd degree in C Major).
 
 - **AC-1.5.4** — Degree labels always relative to the key root
 
-  **Given** focal point = E (C Major), **When** "Degrees" label mode
+  *(Revised 2026-09-07: originally phrased against the focal-point system; the
+  invariant — degree labels are relative to the key root, never to any chord —
+  survives feature 003 unchanged.)*
+
+  **Given** C Major with any chord selected, **When** "Degrees" label mode
   is active, **Then** E, G, B display "3", "5", "7" — always relative
-  to the key root (C), never relative to the focal note.
+  to the key root (C), never relative to the selected chord's root.
 
-- **AC-1.5.5** — Diatonic chord-tone toggles build a sus4 voicing
-
-  **Given** focal point = E (C Major) with the default minor triad
-  active, **When** the user toggles off G and toggles on A, **Then**
-  the bright set becomes E, A, B (an Esus4-type voicing) — valid
-  because A is diatonic to C Major.
-
-- **AC-1.5.6** — Non-diatonic toggle unavailable
-
-  **Given** focal point = E (C Major), **When** the user attempts to
-  toggle on F# (which would build an Esus2 voicing), **Then** that
-  toggle is unavailable, because F# is not diatonic to C Major.
-
-- **AC-1.5.7** — Toggle availability follows the key change
-
-  **Given** the key changes to C Lydian, **When** focal point = E,
-  **Then** F# becomes an available toggle, because F# is diatonic
-  to C Lydian.
+*(AC-1.5.2, AC-1.5.3, AC-1.5.5, AC-1.5.6 and AC-1.5.7 were deleted 2026-09-07 as
+superseded by feature 003 — chord selection is now by named root + quality
+(AC-3.1.x) and chord emphasis by the Chord view (AC-3.2.x).)*
 
 ---
 
