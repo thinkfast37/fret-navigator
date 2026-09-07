@@ -24,6 +24,11 @@
       "spec": "specs/005-display-overhaul/spec.md",
       "plan": "specs/005-display-overhaul/plan.md",
       "tasks": "specs/005-display-overhaul/tasks.md"
+    },
+    {
+      "spec": "specs/006-key-aware-chords/spec.md",
+      "plan": "specs/006-key-aware-chords/plan.md",
+      "tasks": "specs/006-key-aware-chords/tasks.md"
     }
   ],
   "matrix": "specs/traceability-matrix.md",

@@ -342,3 +342,48 @@ describe("save/load persistence", () => {
   // (The chord-tone-override pruning test that stood here was removed 2026-09-07:
   // overrides no longer exist; their criteria were superseded by feature 003.)
 });
+
+// ---- Feature 006: key-aware chord quality (T602) ----
+
+describe("chord quality lifecycle (feature 006)", () => {
+  test("AC-6.1.3 — An explicitly chosen quality survives until the root or key changes", () => {
+    state.setRoot("C");
+    state.setScaleId("ionian");
+
+    // An explicit override sticks, and survives a reload.
+    state.setChordRootOffset(2); // degree ii -> snaps to minor (AC-6.1.1)
+    assert.equal(state.getState().chordQualityId, "minor");
+    state.setChordQualityId("min9");
+    assert.equal(state.getState().chordQualityId, "min9");
+    assert.equal(state.load().chordQualityId, "min9", "the override must persist across a reload");
+
+    // Nothing but a root, scale-root or scale change replaces it.
+    state.setLabelMode("degrees");
+    state.setCapoFret(3);
+    state.setViewMode("chord");
+    assert.equal(state.getState().chordQualityId, "min9");
+
+    // The next chord-root change replaces it with that root's key default.
+    state.setChordRootOffset(7); // degree V in C Ionian
+    assert.equal(state.getState().chordQualityId, "major");
+
+    // So does a scale change...
+    state.setChordQualityId("maj9");
+    state.setScaleId("aeolian");
+    assert.equal(state.getState().chordQualityId, "minor");
+
+    // ...and a scale-root change.
+    state.setChordQualityId("maj9");
+    state.setRoot("G");
+    assert.equal(state.getState().chordQualityId, "minor");
+  });
+
+  test("AC-6.1.1 — A diatonic chord root defaults to the scale's own triad on that degree: through setChordRootOffset", () => {
+    state.setRoot("C");
+    state.setScaleId("ionian");
+    for (const [offset, expected] of [[2, "minor"], [4, "minor"], [5, "major"], [7, "major"], [11, "dim"]]) {
+      state.setChordRootOffset(offset);
+      assert.equal(state.getState().chordQualityId, expected, `offset ${offset}`);
+    }
+  });
+});

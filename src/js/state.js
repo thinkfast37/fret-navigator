@@ -1,7 +1,7 @@
 // App state shape, defaults, and localStorage load/save/migrate.
 // Owns the `fret-navigator-settings` localStorage key exclusively (FR-039, FR-040).
 
-import { ROOTS, CHORD_QUALITIES, getDefaultChordQualityId } from "./theory.js";
+import { ROOTS, CHORD_QUALITIES, getDefaultChordQualityId, getDefaultChordQualityForRoot } from "./theory.js";
 
 const STORAGE_KEY = "fret-navigator-settings";
 const SCHEMA_VERSION = 2;
@@ -76,10 +76,17 @@ export function setScaleId(scaleId) {
   save();
 }
 
-// Implements feature 003, FR-101 (AC-3.1.1): chord root as a degree offset
-// (semitones above the scale root, 0-11)
+// Implements feature 003, FR-101 (AC-3.1.1) + feature 006, FR-401 (AC-6.1.1,
+// AC-6.1.2): chord root as a degree offset (semitones above the scale root,
+// 0-11). Choosing a root now also snaps the quality to the one that root
+// carries in the current key — the diatonic triad for a scale degree, the
+// borrowed parallel mode's triad for a chromatic one. Picking degree ii in C
+// Ionian gives D minor, not the D major that a stale quality left behind. The
+// quality selector still overrides it freely (AC-3.1.2), and that override
+// survives until the root, scale or key changes (AC-6.1.3).
 export function setChordRootOffset(offset) {
   state.chordRootOffset = offset;
+  state.chordQualityId = getDefaultChordQualityForRoot(offset, state.scaleId);
   save();
 }
 

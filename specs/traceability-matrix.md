@@ -13,15 +13,15 @@
   marked with what is true right now.
 -->
 
-**Feature**: specs/001-fretboard-visualizer/spec.md, specs/002-default-root-scale/spec.md, specs/003-chord-mode/spec.md, specs/004-play-chord/spec.md, specs/005-display-overhaul/spec.md
-**Criteria**: 80 across 18 User Stories
+**Feature**: specs/001-fretboard-visualizer/spec.md, specs/002-default-root-scale/spec.md, specs/003-chord-mode/spec.md, specs/004-play-chord/spec.md, specs/005-display-overhaul/spec.md, specs/006-key-aware-chords/spec.md
+**Criteria**: 94 across 22 User Stories
 
-**Coverage**: 28 of 80 criteria proven (35.0%)
+**Coverage**: 42 of 94 criteria proven (44.7%)
 
 | | Criteria | Share |
 |---|---|---|
-| 🟢 Proven | 28 | 35.0% |
-| 🔴 Gap — CRITICAL | 52 | 65.0% |
+| 🟢 Proven | 42 | 44.7% |
+| 🔴 Gap — CRITICAL | 52 | 55.3% |
 
 A row is one *criterion*: an Acceptance Criterion that asserts one thing, or one Case of
 an AC that asserts several. 🖵 marks a criterion that describes something a person sees or
@@ -74,6 +74,10 @@ fail the build, and it is outstanding work — never a settled decision.
 | 🟢 US-5.1 | 3 | **3** | · | · | · | · | · |
 | 🟢 US-5.2 | 1 | **1** | · | · | · | · | · |
 | 🟢 US-5.3 | 1 | **1** | · | · | · | · | · |
+| 🟢 US-6.1 | 6 | **6** | · | · | · | · | · |
+| 🟢 US-6.2 | 2 | **2** | · | · | · | · | · |
+| 🟢 US-6.3 | 3 | **3** | · | · | · | · | · |
+| 🟢 US-6.4 | 3 | **3** | · | · | · | · | · |
 
 ## Every criterion
 
@@ -159,3 +163,17 @@ fail the build, and it is outstanding work — never a settled decision.
 | US-5.1 | `AC-5.1.3` 🖵 | Chord tones are marked by ring and size, never by a color swap | P-401 | T510 (1/1 done) | T501 (1/1 done) | `styles.test.js` | 🟢 OK |
 | US-5.2 | `AC-5.2.1` 🖵 | Wide viewports get compact controls and a fretboard-first layout | P-402 | T511 (1/1 done) | T502 (1/1 done) | `styles.test.js` | 🟢 OK |
 | US-5.3 | `AC-5.3.1` 🖵 | Chord picker dropdowns have a bounded width | P-402 | T511 (1/1 done) | T502 (1/1 done) | `styles.test.js` | 🟢 OK |
+| US-6.1 | `AC-6.1.1/1` | Degree ii of C Ionian yields a minor quality. | P-501 | T610 (1/1 done) | T601 (1/1 done) | `theory.test.js` | 🟢 OK |
+| US-6.1 | `AC-6.1.1/2` | Degree vii of C Ionian yields a diminished quality. | P-501 | T610 (1/1 done) | T601 (1/1 done) | `theory.test.js` | 🟢 OK |
+| US-6.1 | `AC-6.1.1/3` | Every degree of every 7-note scale yields that scale's own triad quality on that degree. | P-501 | T610 (1/1 done) | T601 (1/1 done) | `theory.test.js` | 🟢 OK |
+| US-6.1 | `AC-6.1.2` | A non-diatonic chord root defaults to its borrowed mode's triad | P-501 | T610 (1/1 done) | T601 (1/1 done) | `theory.test.js` | 🟢 OK |
+| US-6.1 | `AC-6.1.3` 🖵 | An explicitly chosen quality survives until the root or key changes | P-502 | T611 (1/1 done) | T602 (1/1 done) | `controls.test.js`, `state.test.js` | 🟢 OK |
+| US-6.1 | `AC-6.1.4` | Non-heptatonic scales keep one predictable default | P-501 | T610 (1/1 done) | T601 (1/1 done) | `theory.test.js` | 🟢 OK |
+| US-6.2 | `AC-6.2.1` 🖵 | Quality options are marked diatonic or not for the selected chord root | P-503 | T612 (1/1 done) | T603 (1/1 done) | `controls.test.js` | 🟢 OK |
+| US-6.2 | `AC-6.2.2` 🖵 | Scales that support no diatonic verdict leave every quality unmarked | P-503 | T612 (1/1 done) | T603 (1/1 done) | `controls.test.js` | 🟢 OK |
+| US-6.3 | `AC-6.3.1` 🖵 | A chord entirely inside the key is reported as diatonic | P-504 | T613 (1/1 done) | T604 (1/1 done) | `controls.test.js`, `theory.test.js` | 🟢 OK |
+| US-6.3 | `AC-6.3.2` 🖵 | A chord outside the key names the parallel modes that contain it | P-504 | T613 (1/1 done) | T604 (1/1 done) | `controls.test.js`, `theory.test.js` | 🟢 OK |
+| US-6.3 | `AC-6.3.3` 🖵 | A chord no parallel mode contains is reported as chromatic | P-504 | T613 (1/1 done) | T604 (1/1 done) | `controls.test.js`, `theory.test.js` | 🟢 OK |
+| US-6.4 | `AC-6.4.1` 🖵 | Tapping the slider moves the nearer handle to the tapped fret | P-505 | T614 (1/1 done) | T605 (1/1 done) | `controls.test.js` | 🟢 OK |
+| US-6.4 | `AC-6.4.2` 🖵 | A capo-locked left handle is never the one a tap moves | P-505 | T614 (1/1 done) | T605 (1/1 done) | `controls.test.js` | 🟢 OK |
+| US-6.4 | `AC-6.4.3` 🖵 | The tap animates, the drag does not | P-505 | T614 (1/1 done) | T605 (1/1 done) | `styles.test.js` | 🟢 OK |

@@ -158,3 +158,36 @@ describe("TV layout + bounded chord selects (feature 005, FR-304/FR-305)", () =>
     assert.ok(rules.some((rule) => /text-overflow:\s*ellipsis/.test(rule)));
   });
 });
+
+// ---- Feature 006: gesture-scoped fret-range slider motion (T605) ----
+
+describe("fret-range slider motion (feature 006)", () => {
+  test("AC-6.4.3 — The tap animates, the drag does not", () => {
+    // The tap's travel: handles and fill carry a position transition.
+    const transition = css.match(
+      /\.fret-range-fill,\s*\n\s*\.fret-range-thumb\s*\{([\s\S]*?)\}/
+    );
+    assert.ok(transition, "expected a shared transition rule for the fill and thumbs");
+    assert.match(transition[1], /transition:\s*left\s/, "handle position must transition");
+    assert.match(transition[1], /width/, "the fill's width must transition with it");
+
+    // The drag: the transition is suppressed for the length of the gesture, so
+    // the handle tracks the pointer exactly rather than lagging behind it.
+    const dragging = css.match(
+      /\.fret-range-slider\.is-dragging[\s\S]*?\{([\s\S]*?)\}/
+    );
+    assert.ok(dragging, "expected an .is-dragging suppression rule");
+    assert.match(dragging[1], /transition:\s*none/);
+
+    // The whole padded slider box is the tap target (AC-6.4.1), not the 4px track.
+    const sliderRule = css.match(/\.fret-range-slider\s*\{([\s\S]*?)\}/);
+    assert.match(sliderRule[1], /cursor:\s*pointer/);
+    assert.match(sliderRule[1], /touch-action:\s*none/);
+  });
+
+  test("motion respects prefers-reduced-motion", () => {
+    const reduced = css.match(/@media \(prefers-reduced-motion: reduce\)\s*\{([\s\S]*?\n\})/);
+    assert.ok(reduced, "expected a prefers-reduced-motion block");
+    assert.match(reduced[1], /transition:\s*none/);
+  });
+});

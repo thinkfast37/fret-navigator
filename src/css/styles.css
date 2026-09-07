@@ -371,9 +371,20 @@ footer#credits a {
   font-weight: 700;
 }
 
-#chord-root-select option.non-diatonic {
+#chord-root-select option.non-diatonic,
+#chord-quality-select option.non-diatonic {
   font-style: italic;
   color: var(--color-neutral-text);
+}
+
+/* Feature 006 (AC-6.2.1): qualities that ARE diatonic to the key read as the
+   plain, confident default the italic/dimmed non-diatonic entries depart
+   from. Marking is never colour alone — the italic/upright contrast carries
+   it (constitution Accessibility, colour-independence). */
+#chord-quality-select option.diatonic {
+  font-style: normal;
+  font-weight: 700;
+  color: var(--color-fg);
 }
 
 .capo-label-mode-buttons {
@@ -393,6 +404,10 @@ footer#credits a {
 .fret-range-slider {
   width: 220px;
   padding: 1.1rem;
+  /* Feature 006 (AC-6.4.1): the whole padded box is the tap target, so a TV
+     remote or a thumb does not have to find the 4px track. */
+  cursor: pointer;
+  touch-action: none;
 }
 
 .fret-range-track {
@@ -409,6 +424,26 @@ footer#credits a {
   height: 100%;
   background: var(--color-fg);
   border-radius: 2px;
+}
+
+/* Feature 006 (AC-6.4.3): a tap makes the handle travel to where it was
+   tapped rather than teleport; a drag must track the pointer exactly, so
+   `.is-dragging` turns the transition off for the length of the gesture. */
+.fret-range-fill,
+.fret-range-thumb {
+  transition: left 140ms ease-out, width 140ms ease-out;
+}
+
+.fret-range-slider.is-dragging .fret-range-fill,
+.fret-range-slider.is-dragging .fret-range-thumb {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fret-range-fill,
+  .fret-range-thumb {
+    transition: none;
+  }
 }
 
 .fret-range-thumb {
@@ -446,6 +481,25 @@ footer#credits a {
 .chord-summary {
   margin: 0.4rem 0 0;
   font-size: 0.9rem;
+}
+
+/* Feature 006 (AC-6.3.1/6.3.2/6.3.3): the modal-mixture verdict for the whole
+   chord. The three states are distinguished by their wording first; weight and
+   emphasis reinforce it without colour carrying the meaning alone. */
+.chord-mixture {
+  margin: 0.2rem 0 0;
+  font-size: 0.85rem;
+}
+
+.chord-mixture.is-diatonic {
+  color: var(--color-fg);
+  font-weight: 600;
+}
+
+.chord-mixture.is-borrowed,
+.chord-mixture.is-chromatic {
+  color: var(--color-neutral-text);
+  font-style: italic;
 }
 
 .note:focus-visible .note-marker {
