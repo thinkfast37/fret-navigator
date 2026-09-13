@@ -38,9 +38,18 @@ function flush() {
 const state = await import("../src/js/state.js");
 const fretboard = await import("../src/js/fretboard.js");
 
+// Feature 007: state now carries the selected instrument and one remembered tuning per
+// instrument. The helper still takes a single `tuning` — the ACTIVE one — and files it
+// under the active instrument, so call sites read the way they always did.
 function baseState(overrides = {}) {
+  const { instrument = "guitar", tuning, ...rest } = overrides;
+  const defaults = {
+    guitar: { presetId: "standard", customOpenPitchClasses: null, customOpenOctaves: null },
+    ukulele: { presetId: "uke-standard", customOpenPitchClasses: null, customOpenOctaves: null },
+  };
   return {
-    tuning: { presetId: "standard", customOpenPitchClasses: null, customOpenOctaves: null },
+    instrument,
+    tunings: { ...defaults, ...(tuning ? { [instrument]: tuning } : {}) },
     root: null,
     accidentalPreference: "sharp",
     scaleId: null,
@@ -51,7 +60,7 @@ function baseState(overrides = {}) {
     capoFret: 0,
     capoLabelMode: "absolute",
     fretRange: { lowerBound: 0, upperBound: 24 },
-    ...overrides,
+    ...rest,
   };
 }
 
@@ -697,5 +706,54 @@ describe("circle-of-fifths spelling on the fretboard (FR-009)", () => {
     );
     const flatSide = [...document.querySelectorAll(".note")].find((el) => el.dataset.pitchClassSemitone === "3");
     assert.equal(flatSide.querySelector(".note-label").textContent, "Eb");
+  });
+});
+
+// ---- Feature 007: the instrument's string count drives the board (T701, T703) ----
+
+describe("render (feature 007: instrument string count and physical row order)", () => {
+  test("AC-7.1.1/1 — Selecting Guitar renders six string rows.", () => {
+    fretboard.render(baseState({ instrument: "guitar" }));
+    assert.equal(document.querySelectorAll(".string-line").length, 6);
+    assert.ok(noteEl(5, 0));
+    assert.equal(noteEl(6, 0), null);
+    const [, , , height] = document.getElementById("fretboard").getAttribute("viewBox").split(" ");
+    assert.equal(Number(height), 24 * 2 + 6 * 48);
+  });
+
+  test("AC-7.1.1/2 — Selecting Ukulele renders four string rows.", () => {
+    fretboard.render(baseState({ instrument: "ukulele" }));
+    assert.equal(document.querySelectorAll(".string-line").length, 4);
+    assert.ok(noteEl(3, 0));
+    assert.equal(noteEl(4, 0), null);
+    assert.equal(document.querySelectorAll(".note").length, 4 * 25);
+    const [, , , height] = document.getElementById("fretboard").getAttribute("viewBox").split(" ");
+    assert.equal(Number(height), 24 * 2 + 4 * 48);
+    // Switching back restores the six-string board rather than leaving stale rows.
+    fretboard.render(baseState({ instrument: "guitar" }));
+    assert.equal(document.querySelectorAll(".string-line").length, 6);
+    assert.equal(document.querySelectorAll(".note").length, 6 * 25);
+  });
+
+  test("AC-7.2.2 — Re-entrant tunings keep physical string order", () => {
+    fretboard.render(baseState({ instrument: "ukulele" })); // uke-standard: high-G
+    // Row 0 is string 1 (A4), row 3 is string 4 (G4) — the bottom row, even though it
+    // sounds above the row above it. The rows are never re-sorted by pitch.
+    assert.equal(Number(noteEl(0, 0).dataset.midiNote), 69); // A4
+    assert.equal(Number(noteEl(3, 0).dataset.midiNote), 67); // G4, re-entrant
+    assert.ok(Number(noteEl(3, 0).dataset.midiNote) > Number(noteEl(2, 0).dataset.midiNote));
+    // The inlay dots stay physical and identical to the guitar's (AC-1.1.5).
+    assert.ok(document.querySelectorAll(".inlay-dot").length > 0);
+  });
+
+  test("AC-7.2.2 — Re-entrant tunings keep physical string order: a linear tuning keeps the same row order", () => {
+    fretboard.render(
+      baseState({
+        instrument: "ukulele",
+        tuning: { presetId: "uke-low-g", customOpenPitchClasses: null, customOpenOctaves: null },
+      })
+    );
+    assert.equal(Number(noteEl(0, 0).dataset.midiNote), 69); // A4, still string 1 on top
+    assert.equal(Number(noteEl(3, 0).dataset.midiNote), 55); // G3, string 4 at the bottom
   });
 });

@@ -5,7 +5,20 @@ import * as state from "./state.js";
 import * as fretboard from "./fretboard.js";
 import * as audio from "./audio.js";
 
+// Feature 007, FR-502 (AC-7.1.2): group order for the guitar's library; any group an
+// instrument declares that is not listed here follows in library order.
 const GROUP_ORDER = ["Standard", "D-Family", "G-Family", "C-Family"];
+
+function currentInstrument() {
+  return theory.getInstrument(state.getState().instrument);
+}
+
+// Feature 007, FR-502: the selected instrument's groups, preferred order first.
+function groupOrderFor(instrumentId) {
+  const groups = theory.tuningGroupsForInstrument(instrumentId);
+  const preferred = GROUP_ORDER.filter((g) => groups.includes(g));
+  return [...preferred, ...groups.filter((g) => !preferred.includes(g))];
+}
 const CHROMATIC_PITCH_CLASSES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
 function rerender() {
@@ -28,12 +41,14 @@ function controlLabel(text) {
   return el("span", { class: "control-label", text });
 }
 
-function buildTuningSelect() {
+// Implements feature 007, FR-502 (AC-7.1.2): only the selected instrument's tunings,
+// plus Custom Tuning.
+function buildTuningSelect(instrumentId) {
   const select = el("select", { id: "tuning-select", "aria-label": "Tuning" });
 
-  for (const group of GROUP_ORDER) {
+  for (const group of groupOrderFor(instrumentId)) {
     const optgroup = el("optgroup", { label: group });
-    for (const tuning of theory.TUNINGS.filter((t) => t.group === group)) {
+    for (const tuning of theory.tuningsForInstrument(instrumentId).filter((t) => t.group === group)) {
       optgroup.appendChild(el("option", { value: tuning.id, text: tuning.label }));
     }
     select.appendChild(optgroup);
@@ -46,19 +61,13 @@ function buildTuningSelect() {
   return select;
 }
 
-const CUSTOM_TUNING_STRING_LABELS = [
-  "String 1 (high E)",
-  "String 2",
-  "String 3",
-  "String 4",
-  "String 5",
-  "String 6 (low E)",
-];
-
 // Implements Story 2, FR-005/FR-006 + UAT round 1 section D1: the previously
 // always-visible custom-tuning panel is now a modal, opened by selecting
 // "Custom Tuning" or clicking the "Edit" button shown only in custom mode.
-function buildCustomTuningModal() {
+// Feature 007, FR-506 (AC-7.3.1): one row per string of the CURRENT instrument, labelled
+// from the instrument's own string names.
+function buildCustomTuningModal(instrument) {
+  const stringLabels = instrument.stringLabels;
   const overlay = el("div", { id: "custom-tuning-modal-overlay", class: "modal-overlay", hidden: "true" });
   const modal = el("div", {
     id: "custom-tuning-modal",
@@ -70,9 +79,9 @@ function buildCustomTuningModal() {
 
   modal.appendChild(el("h2", { id: "custom-tuning-modal-heading", text: "Custom Tuning" }));
 
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < instrument.stringCount; i++) {
     const row = el("div", { class: "custom-tuning-row" });
-    row.appendChild(el("label", { for: `custom-pitch-${i}`, text: CUSTOM_TUNING_STRING_LABELS[i] }));
+    row.appendChild(el("label", { for: `custom-pitch-${i}`, text: stringLabels[i] }));
 
     const pitchSelect = el("select", { id: `custom-pitch-${i}`, "data-string-index": i });
     for (const pc of CHROMATIC_PITCH_CLASSES) {
@@ -91,7 +100,7 @@ function buildCustomTuningModal() {
       min: "0",
       max: "8",
       value: "3",
-      "aria-label": `${CUSTOM_TUNING_STRING_LABELS[i]} octave`,
+      "aria-label": `${stringLabels[i]} octave`,
     });
 
     row.appendChild(pitchSelect);
@@ -110,7 +119,7 @@ function buildCustomTuningModal() {
 function readCustomTuningFromInputs() {
   const pitchClasses = [];
   const octaves = [];
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < currentInstrument().stringCount; i++) {
     pitchClasses.push(document.getElementById(`custom-pitch-${i}`).value);
     octaves.push(Number(document.getElementById(`custom-octave-${i}`).value));
   }
@@ -118,9 +127,9 @@ function readCustomTuningFromInputs() {
 }
 
 function applyStateToCustomInputs() {
-  const { tuning } = state.getState();
+  const tuning = state.getActiveTuning();
   if (tuning.presetId !== "custom" || !tuning.customOpenPitchClasses) return;
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < currentInstrument().stringCount; i++) {
     document.getElementById(`custom-pitch-${i}`).value = tuning.customOpenPitchClasses[i];
     document.getElementById(`custom-octave-${i}`).value = tuning.customOpenOctaves[i];
   }
@@ -130,12 +139,43 @@ function applyStateToCustomInputs() {
 // to Custom: existing custom values if there are any, otherwise a copy of
 // the previously-selected named preset's own pitches (UAT round 1 section D1).
 function resolveInitialCustomTuning() {
-  const { tuning } = state.getState();
+  const instrument = currentInstrument();
+  const tuning = state.getActiveTuning();
   if (tuning.presetId === "custom" && tuning.customOpenPitchClasses) {
     return { pitchClasses: [...tuning.customOpenPitchClasses], octaves: [...tuning.customOpenOctaves] };
   }
-  const preset = theory.TUNINGS.find((t) => t.id === tuning.presetId) || theory.TUNINGS[0];
+  // Feature 007: seed from this instrument's own tuning, never another instrument's.
+  const instrumentTunings = theory.tuningsForInstrument(instrument.id);
+  const preset =
+    instrumentTunings.find((t) => t.id === tuning.presetId) ||
+    instrumentTunings.find((t) => t.id === instrument.defaultTuningId) ||
+    instrumentTunings[0];
   return { pitchClasses: [...preset.openPitchClasses], octaves: [...preset.openOctaves] };
+}
+
+// Implements feature 007, FR-501 (AC-7.1.1, AC-7.1.3): the Instrument selector. Switching
+// changes the string count and the tuning library and nothing else — the root, scale,
+// capo, label mode, fret range and chord selection are all left exactly as they were.
+export function initInstrumentControls() {
+  const container = document.getElementById("instrument-controls");
+  container.textContent = "";
+
+  const select = el("select", { id: "instrument-select", "aria-label": "Instrument" });
+  for (const instrument of theory.INSTRUMENTS) {
+    select.appendChild(el("option", { value: instrument.id, text: instrument.label }));
+  }
+  select.value = state.getState().instrument;
+
+  select.addEventListener("change", () => {
+    state.setInstrument(select.value);
+    // The tuning selector and the custom-tuning modal are both instrument-shaped, so
+    // they are rebuilt rather than patched.
+    initTuningControls();
+    rerender();
+  });
+
+  container.appendChild(controlLabel("Instrument"));
+  container.appendChild(select);
 }
 
 // Implements Story 2, FR-005/FR-006: tuning selector + custom-tuning modal
@@ -143,7 +183,8 @@ export function initTuningControls() {
   const container = document.getElementById("tuning-controls");
   container.textContent = "";
 
-  const select = buildTuningSelect();
+  const instrument = currentInstrument();
+  const select = buildTuningSelect(instrument.id);
   const editButton = el("button", { type: "button", id: "custom-tuning-edit", text: "Edit" });
   container.appendChild(controlLabel("Tuning"));
   container.appendChild(select);
@@ -151,10 +192,10 @@ export function initTuningControls() {
 
   const modalRoot = document.getElementById("custom-tuning-modal-root");
   modalRoot.textContent = "";
-  const { overlay, closeButton } = buildCustomTuningModal();
+  const { overlay, closeButton } = buildCustomTuningModal(instrument);
   modalRoot.appendChild(overlay);
 
-  select.value = state.getState().tuning.presetId;
+  select.value = state.getActiveTuning().presetId;
   editButton.hidden = select.value !== "custom";
 
   function openModal() {
@@ -701,6 +742,7 @@ function syncCapoModeButtons() {
 
 // Implements Story 1-9 wiring: bootstraps every control and its render hooks
 export function initControls() {
+  initInstrumentControls();
   initTuningControls();
   initRootControls();
   initScaleControls();

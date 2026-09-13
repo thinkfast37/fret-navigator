@@ -34,51 +34,109 @@ const CHROMATIC_NAMES = {
 
 const INTERVAL_LABELS = ["R", "m2", "M2", "m3", "M3", "P4", "TT", "P5", "m6", "M6", "m7", "M7"];
 
-// Implements Story 2, FR-005: named tuning library (D/G/C-Family + Standard)
+// Implements feature 007, FR-501/FR-509 (AC-7.1.1): the instruments the app can draw.
+// String count is a property of the instrument and is read from here — no view counts
+// strings for itself. `stringLabels` name the rows in the custom-tuning editor, string 1
+// first (FR-504: physical order, top row to bottom row).
+export const INSTRUMENTS = [
+  {
+    id: "guitar",
+    label: "Guitar",
+    stringCount: 6,
+    defaultTuningId: "standard",
+    stringLabels: ["String 1 (high E)", "String 2", "String 3", "String 4", "String 5", "String 6 (low E)"],
+  },
+  {
+    id: "ukulele",
+    label: "Ukulele",
+    stringCount: 4,
+    defaultTuningId: "uke-standard",
+    stringLabels: ["String 1", "String 2", "String 3", "String 4"],
+  },
+];
+
+export const DEFAULT_INSTRUMENT_ID = "guitar";
+
+// Implements Story 2, FR-005: named tuning library (D/G/C-Family + Standard).
+// Feature 007, FR-502/FR-503: every tuning names the instrument it belongs to, and the
+// ukulele's four common tunings join the library (research R-701). Pitches are listed
+// string 1 first, so a re-entrant ukulele tuning's high 4th string is the LAST entry —
+// the array is physical order, never pitch order (FR-504, research R-702).
 export const TUNINGS = [
-  { id: "standard", label: "Standard", group: "Standard",
+  { id: "standard", label: "Standard", instrument: "guitar", group: "Standard",
     openPitchClasses: ["E", "B", "G", "D", "A", "E"], openOctaves: [4, 3, 3, 3, 2, 2] },
 
   // D-Family
-  { id: "drop-d", label: "Drop D", group: "D-Family",
+  { id: "drop-d", label: "Drop D", instrument: "guitar", group: "D-Family",
     openPitchClasses: ["E", "B", "G", "D", "A", "D"], openOctaves: [4, 3, 3, 3, 2, 2] },
-  { id: "double-drop-d", label: "Double Drop D", group: "D-Family",
+  { id: "double-drop-d", label: "Double Drop D", instrument: "guitar", group: "D-Family",
     openPitchClasses: ["D", "B", "G", "D", "A", "D"], openOctaves: [4, 3, 3, 3, 2, 2] },
-  { id: "dadgad", label: "DADGAD / \"Dsus4\"", group: "D-Family",
+  { id: "dadgad", label: "DADGAD / \"Dsus4\"", instrument: "guitar", group: "D-Family",
     openPitchClasses: ["D", "A", "G", "D", "A", "D"], openOctaves: [4, 3, 3, 3, 2, 2] },
-  { id: "open-d", label: "Open D", group: "D-Family",
+  { id: "open-d", label: "Open D", instrument: "guitar", group: "D-Family",
     openPitchClasses: ["D", "A", "F#", "D", "A", "D"], openOctaves: [4, 3, 3, 3, 2, 2] },
-  { id: "open-d-minor", label: "Open D Minor", group: "D-Family",
+  { id: "open-d-minor", label: "Open D Minor", instrument: "guitar", group: "D-Family",
     openPitchClasses: ["D", "A", "F", "D", "A", "D"], openOctaves: [4, 3, 3, 3, 2, 2] },
-  { id: "dadead", label: "D A D E A D", group: "D-Family",
+  { id: "dadead", label: "D A D E A D", instrument: "guitar", group: "D-Family",
     openPitchClasses: ["D", "A", "E", "D", "A", "D"], openOctaves: [4, 3, 3, 3, 2, 2] },
-  { id: "drop-high-d", label: "Drop High D", group: "D-Family",
+  { id: "drop-high-d", label: "Drop High D", instrument: "guitar", group: "D-Family",
     openPitchClasses: ["D", "B", "G", "D", "A", "E"], openOctaves: [4, 3, 3, 3, 2, 2] },
-  { id: "d-add4", label: "D G D F# G G (D add 4)", group: "D-Family",
+  { id: "d-add4", label: "D G D F# G G (D add 4)", instrument: "guitar", group: "D-Family",
     openPitchClasses: ["G", "G", "F#", "D", "G", "D"], openOctaves: [4, 3, 3, 3, 2, 2] },
 
   // G-Family
-  { id: "open-g", label: "Open G", group: "G-Family",
+  { id: "open-g", label: "Open G", instrument: "guitar", group: "G-Family",
     openPitchClasses: ["D", "B", "G", "D", "G", "D"], openOctaves: [4, 3, 3, 3, 2, 2] },
-  { id: "gsus4", label: "Gsus4", group: "G-Family",
+  { id: "gsus4", label: "Gsus4", instrument: "guitar", group: "G-Family",
     openPitchClasses: ["D", "C", "G", "D", "G", "D"], openOctaves: [4, 4, 3, 3, 2, 2] },
-  { id: "open-g-minor", label: "Open G Minor", group: "G-Family",
+  { id: "open-g-minor", label: "Open G Minor", instrument: "guitar", group: "G-Family",
     openPitchClasses: ["D", "Bb", "G", "D", "G", "D"], openOctaves: [4, 3, 3, 3, 2, 2] },
-  { id: "dgdgad", label: "D G D G A D", group: "G-Family",
+  { id: "dgdgad", label: "D G D G A D", instrument: "guitar", group: "G-Family",
     openPitchClasses: ["D", "A", "G", "D", "G", "D"], openOctaves: [4, 3, 3, 3, 2, 2] },
-  { id: "g6", label: "G6", group: "G-Family",
+  { id: "g6", label: "G6", instrument: "guitar", group: "G-Family",
     openPitchClasses: ["E", "B", "G", "D", "G", "D"], openOctaves: [4, 3, 3, 3, 2, 2] },
 
   // C-Family
-  { id: "cgdgbe", label: "C G D G B E", group: "C-Family",
+  { id: "cgdgbe", label: "C G D G B E", instrument: "guitar", group: "C-Family",
     openPitchClasses: ["E", "B", "G", "D", "G", "C"], openOctaves: [4, 3, 3, 3, 2, 2] },
-  { id: "cgdgbd", label: "C G D G B D", group: "C-Family",
+  { id: "cgdgbd", label: "C G D G B D", instrument: "guitar", group: "C-Family",
     openPitchClasses: ["D", "B", "G", "D", "G", "C"], openOctaves: [4, 3, 3, 3, 2, 2] },
-  { id: "open-c", label: "Open C", group: "C-Family",
+  { id: "open-c", label: "Open C", instrument: "guitar", group: "C-Family",
     openPitchClasses: ["E", "C", "G", "C", "G", "C"], openOctaves: [4, 4, 3, 3, 2, 2] },
-  { id: "open-c-minor", label: "Open C Minor", group: "C-Family",
+  { id: "open-c-minor", label: "Open C Minor", instrument: "guitar", group: "C-Family",
     openPitchClasses: ["Eb", "C", "G", "C", "G", "C"], openOctaves: [4, 4, 3, 3, 2, 2] },
+  // Ukulele — feature 007 (research R-701). Pitches are string 1 → string 4.
+  { id: "uke-standard", label: "Standard (high G) — G C E A", instrument: "ukulele", group: "Ukulele",
+    openPitchClasses: ["A", "E", "C", "G"], openOctaves: [4, 4, 4, 4] },
+  { id: "uke-low-g", label: "Low G — G C E A", instrument: "ukulele", group: "Ukulele",
+    openPitchClasses: ["A", "E", "C", "G"], openOctaves: [4, 4, 4, 3] },
+  { id: "uke-canadian-d", label: "Canadian / D tuning — A D F# B", instrument: "ukulele", group: "Ukulele",
+    openPitchClasses: ["B", "F#", "D", "A"], openOctaves: [4, 4, 4, 4] },
+  { id: "uke-baritone", label: "Baritone — D G B E", instrument: "ukulele", group: "Ukulele",
+    openPitchClasses: ["E", "B", "G", "D"], openOctaves: [4, 3, 3, 3] },
 ];
+
+
+// Implements feature 007, FR-501/FR-509: the instrument record, by id. Unknown ids fall
+// back to the default rather than throwing — persisted state may name anything.
+export function getInstrument(instrumentId) {
+  return INSTRUMENTS.find((i) => i.id === instrumentId) || INSTRUMENTS[0];
+}
+
+// Implements feature 007, FR-502 (AC-7.1.2): the tunings belonging to one instrument.
+export function tuningsForInstrument(instrumentId) {
+  return TUNINGS.filter((t) => t.instrument === instrumentId);
+}
+
+// Implements feature 007, FR-502: the tuning groups one instrument offers, in library
+// order, so the selector never hardcodes another instrument's group names.
+export function tuningGroupsForInstrument(instrumentId) {
+  const groups = [];
+  for (const tuning of tuningsForInstrument(instrumentId)) {
+    if (!groups.includes(tuning.group)) groups.push(tuning.group);
+  }
+  return groups;
+}
 
 // Implements Story 4, FR-010/FR-011: canonical scale/mode degree-formula table
 export const SCALES = [

@@ -8,6 +8,7 @@ import { JSDOM } from "jsdom";
 
 const dom = new JSDOM(
   `<!doctype html><html><body>
+    <div id="instrument-controls"></div>
     <div id="tuning-controls"></div>
     <div id="root-controls"></div>
     <div id="scale-controls"></div>

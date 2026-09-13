@@ -1,10 +1,17 @@
 // App state shape, defaults, and localStorage load/save/migrate.
 // Owns the `fret-navigator-settings` localStorage key exclusively (FR-039, FR-040).
 
-import { ROOTS, CHORD_QUALITIES, getDefaultChordQualityId, getDefaultChordQualityForRoot } from "./theory.js";
+import {
+  ROOTS,
+  CHORD_QUALITIES,
+  INSTRUMENTS,
+  DEFAULT_INSTRUMENT_ID,
+  getDefaultChordQualityId,
+  getDefaultChordQualityForRoot,
+} from "./theory.js";
 
 const STORAGE_KEY = "fret-navigator-settings";
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 
 // UAT round 1 section C3: all 12 canonical roots, not naturals-only.
 const VALID_ROOTS = ROOTS.map((r) => r.label);
@@ -14,10 +21,26 @@ const ACCIDENTAL_PREFERENCES = ["sharp", "flat"];
 const CAPO_LABEL_MODES = ["absolute", "relative"];
 const VIEW_MODES = ["scale", "chord"];
 const VALID_CHORD_QUALITY_IDS = CHORD_QUALITIES.map((q) => q.id);
+const VALID_INSTRUMENT_IDS = INSTRUMENTS.map((i) => i.id);
+
+// Feature 007, FR-507 (AC-7.4.1): each instrument keeps its own tuning, so switching
+// instruments and back restores what was there rather than resetting it.
+function defaultTunings() {
+  return Object.fromEntries(
+    INSTRUMENTS.map((instrument) => [
+      instrument.id,
+      { presetId: instrument.defaultTuningId, customOpenPitchClasses: null, customOpenOctaves: null },
+    ]),
+  );
+}
 
 function defaultState() {
   return {
-    tuning: { presetId: "standard", customOpenPitchClasses: null, customOpenOctaves: null },
+    // Feature 007 (FR-501/FR-507): the selected instrument, and one remembered tuning
+    // per instrument. `tunings` is keyed by instrument id; the active one is read
+    // through getActiveTuning(), never by indexing the map at a call site.
+    instrument: DEFAULT_INSTRUMENT_ID,
+    tunings: defaultTunings(),
     // Feature 002-default-root-scale: default to C Ionian so a first-time
     // visitor sees the fretboard highlighted immediately instead of blank.
     root: "C",
@@ -44,9 +67,30 @@ export function getState() {
 
 // ---- Setters (each mutates in-memory state and persists) ----
 
-// Implements Story 2, FR-006: tuning change triggers full recalculation
+// Implements feature 007, FR-507 (AC-7.4.1): the tuning the selected instrument is
+// currently showing. Every consumer reads the active tuning through here.
+export function getActiveTuning() {
+  return state.tunings[state.instrument];
+}
+
+// Implements Story 2, FR-006: tuning change triggers full recalculation.
+// Feature 007, FR-507: the change is recorded against the ACTIVE instrument only, so the
+// other instrument's tuning survives untouched.
 export function setTuning(presetId, customOpenPitchClasses = null, customOpenOctaves = null) {
-  state.tuning = { presetId, customOpenPitchClasses, customOpenOctaves };
+  state.tunings = {
+    ...state.tunings,
+    [state.instrument]: { presetId, customOpenPitchClasses, customOpenOctaves },
+  };
+  save();
+}
+
+// Implements feature 007, FR-501/FR-507 (AC-7.1.3, AC-7.1.4, AC-7.4.1): switch
+// instrument. Nothing musical moves — root, scale, capo, label mode, fret range and the
+// chord selection are all untouched — and the new instrument comes back showing the
+// tuning it was last left on.
+export function setInstrument(instrumentId) {
+  if (!VALID_INSTRUMENT_IDS.includes(instrumentId)) return;
+  state.instrument = instrumentId;
   save();
 }
 
@@ -143,12 +187,22 @@ export function setFretRange(lowerBound, upperBound) {
 
 // ---- Validation ----
 
-function isValidTuning(tuning) {
+// Feature 007, FR-508 (AC-7.4.3): a custom tuning is sized against ITS OWN instrument —
+// a four-entry custom tuning stored under the guitar is a corrupt payload, not a ukulele.
+function isValidTuning(tuning, stringCount) {
   if (typeof tuning !== "object" || tuning === null) return false;
   if (typeof tuning.presetId !== "string") return false;
   if (tuning.presetId === "custom") {
-    if (!Array.isArray(tuning.customOpenPitchClasses) || tuning.customOpenPitchClasses.length !== 6) return false;
-    if (!Array.isArray(tuning.customOpenOctaves) || tuning.customOpenOctaves.length !== 6) return false;
+    if (!Array.isArray(tuning.customOpenPitchClasses) || tuning.customOpenPitchClasses.length !== stringCount) return false;
+    if (!Array.isArray(tuning.customOpenOctaves) || tuning.customOpenOctaves.length !== stringCount) return false;
+  }
+  return true;
+}
+
+function isValidTunings(tunings) {
+  if (typeof tunings !== "object" || tunings === null) return false;
+  for (const instrument of INSTRUMENTS) {
+    if (!isValidTuning(tunings[instrument.id], instrument.stringCount)) return false;
   }
   return true;
 }
@@ -165,7 +219,8 @@ function isValidFretRange(range) {
 function isValidStoredState(data) {
   if (typeof data !== "object" || data === null) return false;
   if (data.schemaVersion !== SCHEMA_VERSION) return false;
-  if (!isValidTuning(data.tuning)) return false;
+  if (!VALID_INSTRUMENT_IDS.includes(data.instrument)) return false;
+  if (!isValidTunings(data.tunings)) return false;
   if (data.root !== null && !VALID_ROOTS.includes(data.root)) return false;
   if (!ACCIDENTAL_PREFERENCES.includes(data.accidentalPreference)) return false;
   if (data.scaleId !== null && typeof data.scaleId !== "string") return false;
@@ -203,8 +258,25 @@ function migrateV1ToV2(data) {
   };
 }
 
+// v2 -> v3 (feature 007, AC-7.4.2 / research R-703): before this feature there was one
+// instrument, so the single stored `tuning` is the guitar's, and the ukulele starts on
+// its own default. Every other v2 field passes through untouched.
+function migrateV2ToV3(data) {
+  const { tuning, ...rest } = data;
+  const tunings = defaultTunings();
+  if (typeof tuning === "object" && tuning !== null) {
+    tunings.guitar = {
+      presetId: tuning.presetId,
+      customOpenPitchClasses: tuning.customOpenPitchClasses ?? null,
+      customOpenOctaves: tuning.customOpenOctaves ?? null,
+    };
+  }
+  return { ...rest, schemaVersion: 3, instrument: "guitar", tunings };
+}
+
 function migrate(data) {
   if (data.schemaVersion === 1) data = migrateV1ToV2(data);
+  if (data.schemaVersion === 2) data = migrateV2ToV3(data);
   return data;
 }
 

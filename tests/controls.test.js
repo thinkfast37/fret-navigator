@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 
 const dom = new JSDOM(
   `<!doctype html><html><body>
+    <div id="instrument-controls"></div>
     <div id="tuning-controls"></div>
     <div id="root-controls"></div>
     <div id="scale-controls"></div>
@@ -58,6 +59,7 @@ controls.initControls();
 describe("initControls bootstrap", () => {
   test("wires every sub-control container with built DOM", () => {
     for (const id of [
+      "instrument-controls",
       "tuning-controls",
       "root-controls",
       "scale-controls",
@@ -73,6 +75,7 @@ describe("initControls bootstrap", () => {
 describe("control labels (UAT round 1 section E1)", () => {
   test("every control container shows a visible label above its interactive element", () => {
     const expected = {
+      "instrument-controls": "Instrument",
       "tuning-controls": "Tuning",
       "root-controls": "Scale Root",
       "scale-controls": "Scale / Mode",
@@ -118,7 +121,7 @@ describe("initTuningControls (Story 2, FR-005/FR-006)", () => {
     const select = document.getElementById("tuning-select");
     select.value = "drop-d";
     fire(select, "change");
-    assert.equal(state.getState().tuning.presetId, "drop-d");
+    assert.equal(state.getActiveTuning().presetId, "drop-d");
     assert.equal(Number(document.getElementById("note-s5-f0").dataset.midiNote), 38);
   });
 
@@ -133,7 +136,7 @@ describe("initTuningControls (Story 2, FR-005/FR-006)", () => {
 
     document.getElementById("custom-pitch-0").value = "D";
     fire(document.getElementById("custom-pitch-0"), "change");
-    assert.equal(state.getState().tuning.customOpenPitchClasses[0], "D");
+    assert.equal(state.getActiveTuning().customOpenPitchClasses[0], "D");
   });
 
   test("D1: the modal closes via its Close button, and the Edit button reopens it prepopulated with the current custom values", () => {
@@ -677,5 +680,70 @@ describe("tap-to-set fret range (feature 006)", () => {
     capoSelect.value = "0";
     fire(capoSelect, "change");
     document.getElementById("fret-range-reset").click();
+  });
+});
+
+// ---- Feature 007: instrument selector, scoped tunings, N-row custom modal (T702, T704) ----
+
+describe("initInstrumentControls (feature 007, FR-501/FR-502/FR-506)", () => {
+  function selectInstrument(id) {
+    const select = document.getElementById("instrument-select");
+    select.value = id;
+    fire(select, "change");
+  }
+
+  test("AC-7.1.2 — The tuning selector offers only the selected instrument's tunings", () => {
+    selectInstrument("guitar");
+    const guitarOptions = [...document.querySelectorAll("#tuning-select option")].map((o) => o.value);
+    assert.ok(guitarOptions.includes("standard"));
+    assert.ok(guitarOptions.includes("dadgad"));
+    assert.ok(guitarOptions.includes("custom"));
+    assert.equal(guitarOptions.some((id) => id.startsWith("uke-")), false);
+
+    selectInstrument("ukulele");
+    const ukeOptions = [...document.querySelectorAll("#tuning-select option")].map((o) => o.value);
+    assert.deepEqual(ukeOptions, ["uke-standard", "uke-low-g", "uke-canadian-d", "uke-baritone", "custom"]);
+    assert.deepEqual(
+      [...document.querySelectorAll("#tuning-select optgroup")].map((og) => og.label),
+      ["Ukulele", "Custom"],
+    );
+    selectInstrument("guitar");
+  });
+
+  test("AC-7.3.1 — The custom-tuning editor shows one row per string of the current instrument", () => {
+    selectInstrument("ukulele");
+    assert.equal(document.querySelectorAll("#custom-tuning-modal .custom-tuning-row").length, 4);
+    assert.equal(document.getElementById("custom-pitch-4"), null);
+
+    const select = document.getElementById("tuning-select");
+    select.value = "custom";
+    fire(select, "change");
+    // Seeded from the ukulele tuning that was active (uke-standard: string 1 = A).
+    assert.equal(document.getElementById("custom-pitch-0").value, "A");
+    assert.equal(document.getElementById("custom-octave-3").value, "4");
+
+    selectInstrument("guitar");
+    assert.equal(document.querySelectorAll("#custom-tuning-modal .custom-tuning-row").length, 6);
+    assert.ok(document.getElementById("custom-pitch-5"));
+  });
+
+  test("AC-7.3.2 — A custom tuning applies to the instrument it was written for", () => {
+    selectInstrument("ukulele");
+    const tuningSelect = document.getElementById("tuning-select");
+    tuningSelect.value = "custom";
+    fire(tuningSelect, "change");
+    document.getElementById("custom-pitch-0").value = "G";
+    fire(document.getElementById("custom-pitch-0"), "change");
+    assert.equal(state.getActiveTuning().presetId, "custom");
+    assert.equal(state.getActiveTuning().customOpenPitchClasses.length, 4);
+
+    selectInstrument("guitar");
+    assert.notEqual(state.getActiveTuning().presetId, "custom");
+    assert.equal(state.getState().tunings.ukulele.customOpenPitchClasses.length, 4);
+
+    selectInstrument("ukulele");
+    assert.equal(state.getActiveTuning().presetId, "custom");
+    assert.equal(state.getActiveTuning().customOpenPitchClasses[0], "G");
+    selectInstrument("guitar");
   });
 });
