@@ -18,7 +18,8 @@ beforeEach(() => {
 describe("getState", () => {
   test("returns the current in-memory state tuple with documented defaults", () => {
     const s = state.getState();
-    assert.equal(s.tuning.presetId, "standard");
+    assert.equal(state.getActiveTuning().presetId, "standard");
+    assert.equal(s.instrument, "guitar");
     // Feature 002-default-root-scale: first load defaults to C Ionian so the
     // fretboard is highlighted immediately instead of starting blank.
     assert.equal(s.root, "C");
@@ -31,9 +32,9 @@ describe("getState", () => {
 });
 
 describe("setTuning", () => {
-  test("US2 Scenario 1: selecting a named tuning updates state.tuning", () => {
+  test("US2 Scenario 1: selecting a named tuning updates the active instrument's tuning", () => {
     state.setTuning("drop-d");
-    assert.deepEqual(state.getState().tuning, {
+    assert.deepEqual(state.getActiveTuning(), {
       presetId: "drop-d",
       customOpenPitchClasses: null,
       customOpenOctaves: null,
@@ -44,7 +45,7 @@ describe("setTuning", () => {
     const pcs = ["E", "B", "G", "D", "A", "D"];
     const octs = [4, 3, 3, 3, 2, 1];
     state.setTuning("custom", pcs, octs);
-    const t = state.getState().tuning;
+    const t = state.getActiveTuning();
     assert.equal(t.presetId, "custom");
     assert.deepEqual(t.customOpenPitchClasses, pcs);
     assert.deepEqual(t.customOpenOctaves, octs);
@@ -217,7 +218,7 @@ describe("save/load persistence", () => {
 
     const raw = localStorage.getItem("fret-navigator-settings");
     const parsed = JSON.parse(raw);
-    assert.equal(parsed.schemaVersion, 2);
+    assert.equal(parsed.schemaVersion, 3);
     assert.equal(parsed.root, "A");
 
     const restored = state.load();
@@ -249,7 +250,7 @@ describe("save/load persistence", () => {
     const restored = state.load();
     assert.equal(restored.root, "C");
     assert.equal(restored.scaleId, "ionian");
-    assert.equal(restored.tuning.presetId, "standard");
+    assert.equal(restored.tunings.guitar.presetId, "standard");
   });
 
   test("feature 002, FR-005: a previously persisted null root/scaleId is honored, not overridden to the new C Ionian default", () => {
@@ -303,7 +304,7 @@ describe("save/load persistence", () => {
     );
     const restored = state.load();
     // Surviving v1 fields preserved
-    assert.equal(restored.tuning.presetId, "drop-d");
+    assert.equal(restored.tunings.guitar.presetId, "drop-d");
     assert.equal(restored.root, "A");
     assert.equal(restored.scaleId, "aeolian");
     assert.equal(restored.labelMode, "degrees");
@@ -316,9 +317,9 @@ describe("save/load persistence", () => {
     assert.equal(restored.chordRootOffset, 0);
     assert.equal(restored.chordQualityId, "minor"); // aeolian tonic triad
     assert.equal(restored.viewMode, "scale");
-    // Re-saved payload is schemaVersion 2
+    // Re-saved payload is schemaVersion 3
     state.save();
-    assert.equal(JSON.parse(localStorage.getItem("fret-navigator-settings")).schemaVersion, 2);
+    assert.equal(JSON.parse(localStorage.getItem("fret-navigator-settings")).schemaVersion, 3);
   });
 
   test("AC-3.1.6 — Saved settings from the previous focal-point system load cleanly: v2 validation rejects junk chord fields", () => {
@@ -385,5 +386,181 @@ describe("chord quality lifecycle (feature 006)", () => {
       state.setChordRootOffset(offset);
       assert.equal(state.getState().chordQualityId, expected, `offset ${offset}`);
     }
+  });
+});
+
+// ---- Feature 007: per-instrument tuning memory and the v2 -> v3 migration (T705, T706) ----
+
+describe("instrument selection and per-instrument tunings (feature 007)", () => {
+  test("AC-7.1.3 — Switching instruments leaves the musical context untouched", () => {
+    state.setRoot("A");
+    state.setScaleId("aeolian");
+    state.setChordQualityId("minor");
+    state.setLabelMode("degrees");
+    state.setCapoFret(3);
+    state.setViewMode("chord");
+    const before = { ...state.getState() };
+
+    state.setInstrument("ukulele");
+    const after = state.getState();
+
+    assert.equal(after.instrument, "ukulele");
+    for (const key of [
+      "root",
+      "accidentalPreference",
+      "scaleId",
+      "chordRootOffset",
+      "chordQualityId",
+      "viewMode",
+      "labelMode",
+      "capoFret",
+      "capoLabelMode",
+    ]) {
+      assert.deepEqual(after[key], before[key], `${key} should survive an instrument switch`);
+    }
+    assert.deepEqual(after.fretRange, before.fretRange);
+  });
+
+  test("AC-7.4.1 — Each instrument remembers its own last tuning", () => {
+    state.setTuning("dadgad");
+    state.setInstrument("ukulele");
+    assert.equal(state.getActiveTuning().presetId, "uke-standard");
+
+    state.setTuning("uke-canadian-d");
+    state.setInstrument("guitar");
+    assert.equal(state.getActiveTuning().presetId, "dadgad");
+
+    state.setInstrument("ukulele");
+    assert.equal(state.getActiveTuning().presetId, "uke-canadian-d");
+
+    // A custom tuning is remembered the same way, and survives a reload.
+    state.setTuning("custom", ["A", "E", "C", "G"], [4, 4, 4, 3]);
+    state.setInstrument("guitar");
+    const restored = state.load();
+    assert.equal(restored.tunings.guitar.presetId, "dadgad");
+    assert.equal(restored.tunings.ukulele.presetId, "custom");
+    assert.deepEqual(restored.tunings.ukulele.customOpenPitchClasses, ["A", "E", "C", "G"]);
+  });
+
+  test("AC-7.4.2 — Settings saved before this feature load as a guitar in their saved tuning", () => {
+    localStorage.setItem(
+      "fret-navigator-settings",
+      JSON.stringify({
+        schemaVersion: 2,
+        tuning: { presetId: "drop-d", customOpenPitchClasses: null, customOpenOctaves: null },
+        root: "A",
+        accidentalPreference: "sharp",
+        scaleId: "aeolian",
+        chordRootOffset: 0,
+        chordQualityId: "minor",
+        viewMode: "scale",
+        labelMode: "degrees",
+        capoFret: 3,
+        capoLabelMode: "relative",
+        fretRange: { lowerBound: 3, upperBound: 15 },
+      })
+    );
+    const restored = state.load();
+    assert.equal(restored.instrument, "guitar");
+    assert.equal(restored.tunings.guitar.presetId, "drop-d");
+    assert.equal(restored.tunings.ukulele.presetId, "uke-standard");
+    assert.equal("tuning" in restored, false);
+    // Every other saved setting survives.
+    assert.equal(restored.root, "A");
+    assert.equal(restored.scaleId, "aeolian");
+    assert.equal(restored.labelMode, "degrees");
+    assert.equal(restored.capoFret, 3);
+    assert.equal(restored.capoLabelMode, "relative");
+    assert.deepEqual(restored.fretRange, { lowerBound: 3, upperBound: 15 });
+  });
+
+  test("AC-7.4.2 — Settings saved before this feature load as a guitar in their saved tuning: a saved custom tuning migrates too", () => {
+    localStorage.setItem(
+      "fret-navigator-settings",
+      JSON.stringify({
+        schemaVersion: 2,
+        tuning: {
+          presetId: "custom",
+          customOpenPitchClasses: ["D", "A", "F", "C", "G", "D"],
+          customOpenOctaves: [4, 3, 3, 3, 2, 2],
+        },
+        root: "C",
+        accidentalPreference: "sharp",
+        scaleId: "ionian",
+        chordRootOffset: 0,
+        chordQualityId: "major",
+        viewMode: "scale",
+        labelMode: "notes",
+        capoFret: 0,
+        capoLabelMode: "absolute",
+        fretRange: { lowerBound: 0, upperBound: 24 },
+      })
+    );
+    const restored = state.load();
+    assert.equal(restored.instrument, "guitar");
+    assert.equal(restored.tunings.guitar.presetId, "custom");
+    assert.deepEqual(restored.tunings.guitar.customOpenPitchClasses, ["D", "A", "F", "C", "G", "D"]);
+  });
+
+  test("AC-7.4.3 — Saved settings whose string count contradicts their instrument fall back safely", () => {
+    const valid = {
+      schemaVersion: 3,
+      instrument: "guitar",
+      tunings: {
+        guitar: { presetId: "standard", customOpenPitchClasses: null, customOpenOctaves: null },
+        ukulele: { presetId: "uke-standard", customOpenPitchClasses: null, customOpenOctaves: null },
+      },
+      root: "C",
+      accidentalPreference: "sharp",
+      scaleId: "ionian",
+      chordRootOffset: 0,
+      chordQualityId: "major",
+      viewMode: "scale",
+      labelMode: "notes",
+      capoFret: 0,
+      capoLabelMode: "absolute",
+      fretRange: { lowerBound: 0, upperBound: 24 },
+    };
+
+    // An unknown instrument.
+    localStorage.setItem("fret-navigator-settings", JSON.stringify({ ...valid, instrument: "banjo" }));
+    assert.equal(state.load().instrument, "guitar");
+
+    // A four-entry custom tuning filed under the six-string guitar.
+    localStorage.setItem(
+      "fret-navigator-settings",
+      JSON.stringify({
+        ...valid,
+        tunings: {
+          ...valid.tunings,
+          guitar: { presetId: "custom", customOpenPitchClasses: ["A", "E", "C", "G"], customOpenOctaves: [4, 4, 4, 4] },
+        },
+      })
+    );
+    let restored = state.load();
+    assert.equal(restored.tunings.guitar.presetId, "standard");
+
+    // A six-entry custom tuning filed under the four-string ukulele.
+    localStorage.setItem(
+      "fret-navigator-settings",
+      JSON.stringify({
+        ...valid,
+        tunings: {
+          ...valid.tunings,
+          ukulele: {
+            presetId: "custom",
+            customOpenPitchClasses: ["E", "B", "G", "D", "A", "E"],
+            customOpenOctaves: [4, 3, 3, 3, 2, 2],
+          },
+        },
+      })
+    );
+    restored = state.load();
+    assert.equal(restored.tunings.ukulele.presetId, "uke-standard");
+
+    // A payload missing the tunings map entirely.
+    const { tunings, ...withoutTunings } = valid;
+    localStorage.setItem("fret-navigator-settings", JSON.stringify(withoutTunings));
+    assert.equal(state.load().tunings.guitar.presetId, "standard");
   });
 });

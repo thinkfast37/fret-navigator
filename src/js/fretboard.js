@@ -6,7 +6,11 @@ import * as audio from "./audio.js";
 
 const ALL_ROLE_IDS = ["1", "b2", "2", "b3", "3", "4", "4s5b", "5", "b6", "6", "b7", "7"];
 
-const STRING_COUNT = 6;
+// Feature 007, FR-501/FR-509 (AC-7.1.1): string count is a property of the selected
+// instrument, not a constant. `stringCount` is set from the instrument on every render
+// and the skeleton is rebuilt whenever it changes.
+const DEFAULT_STRING_COUNT = theory.getInstrument(theory.DEFAULT_INSTRUMENT_ID).stringCount;
+let stringCount = DEFAULT_STRING_COUNT;
 const FRET_COUNT = 24; // frets 1-24; fret 0 is the open string
 const MARGIN = 24;
 const OPEN_COL_WIDTH = 56;
@@ -19,9 +23,12 @@ const DOUBLE_DOT_FRETS = new Set([12, 24]);
 const MARKER_FRETS = new Set([...SINGLE_DOT_FRETS, ...DOUBLE_DOT_FRETS]);
 
 // Total rendered size stays fixed regardless of the visible fret range
-// (FR-043, UAT round 1 section C1).
+// (FR-043, UAT round 1 section C1). Height follows the instrument's string count
+// (feature 007, FR-501) — a four-string ukulele board is two rows shorter.
 const svgWidth = MARGIN * 2 + OPEN_COL_WIDTH + FRET_COUNT * FRET_COL_WIDTH;
-const svgHeight = MARGIN * 2 + STRING_COUNT * ROW_HEIGHT;
+function boardHeight() {
+  return MARGIN * 2 + stringCount * ROW_HEIGHT;
+}
 
 let initialized = false;
 let backgroundGroup = null;
@@ -119,15 +126,22 @@ function onNoteActivated(g) {
   audio.play(Number(g.dataset.midiNote));
 }
 
+// Feature 007, FR-507: the tuning is the one remembered for the SELECTED instrument, and
+// falls back to that instrument's own default rather than to the guitar's.
 function resolveTuning(state) {
-  if (state.tuning.presetId === "custom") {
+  const instrument = theory.getInstrument(state.instrument);
+  const tuning = state.tunings[instrument.id];
+  if (tuning.presetId === "custom") {
     return {
       id: "custom",
-      openPitchClasses: state.tuning.customOpenPitchClasses,
-      openOctaves: state.tuning.customOpenOctaves,
+      openPitchClasses: tuning.customOpenPitchClasses,
+      openOctaves: tuning.customOpenOctaves,
     };
   }
-  return theory.TUNINGS.find((t) => t.id === state.tuning.presetId);
+  return (
+    theory.TUNINGS.find((t) => t.id === tuning.presetId) ||
+    theory.TUNINGS.find((t) => t.id === instrument.defaultTuningId)
+  );
 }
 
 // Runs once: static structure only (viewBox, empty background/fret-number
@@ -137,7 +151,7 @@ function resolveTuning(state) {
 // on the current fret range (FR-043).
 function buildSkeleton() {
   const svg = document.getElementById("fretboard");
-  svg.setAttribute("viewBox", `0 0 ${svgWidth} ${svgHeight}`);
+  svg.setAttribute("viewBox", `0 0 ${svgWidth} ${boardHeight()}`);
   svg.textContent = "";
 
   backgroundGroup = svgEl("g", { class: "fretboard-background" });
@@ -152,7 +166,7 @@ function buildSkeleton() {
   const notesLayer = svgEl("g", { class: "notes-layer" });
   svg.appendChild(notesLayer);
 
-  for (let s = 0; s < STRING_COUNT; s++) {
+  for (let s = 0; s < stringCount; s++) {
     for (let f = 0; f <= FRET_COUNT; f++) {
       const key = `s${s}-f${f}`;
       const g = svgEl("g", {
@@ -189,7 +203,7 @@ function renderBackground(appState, layout) {
   backgroundGroup.textContent = "";
   const { showOpenColumn, firstFret, lastFret, wireX, noteX } = layout;
 
-  for (let s = 0; s < STRING_COUNT; s++) {
+  for (let s = 0; s < stringCount; s++) {
     const y = stringY(s);
     backgroundGroup.appendChild(
       svgEl("line", {
@@ -220,16 +234,16 @@ function renderBackground(appState, layout) {
         x1: x,
         y1: MARGIN,
         x2: x,
-        y2: svgHeight - MARGIN,
+        y2: boardHeight() - MARGIN,
       })
     );
   }
 
   // Inlay markers, centered vertically between string rows, only for
   // standard marker frets currently within the visible range.
-  const midY = MARGIN + (STRING_COUNT * ROW_HEIGHT) / 2;
-  const thirdY1 = MARGIN + (STRING_COUNT * ROW_HEIGHT) / 3;
-  const thirdY2 = MARGIN + (2 * STRING_COUNT * ROW_HEIGHT) / 3;
+  const midY = MARGIN + (stringCount * ROW_HEIGHT) / 2;
+  const thirdY1 = MARGIN + (stringCount * ROW_HEIGHT) / 3;
+  const thirdY2 = MARGIN + (2 * stringCount * ROW_HEIGHT) / 3;
   for (let f = firstFret; f <= lastFret; f++) {
     if (!MARKER_FRETS.has(f)) continue;
     const cx = noteX(f);
@@ -253,7 +267,7 @@ function renderFretNumbers(appState, layout) {
   const { firstFret, lastFret, noteX } = layout;
   const isRelative = appState.capoFret > 0 && appState.capoLabelMode === "relative";
   const topY = MARGIN - 10;
-  const bottomY = svgHeight - MARGIN + 12;
+  const bottomY = boardHeight() - MARGIN + 12;
 
   for (let f = firstFret; f <= lastFret; f++) {
     if (!MARKER_FRETS.has(f)) continue;
@@ -300,7 +314,7 @@ function updateNotes(state, layout) {
   const chordToneSet = isChordView ? computeChordToneSet(state) : new Set();
   const isRelativeLabelMode = state.capoFret > 0 && state.capoLabelMode === "relative";
 
-  for (let s = 0; s < STRING_COUNT; s++) {
+  for (let s = 0; s < stringCount; s++) {
     for (let f = 0; f <= FRET_COUNT; f++) {
       const key = `s${s}-f${f}`;
       const { g, circle, text } = noteElements.get(key);
@@ -387,7 +401,12 @@ export function onAfterRender(fn) {
 
 // Implements Story 1, FR-001/FR-002/FR-003/FR-004, FR-043, FR-046: pure state -> fretboard render
 export function render(appState) {
-  if (!initialized) {
+  // Feature 007 (AC-7.1.1): switching instrument changes how many string rows exist, so
+  // the skeleton — one note element per string × fret — is rebuilt when the count moves.
+  const nextStringCount = theory.getInstrument(appState.instrument).stringCount;
+  if (!initialized || nextStringCount !== stringCount) {
+    stringCount = nextStringCount;
+    noteElements.clear();
     buildSkeleton();
     initialized = true;
   }

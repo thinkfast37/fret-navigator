@@ -13,15 +13,15 @@
   marked with what is true right now.
 -->
 
-**Feature**: specs/001-fretboard-visualizer/spec.md, specs/002-default-root-scale/spec.md, specs/003-chord-mode/spec.md, specs/004-play-chord/spec.md, specs/005-display-overhaul/spec.md, specs/006-key-aware-chords/spec.md
-**Criteria**: 96 across 22 User Stories
+**Feature**: specs/001-fretboard-visualizer/spec.md, specs/002-default-root-scale/spec.md, specs/003-chord-mode/spec.md, specs/004-play-chord/spec.md, specs/005-display-overhaul/spec.md, specs/006-key-aware-chords/spec.md, specs/007-instrument-ukulele/spec.md
+**Criteria**: 112 across 26 User Stories
 
-**Coverage**: 45 of 96 criteria proven (46.9%)
+**Coverage**: 61 of 112 criteria proven (54.5%)
 
 | | Criteria | Share |
 |---|---|---|
-| 🟢 Proven | 45 | 46.9% |
-| 🔴 Gap — CRITICAL | 51 | 53.1% |
+| 🟢 Proven | 61 | 54.5% |
+| 🔴 Gap — CRITICAL | 51 | 45.5% |
 
 A row is one *criterion*: an Acceptance Criterion that asserts one thing, or one Case of
 an AC that asserts several. 🖵 marks a criterion that describes something a person sees or
@@ -78,6 +78,10 @@ fail the build, and it is outstanding work — never a settled decision.
 | 🟢 US-6.2 | 2 | **2** | · | · | · | · | · |
 | 🟢 US-6.3 | 3 | **3** | · | · | · | · | · |
 | 🟢 US-6.4 | 3 | **3** | · | · | · | · | · |
+| 🟢 US-7.1 | 5 | **5** | · | · | · | · | · |
+| 🟢 US-7.2 | 6 | **6** | · | · | · | · | · |
+| 🟢 US-7.3 | 2 | **2** | · | · | · | · | · |
+| 🟢 US-7.4 | 3 | **3** | · | · | · | · | · |
 
 ## Every criterion
 
@@ -88,7 +92,7 @@ fail the build, and it is outstanding work — never a settled decision.
 | US-1.1 | `AC-1.1.3` 🖵 | Active notes distinguished by color and shape, not color alone | P-002 | T042, T043, T044, T045, T046, T047, T048, T049, T110, T111, T112 (11/11 done) | T126 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
 | US-1.1 | `AC-1.1.4` 🖵 | Open-string notes shown left of fret 1 past the nut | P-002 | T042, T043, T044, T045, T046, T047, T048, T049, T110, T111, T112 (11/11 done) | T126 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
 | US-1.1 | `AC-1.1.5` 🖵 | Inlay dots anchored to physical fret positions under capo Relative renumbering | P-002 | T042, T043, T044, T045, T046, T047, T048, T049, T110, T111, T112 (11/11 done) | T126 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
-| US-1.2 | `AC-1.2.1` | All 6 strings retune and every fretted note recalculates | P-003 | T050, T051, T052, T053, T054 (5/5 done) | T127 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
+| US-1.2 | `AC-1.2.1` | Every string retunes and every fretted note recalculates | P-003 | T050, T051, T052, T053, T054 (5/5 done) | T127 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
 | US-1.2 | `AC-1.2.2` | D-Family tunings reflected exactly | P-003 | T050, T051, T052, T053, T054 (5/5 done) | T127 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
 | US-1.2 | `AC-1.2.3` | G-Family tunings reflected exactly | P-003 | T050, T051, T052, T053, T054 (5/5 done) | T127 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
 | US-1.2 | `AC-1.2.4` | C-Family tunings reflected exactly | P-003 | T050, T051, T052, T053, T054 (5/5 done) | T127 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
@@ -179,3 +183,19 @@ fail the build, and it is outstanding work — never a settled decision.
 | US-6.4 | `AC-6.4.1` 🖵 | Tapping the slider moves the nearer handle to the tapped fret | P-505 | T614 (1/1 done) | T605 (1/1 done) | `controls.test.js` | 🟢 OK |
 | US-6.4 | `AC-6.4.2` 🖵 | A capo-locked left handle is never the one a tap moves | P-505 | T614 (1/1 done) | T605 (1/1 done) | `controls.test.js` | 🟢 OK |
 | US-6.4 | `AC-6.4.3` 🖵 | The tap animates, the drag does not | P-505 | T614 (1/1 done) | T605 (1/1 done) | `styles.test.js` | 🟢 OK |
+| US-7.1 | `AC-7.1.1/1` 🖵 | Selecting Guitar renders six string rows. | P-601 | T710 (1/1 done) | T701 (1/1 done) | `fretboard.test.js` | 🟢 OK |
+| US-7.1 | `AC-7.1.1/2` 🖵 | Selecting Ukulele renders four string rows. | P-601 | T710 (1/1 done) | T701 (1/1 done) | `fretboard.test.js` | 🟢 OK |
+| US-7.1 | `AC-7.1.2` 🖵 | The tuning selector offers only the selected instrument's tunings | P-602 | T711 (1/1 done) | T702 (1/1 done) | `controls.test.js` | 🟢 OK |
+| US-7.1 | `AC-7.1.3` | Switching instruments leaves the musical context untouched | P-605 | T714 (1/1 done) | T705 (1/1 done) | `state.test.js` | 🟢 OK |
+| US-7.1 | `AC-7.1.4` | The instrument choice survives a reload | P-605 | T714 (1/1 done) | T705 (1/1 done) | `main-instrument.test.js` | 🟢 OK |
+| US-7.2 | `AC-7.2.1/1` | Standard (high-G) GCEA is G4 C4 E4 A4, string 4 to string 1. | P-603 | T712 (1/1 done) | T703 (1/1 done) | `theory.test.js` | 🟢 OK |
+| US-7.2 | `AC-7.2.1/2` | Low-G GCEA is G3 C4 E4 A4, string 4 to string 1. | P-603 | T712 (1/1 done) | T703 (1/1 done) | `theory.test.js` | 🟢 OK |
+| US-7.2 | `AC-7.2.1/3` | Canadian / D tuning ADF#B is A4 D4 F#4 B4, string 4 to string 1. | P-603 | T712 (1/1 done) | T703 (1/1 done) | `theory.test.js` | 🟢 OK |
+| US-7.2 | `AC-7.2.1/4` | Baritone DGBE is D3 G3 B3 E4, string 4 to string 1. | P-603 | T712 (1/1 done) | T703 (1/1 done) | `theory.test.js` | 🟢 OK |
+| US-7.2 | `AC-7.2.2` 🖵 | Re-entrant tunings keep physical string order | P-603 | T712 (1/1 done) | T703 (1/1 done) | `fretboard.test.js` | 🟢 OK |
+| US-7.2 | `AC-7.2.3` | Every string sounds and labels at its true octave | P-603 | T712 (1/1 done) | T703 (1/1 done) | `theory.test.js` | 🟢 OK |
+| US-7.3 | `AC-7.3.1` 🖵 | The custom-tuning editor shows one row per string of the current instrument | P-604 | T713 (1/1 done) | T704 (1/1 done) | `controls.test.js` | 🟢 OK |
+| US-7.3 | `AC-7.3.2` | A custom tuning applies to the instrument it was written for | P-604 | T713 (1/1 done) | T704 (1/1 done) | `controls.test.js` | 🟢 OK |
+| US-7.4 | `AC-7.4.1` | Each instrument remembers its own last tuning | P-605 | T714 (1/1 done) | T705 (1/1 done) | `state.test.js` | 🟢 OK |
+| US-7.4 | `AC-7.4.2` | Settings saved before this feature load as a guitar in their saved tuning | P-606 | T715 (1/1 done) | T706 (1/1 done) | `state.test.js` | 🟢 OK |
+| US-7.4 | `AC-7.4.3` | Saved settings whose string count contradicts their instrument fall back safely | P-606 | T715 (1/1 done) | T706 (1/1 done) | `state.test.js` | 🟢 OK |

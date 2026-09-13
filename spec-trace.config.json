@@ -29,6 +29,11 @@
       "spec": "specs/006-key-aware-chords/spec.md",
       "plan": "specs/006-key-aware-chords/plan.md",
       "tasks": "specs/006-key-aware-chords/tasks.md"
+    },
+    {
+      "spec": "specs/007-instrument-ukulele/spec.md",
+      "plan": "specs/007-instrument-ukulele/plan.md",
+      "tasks": "specs/007-instrument-ukulele/tasks.md"
     }
   ],
   "matrix": "specs/traceability-matrix.md",
@@ -42,6 +47,7 @@
     "tests/controls.test.js",
     "tests/main.test.js",
     "tests/main-default-selection.test.js",
-    "tests/styles.test.js"
+    "tests/styles.test.js",
+    "tests/main-instrument.test.js"
   ]
 }

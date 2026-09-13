@@ -17,13 +17,18 @@ import {
   isFretPlayable,
   rootLetterToSemitone,
   getHighlightRootSemitone,
+  INSTRUMENTS,
+  getInstrument,
+  tuningsForInstrument,
 } from "../src/js/theory.js";
 
 // ---- Reference data (T005, T007, T009) ----
 
 describe("TUNINGS reference data", () => {
-  test("has standard plus 17 named tunings (D-Family x8, G-Family x5, C-Family x4)", () => {
-    assert.equal(TUNINGS.length, 18);
+  // Feature 007: the library now spans instruments, so the guitar's count is asserted
+  // over the guitar's own tunings rather than over the whole table.
+  test("has standard plus 17 named guitar tunings (D-Family x8, G-Family x5, C-Family x4)", () => {
+    assert.equal(TUNINGS.filter((t) => t.instrument === "guitar").length, 18);
     assert.equal(TUNINGS.filter((t) => t.group === "D-Family").length, 8);
     assert.equal(TUNINGS.filter((t) => t.group === "G-Family").length, 5);
     assert.equal(TUNINGS.filter((t) => t.group === "C-Family").length, 4);
@@ -31,11 +36,14 @@ describe("TUNINGS reference data", () => {
     assert.ok(TUNINGS.find((t) => t.id === "standard"));
   });
 
-  test("every tuning has correct group and 6-element pitch/octave arrays", () => {
+  // Feature 007 (FR-509): the array length a tuning must have is its INSTRUMENT's string
+  // count — six for the guitar, four for the ukulele — not a fixed six.
+  test("every tuning has correct group and one pitch/octave per string of its instrument", () => {
     for (const tuning of TUNINGS) {
-      assert.ok(["D-Family", "G-Family", "C-Family", "Standard", "Custom"].includes(tuning.group));
-      assert.equal(tuning.openPitchClasses.length, 6);
-      assert.equal(tuning.openOctaves.length, 6);
+      assert.ok(["D-Family", "G-Family", "C-Family", "Standard", "Ukulele", "Custom"].includes(tuning.group));
+      const { stringCount } = getInstrument(tuning.instrument);
+      assert.equal(tuning.openPitchClasses.length, stringCount);
+      assert.equal(tuning.openOctaves.length, stringCount);
     }
   });
 
@@ -159,9 +167,9 @@ describe("noteAt", () => {
     assert.equal(twelfth.pitchClassSemitone, open.pitchClassSemitone);
   });
 
-  test("every tuning in TUNINGS produces a valid open-string note for all 6 strings", () => {
+  test("every tuning in TUNINGS produces a valid open-string note for all of its strings", () => {
     for (const tuning of TUNINGS) {
-      for (let s = 0; s < 6; s++) {
+      for (let s = 0; s < getInstrument(tuning.instrument).stringCount; s++) {
         const note = noteAt(tuning, s, 0);
         assert.ok(Number.isInteger(note.midiNote));
         assert.ok(note.pitchClassSemitone >= 0 && note.pitchClassSemitone <= 11);
@@ -929,4 +937,72 @@ describe("circle-of-fifths spelling is applied consistently (FR-009)", () => {
     const semitones = { C: 0, G: 7, D: 2, A: 9, E: 4, B: 11, "F#": 6, Db: 1, Ab: 8, Eb: 3, Bb: 10, F: 5 };
     return (semitones[root] + offset) % 12;
   }
+});
+
+// ---- Feature 007: instruments and the ukulele tuning library (T703) ----
+
+describe("INSTRUMENTS and the ukulele tuning library (feature 007)", () => {
+  const uke = (id) => tuningsForInstrument("ukulele").find((t) => t.id === id);
+  // Pitches are listed string 1 first in the library; the AC states them string 4 first,
+  // as a player reads a tuning, so the expectations below are reversed for comparison.
+  const stringFourToOne = (tuning) =>
+    [...tuning.openPitchClasses].reverse().map((pc, i) => pc + [...tuning.openOctaves].reverse()[i]);
+
+  test("AC-7.1.1 — The instrument selector renders that instrument's string count: the instrument table declares both counts", () => {
+    assert.equal(getInstrument("guitar").stringCount, 6);
+    assert.equal(getInstrument("ukulele").stringCount, 4);
+    assert.equal(INSTRUMENTS.length, 2);
+    for (const instrument of INSTRUMENTS) {
+      assert.equal(instrument.stringLabels.length, instrument.stringCount);
+      assert.ok(tuningsForInstrument(instrument.id).some((t) => t.id === instrument.defaultTuningId));
+    }
+  });
+
+  test("AC-7.2.1 — The four ukulele presets are reflected exactly", () => {
+    assert.deepEqual(
+      tuningsForInstrument("ukulele").map((t) => t.id),
+      ["uke-standard", "uke-low-g", "uke-canadian-d", "uke-baritone"],
+    );
+  });
+
+  test("AC-7.2.1/1 — Standard (high-G) GCEA is G4 C4 E4 A4, string 4 to string 1.", () => {
+    assert.deepEqual(stringFourToOne(uke("uke-standard")), ["G4", "C4", "E4", "A4"]);
+  });
+
+  test("AC-7.2.1/2 — Low-G GCEA is G3 C4 E4 A4, string 4 to string 1.", () => {
+    assert.deepEqual(stringFourToOne(uke("uke-low-g")), ["G3", "C4", "E4", "A4"]);
+  });
+
+  test("AC-7.2.1/3 — Canadian / D tuning ADF#B is A4 D4 F#4 B4, string 4 to string 1.", () => {
+    assert.deepEqual(stringFourToOne(uke("uke-canadian-d")), ["A4", "D4", "F#4", "B4"]);
+  });
+
+  test("AC-7.2.1/4 — Baritone DGBE is D3 G3 B3 E4, string 4 to string 1.", () => {
+    assert.deepEqual(stringFourToOne(uke("uke-baritone")), ["D3", "G3", "B3", "E4"]);
+  });
+
+  test("AC-7.2.3 — Every string sounds and labels at its true octave", () => {
+    // String 4 is index 3 (the library is physical order, string 1 first).
+    const highG = noteAt(uke("uke-standard"), 3, 0);
+    const lowG = noteAt(uke("uke-low-g"), 3, 0);
+    assert.equal(highG.midiNote, 67); // G4
+    assert.equal(lowG.midiNote, 55); // G3
+    assert.equal(highG.pitchClassSemitone, lowG.pitchClassSemitone);
+    for (let fret = 0; fret <= 24; fret++) {
+      assert.equal(noteAt(uke("uke-standard"), 3, fret).midiNote - noteAt(uke("uke-low-g"), 3, fret).midiNote, 12);
+    }
+    // Canadian tuning is a whole tone above standard on every string.
+    for (let s = 0; s < 4; s++) {
+      assert.equal(noteAt(uke("uke-canadian-d"), s, 0).midiNote - noteAt(uke("uke-standard"), s, 0).midiNote, 2);
+    }
+  });
+
+  test("AC-7.2.3 — Every string sounds and labels at its true octave: a re-entrant string 4 sounds above string 3", () => {
+    const standard = uke("uke-standard");
+    assert.ok(noteAt(standard, 3, 0).midiNote > noteAt(standard, 2, 0).midiNote);
+    // The linear tunings do not: low-G and baritone both fall away from string 1 down.
+    for (const id of ["uke-low-g", "uke-baritone"]) {
+      assert.ok(noteAt(uke(id), 3, 0).midiNote < noteAt(uke(id), 2, 0).midiNote);
+    }
+  });
 });

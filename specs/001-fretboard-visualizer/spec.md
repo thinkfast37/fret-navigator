@@ -79,11 +79,13 @@ a custom one), so that I can see how note positions shift across alternate tunin
 
 **Acceptance Scenarios**:
 
-- **AC-1.2.1** — All 6 strings retune and every fretted note recalculates
+- **AC-1.2.1** — Every string retunes and every fretted note recalculates
 
   **Given** the tuning selector, **When** I choose any supported tuning,
-  **Then** all 6 strings retune to the correct pitch and every fretted
-  note recalculates accordingly.
+  **Then** every string of the selected instrument retunes to the correct pitch and every
+  fretted note recalculates accordingly. *(Amended 2026-09-13, feature 007: "all 6
+  strings" generalised to "every string" — the criterion is about the instrument's
+  strings, and the ukulele has four.)*
 
 - **AC-1.2.2** — D-Family tunings reflected exactly
 
@@ -748,11 +750,11 @@ section A)**
 
 ### Functional Requirements
 
-- **FR-001**: System MUST render a 6-string fretboard oriented with string 1 (high-E) at the top and string 6 (low-E) at the bottom, spanning frets 0 (open/nut) through 24.
+- **FR-001**: System MUST render a fretboard with the selected instrument's number of strings, oriented with string 1 at the top and string N at the bottom (guitar: high-E through low-E), spanning frets 0 (open/nut) through 24. *(Amended 2026-09-13, feature 007: string count is a property of the selected instrument — six for guitar, four for ukulele — rather than a fixed six.)*
 - **FR-002**: System MUST display inlay fret markers at frets 3, 5, 7, 9, 12, 15, 17, 19, 21, and 24, with a double-dot marker at frets 12 and 24 and single-dot markers elsewhere.
 - **FR-003**: System MUST render open-string notes visually distinct from fretted notes, positioned to the left of fret 1 past the nut line.
 - **FR-004**: System MUST visually distinguish any "active" note (in-scale, root, or chord tone) from inactive notes using both a color cue AND a non-color cue (shape/border), never color alone.
-- **FR-005**: System MUST provide a tuning selector offering named tuning groups ("D-Family," "G-Family," "C-Family") with the exact tunings enumerated in User Story 2, plus a "Custom Tuning" option allowing independent per-string pitch assignment.
+- **FR-005**: System MUST provide a tuning selector offering the selected instrument's named tuning groups (guitar: "D-Family," "G-Family," "C-Family") with the exact tunings enumerated in User Story 2, plus a "Custom Tuning" option allowing independent per-string pitch assignment. *(Amended 2026-09-13, feature 007: the groups offered are the selected instrument's; see FR-502/FR-503.)*
 - **FR-006**: System MUST recalculate every string's pitch and every fretted note's label immediately upon any tuning change, whether from a named preset or a custom assignment.
 - **FR-007**: System MUST derive enharmonic spelling (sharp vs. flat letter names) from the active key/scale context rather than a fixed global convention, for every tuning.
 - **FR-008**: System MUST allow selection of a root note from all 12 chromatic pitch classes — displayed alphabetically as A, Ab, B, Bb, C, D, Db, E, Eb, F, F#, G — and highlight that pitch class as the root/tonic in every occurrence on the fretboard. *(Amended UAT round 1 section C3: previously 7 natural letters only.)*
@@ -812,7 +814,7 @@ section A)**
 
 - **Note**: A pitch at a specific string/fret position; carries a pitch class, absolute octave/MIDI value, and (when applicable) an enharmonic spelling, a scale-degree role, and diatonic/non-diatonic status relative to the active key.
 - **String**: One of the 6 physical guitar strings (1 = high-E through 6 = low-E); carries an open pitch determined by the active tuning.
-- **Tuning**: A named or custom set of 6 open-string pitches; belongs to a tuning group (D-Family, G-Family, C-Family, or Custom) when named.
+- **Tuning**: A named or custom set of open-string pitches, one per string of the instrument it belongs to; belongs to a tuning group (guitar: D-Family, G-Family, C-Family, or Custom) when named. *(Amended 2026-09-13, feature 007: "6 open-string pitches" generalised to one per string of its instrument.)*
 - **Scale/Mode**: A named degree formula (from the canonical tables in Story 4) defining which semitone offsets from a root are diatonic; belongs to a category (Church Modes, Pentatonic, Blues, Other).
 - **Key Context**: The combination of root note (one of the 12 canonical chromatic roots, each with a fixed circle-of-fifths sharp/flat spelling — UAT round 1 section C3) and active scale/mode that determines every note's diatonic status, degree role, and label spelling. For highlighting purposes (color, degree roles/labels, interval labels, chord-tone membership) the effective root is `getHighlightRootSemitone`'s output, which shifts from the true root only when capo > 0 AND Relative label mode is active (UAT round 2 section A); audio and the "Bright notes" text summary always use the true root regardless.
 - **Focal Point**: The currently selected scale-degree acting as the reference for chord-tone (bright set) computation; defaults to the root and resets on key/scale change.

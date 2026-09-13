@@ -495,3 +495,22 @@ but never logged as tasks. Added so every plan item carries a test task (spec-tr
   spell per their degree (bVII), not the root's sharp preference"; plus the two
   matching `tests/controls.test.js` assertions on the `bVII` option text. Roman
   numerals are unchanged — "bVII" is a degree name, not a note name.
+- [X] T139 [US1, US2] Spec defect (2026-09-13, feature 007's approved spill): AC-1.2.1,
+  FR-001, FR-005 and the Key Entities "Tuning" entry wrote the guitar's **six** strings
+  into criteria that are really about the selected instrument's strings, which blocked the
+  ukulele from existing at all. Each is generalised in place with a dated parenthetical —
+  "all 6 strings" → "every string"; "a 6-string fretboard" → the selected instrument's
+  string count, string 1 at the top through string N at the bottom; the tuning selector's
+  groups are the selected instrument's; a tuning carries one open pitch per string of its
+  instrument. Revised **before** the implementation, per CLAUDE.md §2. The behaviour that
+  implements it, and its tests, are feature 007 (`specs/007-instrument-ukulele/`).
+
+  **Test defects corrected (§2a)**: three `tests/theory.test.js` assertions encoded the
+  fixed six that the revised FR-001/FR-005 no longer say — the guitar-library count (now
+  counted over the guitar's own tunings), the "6-element pitch/octave arrays" check (now
+  one entry per string of the tuning's instrument), and the open-string sweep over "all 6
+  strings" (now over the instrument's strings). The fixtures in `tests/state.test.js`,
+  `tests/fretboard.test.js`, `tests/controls.test.js`, `tests/main.test.js` and
+  `tests/main-default-selection.test.js` were updated to the new persisted state shape
+  (`instrument` + a per-instrument `tunings` map, schemaVersion 3) and the new
+  `#instrument-controls` mount point; no assertion was relaxed, narrowed or removed.
