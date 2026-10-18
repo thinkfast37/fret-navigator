@@ -14,9 +14,14 @@ const restoredState = state.load();
 fretboard.render(restoredState);
 controls.initControls();
 
-audio.onLoadError(() => {
+// Feature 008 (AC-8.4.2): the piano's recordings can fail to load too; the banner names
+// whichever instrument's did.
+audio.onLoadError((err, voice) => {
   const banner = document.getElementById("audio-error-banner");
-  banner.textContent = "Guitar samples failed to load. Tap a fret to retry.";
+  banner.textContent =
+    voice === "piano"
+      ? "Piano samples failed to load. Tap a key to retry."
+      : "Guitar samples failed to load. Tap a fret to retry.";
   banner.hidden = false;
 });
 

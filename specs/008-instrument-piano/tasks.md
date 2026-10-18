@@ -79,14 +79,14 @@ board or a gesture is tested in a DOM-capable suite.
 
 ## Phase 5: User Story 4 — Hear a piano (P1)
 
-- [X] T806 [US4] In `tests/synth.test.js`: `AC-8.4.2 — The piano voice is rhythm-master's
+- [X] T806 [US4] In tests/synth.test.js (removed 2026-10-18 by T821): `AC-8.4.2 — The piano voice is rhythm-master's
   melodic voice` (the node graph, and one bus per context). In `tests/piano.test.js`:
   `AC-8.4.1 — Tapping a key plays its exact pitch with the piano voice` (click and Enter),
   `AC-8.4.3 — The chord Play button strikes every chord tone at once on the piano` and
   `AC-8.4.4 — Stringed instruments keep the guitar sample` (guitar and ukulele). In
   `tests/theory.test.js`: `midiToFrequency()` for AC-8.4.1. New
   `tests/helpers/web-audio-mock.js`.
-- [X] T815 [US4] New `src/js/synth.js` (R-801). In `src/js/theory.js`:
+- [X] T815 [US4] New src/js/synth.js (R-801; removed 2026-10-18 by T822). In `src/js/theory.js`:
   `midiToFrequency()`. In `src/js/audio.js`: `play`, `playChord` and `resetAudio` take a
   voice and route "synth" through `synth.playNote` on the shared, self-recovering
   context. In `src/js/controls.js`: the Play button uses the instrument's strum and
@@ -105,6 +105,32 @@ board or a gesture is tested in a DOM-capable suite.
 ## Phase 7: Polish & gates
 
 - [X] T820 Run all four gates; regenerate and commit the matrix.
+
+## Phase 8: UAT 2026-10-18 — a real piano, and middle C marked
+
+The maintainer heard the synthesised voice as "synth sounds… really weird" for a piano,
+asked for authentic piano sounds in the correct octaves, and could not tell where middle
+C was. R-801 reversed; AC-8.4.2, FR-607 and the download edge case revised; AC-8.2.4
+added. Landing mode: Auto.
+
+- [X] T821 [US2][US4] In `tests/piano-sampler.test.js` (replaces tests/synth.test.js):
+  `AC-8.4.2 — The piano voice is a recorded grand piano, re-pitched to the exact note` —
+  the recording table and the sounding pitch of every one of the 88 keys, the node graph,
+  one compressor per context, chord tones sharing one start, a failed fetch rejecting and
+  then retrying. In `tests/piano.test.js`: `AC-8.4.1`, `AC-8.4.3` and `AC-8.4.4` now
+  assert piano sample playback instead of oscillators, and `AC-8.2.4 — Middle C is marked
+  on every keyboard size` (every size, one row and two). In `tests/main-piano.test.js`:
+  the piano's load-error banner wording. In `tests/helpers/web-audio-mock.js`: buffer
+  sources and `decodeAudioData`.
+- [X] T822 [US2][US4] New `src/js/piano-sampler.js` and `src/audio/piano/` (29 MP3s,
+  A0–A7; C8 left out as a semitone sharp). Removed src/js/synth.js. In
+  `src/js/audio.js`: the "piano" voice plays through the sampler, reports load failure
+  and success like the guitar, and passes the voice to the error listener. In
+  `src/js/theory.js`: the piano's voice is "piano". In `src/js/keyboard.js`: the middle C
+  tint and caption, and a caption band below each row. In `src/js/main.js`: the banner
+  names the piano or guitar. In `src/css/styles.css`: middle C styles. In
+  `src/index.html`: the Salamander credit line. Research R-801 amended.
+- [X] T823 Run all four gates; regenerate and commit the matrix.
 
 ## Dependencies
 

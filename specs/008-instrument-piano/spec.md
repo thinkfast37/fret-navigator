@@ -19,6 +19,10 @@ Clarified with the maintainer before specification:
   (three detuned sines, a low-pass sweep, a reverb send) and replaced the sampled piano
   there because the maintainer preferred it. The maintainer chose to port that synthesised
   voice as it is.
+  *(Reversed 2026-10-18, UAT: the maintainer found the synthesised voice "really weird"
+  as a piano here — fine as rhythm-master's beat voice, wrong for playing notes — and
+  asked for authentic, octave-accurate piano sounds. The piano now plays recorded
+  Salamander Grand Piano samples; see research R-801's reversal, AC-8.4.2 and FR-607.)*
 - **Layout**: one row of keys when every white key fits at a usable width; otherwise two
   stacked rows split at a C, lower notes on the top row.
 - **Key count**: the standard keyboard sizes 25, 37, 49, 61, 76 and 88, each spanning its
@@ -127,6 +131,14 @@ the default.
   **Given** the piano is selected, **When** the key-count control renders, **Then** it
   offers 25, 37, 49, 61, 76 and 88 keys, in that order, with the current count selected.
 
+- **AC-8.2.4** — Middle C is marked on every keyboard size
+
+  **Given** the piano at any key count, **When** it is drawn, **Then** middle C (C4, MIDI
+  60, 261.63 Hz) and only middle C is visibly marked — its key tinted and captioned
+  "Middle C" beneath it — whichever row it falls on.
+
+  *(Added 2026-10-18, UAT: the maintainer could not tell where middle C was.)*
+
 ---
 
 ### User Story 3 - Fit the keyboard on the screen (Priority: P1)
@@ -177,16 +189,17 @@ it; verify one row.
 
 ### User Story 4 - Hear a piano (Priority: P1)
 
-Tapping a key plays that key's pitch with rhythm-master's melodic voice, not the guitar
-sample, and the chord Play button strikes the whole chord at once, as a pianist would.
-The guitar and ukulele keep sounding like a guitar.
+Tapping a key plays that key's pitch with a recorded acoustic grand piano, not the
+guitar sample, and the chord Play button strikes the whole chord at once, as a pianist
+would. The guitar and ukulele keep sounding like a guitar.
 
-**Why this priority**: The maintainer asked to hear piano sounds in piano mode, using
-rhythm-master's voice.
+**Why this priority**: The maintainer asked to hear piano sounds in piano mode — first
+rhythm-master's synthesised voice, then (UAT, 2026-10-18) authentic piano sounds in the
+right octaves instead.
 
 **Independent Test**: In piano mode tap middle C; verify (via the mocked audio layer) one
-note at 261.63 Hz through the synthesised voice and no guitar-sample load. Press Play on
-C major; verify C, E and G all start at the same instant.
+piano sample sounding at 261.63 Hz and no guitar-sample load. Press Play on C major;
+verify C, E and G all start at the same instant.
 
 **Acceptance Scenarios**:
 
@@ -194,16 +207,22 @@ C major; verify C, E and G all start at the same instant.
 
   **Given** the piano is shown, **When** a key is clicked, tapped or activated from the
   keyboard, **Then** that key's exact pitch (its MIDI note, at A4 = 440 Hz equal
-  temperament) plays through the synthesised piano voice and the guitar sample is not
-  used.
+  temperament) plays through the piano voice and the guitar sample is not used.
 
-- **AC-8.4.2** — The piano voice is rhythm-master's melodic voice
+- **AC-8.4.2** — The piano voice is a recorded grand piano, re-pitched to the exact note
 
-  **Given** a piano note is played, **When** it sounds, **Then** it is built as
-  rhythm-master builds its melodic voice: three sine oscillators detuned 0, +5 and −5
-  cents, a shared gain envelope peaking at 0.88 after 10 ms and decaying over 0.55 s, a
-  low-pass filter sweeping from 2000 Hz to 600 Hz over the decay, and a dry path through a
-  compressor plus a 35% reverb send.
+  **Given** a piano note is played, **When** it sounds, **Then** it plays the Salamander
+  Grand Piano recording nearest to it — recordings are bundled with the app every three
+  semitones from A0 to A7, so no key is more than one semitone from one, and the top
+  three keys (A#7–C8) take A7's — re-pitched by exactly 2^(semitones/12) so it sounds at
+  the key's own pitch and octave; it rings for up to 3 s, then fades over 1 s, through a
+  compressor that keeps stacked chord tones from clipping. A recording that fails to load
+  raises the sample-load error banner, and the next tap retries it.
+
+  *(Revised 2026-10-18, UAT: was "The piano voice is rhythm-master's melodic voice" —
+  three detuned sine oscillators, a 0.88/10 ms/0.55 s envelope, a 2000 → 600 Hz low-pass
+  sweep and a 35% reverb send. The maintainer heard it as synth-like and weird for a
+  piano and asked for authentic, octave-accurate piano sounds. Research R-801 reversed.)*
 
 - **AC-8.4.3** — The chord Play button strikes every chord tone at once on the piano
 
@@ -263,8 +282,11 @@ keys.
   other key shows its note name.
 - The Reset audio button (AC-1.8.7) confirms with a piano note in piano mode and a guitar
   note otherwise.
-- The synthesised voice has nothing to download, so the sample-load error banner can
-  never appear for piano playback.
+- The piano's recordings are fetched on the first piano tap, not on load (constitution
+  Principle III). A failed fetch shows the sample-load error banner worded for the piano
+  ("Piano samples failed to load. Tap a key to retry."), and the next tap retries.
+  *(Revised 2026-10-18: was "The synthesised voice has nothing to download, so the
+  sample-load error banner can never appear for piano playback.")*
 
 ## Requirements *(mandatory)*
 
@@ -285,9 +307,11 @@ keys.
 - **FR-606**: The keyboard MUST render in one row when the board width gives every white
   key at least the minimum usable width, otherwise in two rows split at the C nearest the
   middle, lower notes on top; it MUST re-fit on resize.
-- **FR-607**: Piano notes and piano chords MUST play through a Web Audio port of
-  rhythm-master's melodic voice; piano chords MUST start every tone at once; playback MUST
-  start only from a user gesture (constitution Principle III).
+- **FR-607**: Piano notes and piano chords MUST play recorded grand-piano samples,
+  re-pitched to each key's exact pitch and octave; piano chords MUST start every tone at
+  once; playback MUST start only from a user gesture (constitution Principle III).
+  *(Revised 2026-10-18, UAT: was "through a Web Audio port of rhythm-master's melodic
+  voice"; research R-801 reversed.)*
 - **FR-608**: Guitar and ukulele playback MUST be unchanged.
 - **FR-609**: The key count MUST persist; saved settings without one MUST migrate to 88
   keys with every other setting intact; an invalid stored key count MUST fall back to
@@ -329,6 +353,8 @@ Revised in this change, with the maintainer's approval, because earlier features
 
 - "Piano sounds from rhythm-master" means rhythm-master's current melodic voice, which is
   synthesised; the maintainer confirmed this knowing it is not a sampled piano.
+  *(Superseded 2026-10-18, UAT: the maintainer asked for authentic piano sounds instead —
+  see R-801.)*
 - The piano's only size setting is the key count; there is no visible-range slider on top
   of it.
 - Label modes, colours and chord analysis are not instrument-specific.

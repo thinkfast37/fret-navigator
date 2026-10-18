@@ -24,6 +24,43 @@ offline at once and has no loading or error state.
 - *Re-deriving a "piano-like" synth*: the maintainer asked for rhythm-master's sound,
   not a new one.
 
+### R-801 reversed (2026-10-18, UAT) — the piano voice is the Salamander Grand Piano
+
+**Decision**: The piano plays recorded samples of the Salamander Grand Piano (Alexander
+Holm, a Yamaha C5, CC BY 3.0), bundled in `src/audio/piano/` as 29 MP3s (≈2 MB) — every
+three semitones from A0 to A7, the set Tone.js publishes. `src/js/piano-sampler.js` plays
+the nearest recording through an `AudioBufferSourceNode` with `playbackRate`
+2^(semitones/12), so no key is re-pitched by more than a semitone (three at the very top),
+then a compressor keeps stacked chord tones from clipping. `synth.js` is removed.
+
+**Rationale**: Hearing the port in this app, the maintainer found it "really weird" and
+synth-like as a piano: it works as rhythm-master's beat voice, but here single notes are
+the whole experience, and three sines with a 0.55 s decay carry no low end, so bass notes
+read as the wrong octave. They asked for authentic, octave-accurate piano sounds.
+
+Each recording was checked against its note before bundling (harmonic sweep of the first
+0.6 s): all within ±15 cents through A6, the top octave up to +30 cents sharp as a real
+piano's stretch tuning is — except C8, almost a full semitone sharp (≈4425 Hz against
+4186 Hz). C8 is therefore left out, and A#7–C8 are played from A7.
+
+The constitution's dependency-vetting rule asks a bundled sample library to justify
+itself: synthesis (R-801 as first decided) was tried and rejected by the maintainer in
+UAT, and no Web API produces a realistic piano. The samples are bundled rather than
+hot-linked so the live site does not depend on another project's GitHub Pages staying
+up, and they are same-origin. They are fetched on the first piano tap, never on load
+(Principle III), so the guitar pays nothing for them.
+
+**Alternatives rejected**:
+
+- *FluidR3 `acoustic_grand_piano` through soundfont-player* (the guitar's path): no new
+  code, but a General MIDI piano markedly less realistic than Salamander — and the one
+  rhythm-master's maintainer liked less than its synth.
+- *MusyngKite `acoustic_grand_piano`*: better than FluidR3, still a GM soundfont piano,
+  and a single multi-MB base64 file that must fully download before the first note.
+- *Tone.js `Sampler`*: does the same nearest-sample re-pitching, but brings its own
+  context, which would fight `audio.js`'s dead-context replacement (AC-1.8.6); the
+  sampler is ~100 lines of raw Web Audio.
+
 ## R-802 — Key counts are the sizes sold, over their conventional ranges
 
 **Decision**: 25 (C3–C5), 37 (C3–C6), 49 (C2–C6), 61 (C2–C7), 76 (E1–G7), 88 (A0–C8).
