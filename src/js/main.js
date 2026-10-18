@@ -31,9 +31,20 @@ audio.onLoadSuccess(() => {
 
 // AC-1.8.7: manual backup for silent states the automatic recovery cannot see.
 // Feature 008: in piano mode the confirmation note is a piano note.
-document
-  .getElementById("audio-reset")
-  ?.addEventListener("click", () => audio.resetAudio(theory.getInstrument(state.getState().instrument).voice));
+// AC-1.8.7/3: if the replacement's clock still is not running, no page code can
+// bring sound back — only quitting the app restarts Safari's audio for it.
+const STUCK_AUDIO_MESSAGE = "Audio is stuck in Safari for this app. Quit the app (⌘Q) and reopen it — reloading won't fix it.";
+
+document.getElementById("audio-reset")?.addEventListener("click", async () => {
+  const running = await audio.resetAudio(theory.getInstrument(state.getState().instrument).voice);
+  const banner = document.getElementById("audio-error-banner");
+  if (running) {
+    banner.hidden = true;
+  } else {
+    banner.textContent = STUCK_AUDIO_MESSAGE;
+    banner.hidden = false;
+  }
+});
 
 // Feature 008, FR-606 (AC-8.3.4): the piano re-fits between one and two rows as the
 // window is resized, redrawing only when the fit actually changes.

@@ -204,4 +204,33 @@ describe("main.js bootstrap (Story 1, FR-039/FR-040/FR-041)", () => {
     assert.equal(audioContextInstances.length, contexts + 1);
     assert.equal(playedNotes.length, before + 1);
   });
+
+  // AC-1.8.7/3: Reset checks its own result, since sound that has died below the page
+  // (Safari's audio for the app) is recoverable only by quitting the app.
+  function pressReset({ clockMoves }) {
+    document.getElementById("audio-reset").dispatchEvent(new dom.window.Event("click", { bubbles: true }));
+    // The replacement is created inside the press, so it exists synchronously.
+    const fresh = audioContextInstances[audioContextInstances.length - 1];
+    fresh.currentTime = 0;
+    if (clockMoves) setTimeout(() => (fresh.currentTime = 0.1), 100);
+  }
+
+  test("AC-1.8.7/3 — When the replacement's clock still is not running, a message says to quit and reopen the app", async () => {
+    const banner = document.getElementById("audio-error-banner");
+    banner.hidden = true;
+    pressReset({ clockMoves: false });
+    await new Promise((resolve) => setTimeout(resolve, 450));
+    assert.equal(banner.hidden, false);
+    assert.match(banner.textContent, /quit/i);
+    assert.match(banner.textContent, /⌘Q/);
+    assert.match(banner.textContent, /reopen/i);
+  });
+
+  test("AC-1.8.7/3 — When the replacement's clock still is not running, a message says to quit and reopen the app: a Reset that brings sound back clears it", async () => {
+    const banner = document.getElementById("audio-error-banner");
+    assert.equal(banner.hidden, false, "left showing by the previous test");
+    pressReset({ clockMoves: true });
+    await new Promise((resolve) => setTimeout(resolve, 450));
+    assert.equal(banner.hidden, true);
+  });
 });

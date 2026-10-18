@@ -721,7 +721,7 @@ export function updateChordInfo() {
   // is computed from the TRUE root (like the summary above, never the
   // capo-shifted highlight root) and only inside this gesture handler.
   // Feature 008 (AC-8.4.3, AC-8.4.4): the instrument decides how it sounds — strummed
-  // through the guitar sample on strings, struck at once through the synth on the piano.
+  // through the guitar sample on strings, struck at once through the piano voice on the piano.
   const playButton = el("button", {
     type: "button",
     id: "play-chord-button",

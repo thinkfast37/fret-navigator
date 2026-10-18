@@ -14,14 +14,14 @@
 -->
 
 **Feature**: specs/001-fretboard-visualizer/spec.md, specs/002-default-root-scale/spec.md, specs/003-chord-mode/spec.md, specs/004-play-chord/spec.md, specs/005-display-overhaul/spec.md, specs/006-key-aware-chords/spec.md, specs/007-instrument-ukulele/spec.md, specs/008-instrument-piano/spec.md
-**Criteria**: 143 across 31 User Stories
+**Criteria**: 144 across 31 User Stories
 
-**Coverage**: 92 of 143 criteria proven (64.3%)
+**Coverage**: 93 of 144 criteria proven (64.6%)
 
 | | Criteria | Share |
 |---|---|---|
-| 🟢 Proven | 92 | 64.3% |
-| 🔴 Gap — CRITICAL | 51 | 35.7% |
+| 🟢 Proven | 93 | 64.6% |
+| 🔴 Gap — CRITICAL | 51 | 35.4% |
 
 A row is one *criterion*: an Acceptance Criterion that asserts one thing, or one Case of
 an AC that asserts several. 🖵 marks a criterion that describes something a person sees or
@@ -63,7 +63,7 @@ fail the build, and it is outstanding work — never a settled decision.
 | 🔴 US-1.5 | 2 | 0 | · | 2 | · | · | · |
 | 🔴 US-1.6 | 5 | 0 | · | 5 | · | · | · |
 | 🔴 US-1.7 | 6 | 0 | · | 6 | · | · | · |
-| 🔴 US-1.8 | 10 | 5 | · | 5 | · | · | · |
+| 🔴 US-1.8 | 11 | 6 | · | 5 | · | · | · |
 | 🔴 US-1.9 | 13 | 0 | · | 13 | · | · | · |
 | 🔴 US-2.1 | 3 | 0 | · | 3 | · | · | · |
 | 🟢 US-3.1 | 6 | **6** | · | · | · | · | · |
@@ -131,8 +131,9 @@ fail the build, and it is outstanding work — never a settled decision.
 | US-1.8 | `AC-1.8.6/1` 🖵 | A suspended or interrupted context is resumed, and the resume awaited, before the note plays | P-011 | T136, T140 (2/2 done) | T137, T141 (2/2 done) | `audio.test.js`, `main.test.js` | 🟢 OK |
 | US-1.8 | `AC-1.8.6/2` 🖵 | A context that stays stuck after resume is replaced, and the instrument reloads on the replacement | P-011 | T136, T140 (2/2 done) | T137, T141 (2/2 done) | `audio.test.js`, `main.test.js` | 🟢 OK |
 | US-1.8 | `AC-1.8.6/3` 🖵 | A context that reports running but whose clock has stopped is replaced, and the instrument reloads on the replacement | P-011 | T136, T140 (2/2 done) | T137, T141 (2/2 done) | `audio.test.js`, `main.test.js` | 🟢 OK |
-| US-1.8 | `AC-1.8.7/1` 🖵 | A Reset audio button sits in the footer beside the credit line | P-012 | T142 (1/1 done) | T143 (1/1 done) | `styles.test.js` | 🟢 OK |
-| US-1.8 | `AC-1.8.7/2` | Pressing it replaces the context, reloads the instrument, and plays a confirmation note | P-012 | T142 (1/1 done) | T143 (1/1 done) | `audio.test.js`, `main.test.js` | 🟢 OK |
+| US-1.8 | `AC-1.8.7/1` 🖵 | A Reset audio button sits in the footer beside the credit line | P-012 | T142, T146 (2/2 done) | T143, T147 (2/2 done) | `styles.test.js` | 🟢 OK |
+| US-1.8 | `AC-1.8.7/2` | Pressing it replaces the context, reloads the instrument, and plays a confirmation note | P-012 | T142, T146 (2/2 done) | T143, T147 (2/2 done) | `audio.test.js`, `main.test.js` | 🟢 OK |
+| US-1.8 | `AC-1.8.7/3` | When the replacement's clock still is not running, a message says to quit and reopen the app | P-012 | T142, T146 (2/2 done) | T143, T147 (2/2 done) | `audio.test.js`, `main.test.js` | 🟢 OK |
 | US-1.9 | `AC-1.9.1` 🖵 | Capo mutes lower frets and locks the left handle | P-010 | T087, T088, T089, T090, T091, T092, T093, T094, T095, T101, T102, T103, T104, T105, T106, T107, T108, T109, T113, T114, T115, T116 (22/22 done) | T134 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
 | US-1.9 | `AC-1.9.2` 🖵 | Absolute mode shows the true sounding pitch at the capo | P-010 | T087, T088, T089, T090, T091, T092, T093, T094, T095, T101, T102, T103, T104, T105, T106, T107, T108, T109, T113, T114, T115, T116 (22/22 done) | T134 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |
 | US-1.9 | `AC-1.9.3` 🖵 | Relative mode shows the open-string name at the capo | P-010 | T087, T088, T089, T090, T091, T092, T093, T094, T095, T101, T102, T103, T104, T105, T106, T107, T108, T109, T113, T114, T115, T116 (22/22 done) | T134 (1/1 done) | **none** | 🔴 **CRITICAL** · NO TEST ᵃ |

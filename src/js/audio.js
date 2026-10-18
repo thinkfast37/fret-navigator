@@ -206,6 +206,18 @@ export function playChord(midiNotes, strumSeconds = 0.05, voice = "sample") {
     });
 }
 
+// AC-1.8.7/3: how long Reset waits before judging whether the replacement's
+// clock is running. Long enough for a healthy context's clock to move, short
+// enough that the player is told promptly.
+const VERIFY_WAIT_MS = 300;
+
+function clockIsRunning(ctx) {
+  const start = ctx.currentTime;
+  return new Promise((resolve) =>
+    setTimeout(() => resolve(ctx.state === "running" && ctx.currentTime > start), VERIFY_WAIT_MS)
+  );
+}
+
 // Implements AC-1.8.7: the footer's "Reset audio" button. Unconditionally
 // replaces the context and reloads the instrument, then plays a confirmation
 // note (E4) so the guitarist hears that sound is back. Must be called from
@@ -213,23 +225,27 @@ export function playChord(midiNotes, strumSeconds = 0.05, voice = "sample") {
 // Feature 008: in piano mode the confirmation is a piano note.
 const CONFIRMATION_MIDI_NOTE = 64;
 
+//
+// Resolves whether the replacement's clock is running (AC-1.8.7/3). When it is
+// not, sound has died below the page — Safari's audio for the app — and only
+// quitting the app brings it back; the caller says so.
 export async function resetAudio(voice = "sample") {
   await replaceContext();
   recordClockReading();
+  const ctx = audioContext;
+  const running = clockIsRunning(ctx);
   if (voice === "piano") {
-    const ctx = audioContext;
-    try {
-      await loadPiano(ctx, [CONFIRMATION_MIDI_NOTE]);
-      await pianoSampler.playNote(ctx, CONFIRMATION_MIDI_NOTE, ctx.currentTime);
-    } catch {
-      // Load failure already surfaced via onLoadError; nothing further to do.
-    }
-    return;
+    loadPiano(ctx, [CONFIRMATION_MIDI_NOTE])
+      .then(() => pianoSampler.playNote(ctx, CONFIRMATION_MIDI_NOTE, ctx.currentTime))
+      .catch(() => {
+        // Load failure already surfaced via onLoadError; nothing further to do.
+      });
+  } else {
+    loadInstrument()
+      .then((instrument) => instrument.play(CONFIRMATION_MIDI_NOTE))
+      .catch(() => {
+        // Load failure already surfaced via onLoadError; nothing further to do.
+      });
   }
-  try {
-    const instrument = await loadInstrument();
-    instrument.play(CONFIRMATION_MIDI_NOTE);
-  } catch {
-    // Load failure already surfaced via onLoadError; nothing further to do.
-  }
+  return running;
 }
