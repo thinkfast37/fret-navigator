@@ -514,3 +514,21 @@ but never logged as tasks. Added so every plan item carries a test task (spec-tr
   `tests/main-default-selection.test.js` were updated to the new persisted state shape
   (`instrument` + a per-instrument `tunings` map, schemaVersion 3) and the new
   `#instrument-controls` mount point; no assertion was relaxed, narrowed or removed.
+- [X] T140 [US8] Spec defect + fix (2026-10-18, AC-1.8.6/3, P-011): a macOS Safari web
+  app left open beside Logic Pro went silent and stayed silent across reloads; only ⌘Q
+  recovered it. The context reported `running`, so AC-1.8.6/1–/2 never fired. AC-1.8.6
+  gains Case /3 (revised before the code). `src/js/audio.js` — each tap records the
+  context's `currentTime` against wall time; if the next tap ≥250 ms later finds the
+  clock unmoved, the context is closed and replaced and the instrument reloads.
+  Close-and-replace factored into `replaceContext()`, shared with Case /2.
+- [X] T141 [US8] Test task for AC-1.8.6/3: `tests/audio.test.js` — a frozen running
+  clock is replaced and the instrument reloads on the replacement; a clock that keeps
+  pace with wall time is left alone. `tests/main.test.js` — the same through a real fret
+  tap (DOM-level, check:trace T6).
+- [X] T142 [US8] Reset audio button (2026-10-18, AC-1.8.7, P-012): `src/index.html`
+  adds `#audio-reset` to `footer#credits`; `src/css/styles.css` styles it from existing
+  tokens; `src/js/audio.js` exports `resetAudio()` (replace context, reload instrument,
+  play E4 as confirmation); `src/js/main.js` wires the click. Gesture-only (Principle III).
+- [X] T143 [US8] Test task for AC-1.8.7: `tests/styles.test.js` (AC-1.8.7/1, button in
+  the real footer), `tests/audio.test.js` and `tests/main.test.js` (AC-1.8.7/2, the
+  module call and the wired footer click).

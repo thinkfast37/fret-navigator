@@ -14,6 +14,14 @@ let loadSuccessListener = null;
 // state rather than 'suspended'; both must be recovered alike (AC-1.8.6).
 const STUCK_STATES = ["suspended", "interrupted"];
 
+// A context can also report 'running' while its clock has stopped — seen on
+// macOS when a Safari web app shares the audio device with Logic Pro, where
+// only quitting the app brought sound back. The clock reading taken at each
+// tap is compared at the next; no movement across this much wall time means
+// the context is dead (AC-1.8.6/3).
+const FROZEN_CLOCK_WALL_MS = 250;
+let lastClockReading = null;
+
 function createContext() {
   const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
   return new AudioContextCtor();
@@ -24,8 +32,44 @@ function createContext() {
 // error. So a context still stuck after the resume attempt is closed and
 // replaced (AC-1.8.6/2); the cached instrument is bound to the old context and
 // must reload against the replacement.
+function clockHasStopped() {
+  if (!lastClockReading || lastClockReading.context !== audioContext) return false;
+  if (audioContext.state !== "running") return false;
+  const wallMs = performance.now() - lastClockReading.wallMs;
+  return wallMs >= FROZEN_CLOCK_WALL_MS && audioContext.currentTime <= lastClockReading.audioTime;
+}
+
+function recordClockReading() {
+  lastClockReading = { context: audioContext, audioTime: audioContext.currentTime, wallMs: performance.now() };
+}
+
+// Closes the current context (if any) and starts a fresh one; the cached
+// instrument is bound to the old context, so it is dropped to reload.
+async function replaceContext() {
+  try {
+    await audioContext?.close?.();
+  } catch {
+    // A dead context may refuse even close(); replacement proceeds anyway.
+  }
+  audioContext = createContext();
+  instrumentPromise = null;
+  lastClockReading = null;
+  if (audioContext.state === "suspended") {
+    try {
+      await audioContext.resume();
+    } catch {
+      // The caller's gesture has done all it can; the next tap retries.
+    }
+  }
+}
+
 async function ensureRunningContext() {
   if (!audioContext) audioContext = createContext();
+  if (clockHasStopped()) {
+    await replaceContext();
+    recordClockReading();
+    return audioContext;
+  }
   if (STUCK_STATES.includes(audioContext.state)) {
     try {
       await audioContext.resume();
@@ -34,22 +78,8 @@ async function ensureRunningContext() {
       // that resolves without leaving the stuck state.
     }
   }
-  if (STUCK_STATES.includes(audioContext.state)) {
-    try {
-      await audioContext.close?.();
-    } catch {
-      // A dead context may refuse even close(); replacement proceeds anyway.
-    }
-    audioContext = createContext();
-    instrumentPromise = null;
-    if (audioContext.state === "suspended") {
-      try {
-        await audioContext.resume();
-      } catch {
-        // The caller's gesture has done all it can; the next tap retries.
-      }
-    }
-  }
+  if (STUCK_STATES.includes(audioContext.state)) await replaceContext();
+  recordClockReading();
   return audioContext;
 }
 
@@ -114,4 +144,21 @@ export function playChord(midiNotes, strumSeconds = 0.05) {
     .catch(() => {
       // Load failure already surfaced via onLoadError; nothing further to do.
     });
+}
+
+// Implements AC-1.8.7: the footer's "Reset audio" button. Unconditionally
+// replaces the context and reloads the instrument, then plays a confirmation
+// note (E4) so the guitarist hears that sound is back. Must be called from
+// within a user-gesture handler (constitution Principle III).
+const CONFIRMATION_MIDI_NOTE = 64;
+
+export async function resetAudio() {
+  await replaceContext();
+  recordClockReading();
+  try {
+    const instrument = await loadInstrument();
+    instrument.play(CONFIRMATION_MIDI_NOTE);
+  } catch {
+    // Load failure already surfaced via onLoadError; nothing further to do.
+  }
 }

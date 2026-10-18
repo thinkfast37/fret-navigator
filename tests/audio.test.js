@@ -197,4 +197,65 @@ describe("audio.js (Story 8, FR-028/FR-029/FR-030/FR-031/FR-032/FR-041)", () => 
     assert.ok(fresh.resumeCallCount >= 1);
     assert.equal(fresh.state, "running");
   });
+
+  test("AC-1.8.6/3 — A context that reports running but whose clock has stopped is replaced, and the instrument reloads on the replacement", async () => {
+    const frozen = audioContextInstances[audioContextInstances.length - 1];
+    frozen.state = "running";
+    frozen.currentTime = 12.5; // never advances: the clock has stopped
+    frozen.close = () => {
+      frozen.state = "closed";
+      return Promise.resolve();
+    };
+    const before = audioContextInstances.length;
+
+    audio.play(55); // records the clock reading
+    await flush();
+    assert.equal(audioContextInstances.length, before, "a single reading is not evidence of a stopped clock");
+
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    const reloaded = installSoundfontMock();
+    audio.play(57);
+    await flush();
+
+    assert.equal(frozen.state, "closed");
+    assert.equal(audioContextInstances.length, before + 1);
+    const fresh = audioContextInstances[before];
+    assert.equal(reloaded.instrumentCalls.length, 1);
+    assert.equal(reloaded.instrumentCalls[0].ctx, fresh);
+    assert.deepEqual(reloaded.playCalls, [57]);
+  });
+
+  test("AC-1.8.6/3 — A context that reports running but whose clock has stopped is replaced, and the instrument reloads on the replacement: a running clock is left alone", async () => {
+    const live = audioContextInstances[audioContextInstances.length - 1];
+    const before = audioContextInstances.length;
+    audio.play(60);
+    await flush();
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    live.currentTime += 0.3; // the clock kept pace with wall time
+    audio.play(62);
+    await flush();
+    assert.equal(audioContextInstances.length, before);
+    assert.equal(live.state, "running");
+  });
+
+  test("AC-1.8.7/2 — Pressing it replaces the context, reloads the instrument, and plays a confirmation note", async () => {
+    const old = audioContextInstances[audioContextInstances.length - 1];
+    let closed = false;
+    old.close = () => {
+      closed = true;
+      old.state = "closed";
+      return Promise.resolve();
+    };
+    const before = audioContextInstances.length;
+    const reloaded = installSoundfontMock();
+
+    await audio.resetAudio();
+    await flush();
+
+    assert.equal(closed, true);
+    assert.equal(audioContextInstances.length, before + 1);
+    assert.equal(reloaded.instrumentCalls.length, 1);
+    assert.equal(reloaded.instrumentCalls[0].ctx, audioContextInstances[before]);
+    assert.equal(reloaded.playCalls.length, 1);
+  });
 });

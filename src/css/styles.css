@@ -101,6 +101,16 @@ footer#credits a {
   color: inherit;
 }
 
+footer#credits button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  padding: 0.1rem 0.5rem;
+  cursor: pointer;
+}
+
 /* ---- Fretboard base layer ---- */
 
 #fretboard-container {
