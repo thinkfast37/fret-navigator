@@ -44,24 +44,42 @@ function recordClockReading() {
   lastClockReading = { context: audioContext, audioTime: audioContext.currentTime, wallMs: performance.now() };
 }
 
-// Closes the current context (if any) and starts a fresh one; the cached
-// instrument is bound to the old context, so it is dropped to reload.
-async function replaceContext() {
+// A dead context's promises need not ever settle — a frozen context's close() or
+// resume() can hang, which is silence with no error. Waits are bounded by this.
+const SETTLE_TIMEOUT_MS = 500;
+
+function settleWithin(promiseLike, ms) {
+  return Promise.race([Promise.resolve(promiseLike), new Promise((resolve) => setTimeout(resolve, ms))]);
+}
+
+// Resumes a stuck context, giving up after SETTLE_TIMEOUT_MS. The resume() call
+// itself is made synchronously, so it lands inside the caller's gesture.
+async function resumeIfStuck(ctx) {
+  if (!STUCK_STATES.includes(ctx.state)) return;
   try {
-    await audioContext?.close?.();
+    await settleWithin(ctx.resume(), SETTLE_TIMEOUT_MS);
+  } catch {
+    // A rejecting resume() leaves the context stuck; the caller decides what next.
+  }
+}
+
+// Starts a fresh context and closes the old one; the cached instrument is bound
+// to the old context, so it is dropped to reload. Everything up to the new
+// context's resume() runs synchronously, inside the caller's gesture — Safari
+// will not start a context created after an await (constitution Principle III) —
+// and the old context's close() is never waited on, since a frozen one may never
+// finish closing (T145).
+function replaceContext() {
+  const old = audioContext;
+  try {
+    old?.close?.()?.catch?.(() => {});
   } catch {
     // A dead context may refuse even close(); replacement proceeds anyway.
   }
   audioContext = createContext();
   instrumentPromise = null;
   lastClockReading = null;
-  if (audioContext.state === "suspended") {
-    try {
-      await audioContext.resume();
-    } catch {
-      // The caller's gesture has done all it can; the next tap retries.
-    }
-  }
+  return resumeIfStuck(audioContext);
 }
 
 // A context can refuse to come back — TV browsers and iOS sometimes leave one
@@ -76,14 +94,9 @@ async function ensureRunningContext() {
     recordClockReading();
     return audioContext;
   }
-  if (STUCK_STATES.includes(audioContext.state)) {
-    try {
-      await audioContext.resume();
-    } catch {
-      // Replaced below: a context whose resume() rejects is as dead as one
-      // that resolves without leaving the stuck state.
-    }
-  }
+  // A context whose resume() rejects, hangs, or resolves without leaving the
+  // stuck state is equally dead, and is replaced below.
+  await resumeIfStuck(audioContext);
   if (STUCK_STATES.includes(audioContext.state)) await replaceContext();
   recordClockReading();
   return audioContext;
