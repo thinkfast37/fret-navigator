@@ -191,4 +191,4 @@ No violations. (The Principle IV testing-coverage gap previously tracked here wa
 | **P-009** | US-1.8 — Hear notes on the fretboard | AC-1.8.1–AC-1.8.5 | T080–T086 | T133 |
 | **P-010** | US-1.9 — Apply a capo | AC-1.9.1–AC-1.9.13 | T087–T095, T101–T109, T113–T116 | T134 |
 | **P-011** | US-1.8 — Stuck-audio-context recovery (added 2026-09-07, ported from rhythm-master AC-4.1.10) | AC-1.8.6 | T136, T140 | T137, T141 |
-| **P-012** | US-1.8 — Reset audio button (added 2026-10-18) | AC-1.8.7 | T142 | T143 |
+| **P-012** | US-1.8 — Reset audio button (added 2026-10-18) | AC-1.8.7 | T142, T146 | T143, T147 |
