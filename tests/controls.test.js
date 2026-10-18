@@ -746,4 +746,41 @@ describe("initInstrumentControls (feature 007, FR-501/FR-502/FR-506)", () => {
     assert.equal(state.getActiveTuning().customOpenPitchClasses[0], "G");
     selectInstrument("guitar");
   });
+
+  test("AC-7.1.3 — Switching instruments leaves the musical context untouched: through the Instrument control, Piano included", () => {
+    selectInstrument("guitar");
+    document.querySelector('[data-root="A"]').click();
+    const scaleSelect = document.getElementById("scale-select");
+    scaleSelect.value = "dorian";
+    fire(scaleSelect, "change");
+    document.querySelector('[data-mode="intervals"]').click();
+    const capoSelect = document.getElementById("capo-select");
+    capoSelect.value = "2";
+    fire(capoSelect, "change");
+    const chordRoot = document.getElementById("chord-root-select");
+    chordRoot.value = "5";
+    fire(chordRoot, "change");
+    const quality = document.getElementById("chord-quality-select");
+    quality.value = "dom7";
+    fire(quality, "change");
+
+    const snapshot = () => ({
+      root: document.querySelector('.root-buttons [aria-pressed="true"]').dataset.root,
+      scale: document.getElementById("scale-select").value,
+      labelMode: document.querySelector('.label-mode-buttons [aria-pressed="true"]').dataset.mode,
+      capo: document.getElementById("capo-select").value,
+      chordRoot: document.getElementById("chord-root-select").value,
+      quality: document.getElementById("chord-quality-select").value,
+      fretRange: JSON.stringify(state.getState().fretRange),
+    });
+    const before = snapshot();
+    for (const id of ["ukulele", "piano", "guitar"]) {
+      selectInstrument(id);
+      assert.deepEqual(snapshot(), before, `unchanged after switching to ${id}`);
+    }
+
+    capoSelect.value = "0";
+    fire(capoSelect, "change");
+  });
+
 });

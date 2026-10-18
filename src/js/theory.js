@@ -38,10 +38,17 @@ const INTERVAL_LABELS = ["R", "m2", "M2", "m3", "M3", "P4", "TT", "P5", "m6", "M
 // String count is a property of the instrument and is read from here — no view counts
 // strings for itself. `stringLabels` name the rows in the custom-tuning editor, string 1
 // first (FR-504: physical order, top row to bottom row).
+//
+// Feature 008, FR-601/FR-607: an instrument is either stringed (a string count and a
+// tuning library) or a keyboard (a key count), and names the voice it plays with and how
+// its chords are sounded — strummed on strings, struck at once on the piano.
 export const INSTRUMENTS = [
   {
     id: "guitar",
     label: "Guitar",
+    kind: "stringed",
+    voice: "sample",
+    chordStrumSeconds: 0.05,
     stringCount: 6,
     defaultTuningId: "standard",
     stringLabels: ["String 1 (high E)", "String 2", "String 3", "String 4", "String 5", "String 6 (low E)"],
@@ -49,11 +56,38 @@ export const INSTRUMENTS = [
   {
     id: "ukulele",
     label: "Ukulele",
+    kind: "stringed",
+    voice: "sample",
+    chordStrumSeconds: 0.05,
     stringCount: 4,
     defaultTuningId: "uke-standard",
     stringLabels: ["String 1", "String 2", "String 3", "String 4"],
   },
+  {
+    id: "piano",
+    label: "Piano",
+    kind: "keyboard",
+    voice: "synth",
+    chordStrumSeconds: 0,
+  },
 ];
+
+// Feature 008, FR-609: the instruments that carry a tuning — every stringed one.
+export const STRINGED_INSTRUMENTS = INSTRUMENTS.filter((i) => i.kind === "stringed");
+
+// Implements feature 008, FR-605 (AC-8.2.2): the keyboard sizes sold, each over its
+// conventional range (research R-802). MIDI numbers use this module's octave convention,
+// C4 = 60, so A0 = 21 and C8 = 108.
+export const KEYBOARD_SIZES = [
+  { keyCount: 25, lowMidi: 48, highMidi: 72 }, // C3–C5
+  { keyCount: 37, lowMidi: 48, highMidi: 84 }, // C3–C6
+  { keyCount: 49, lowMidi: 36, highMidi: 84 }, // C2–C6
+  { keyCount: 61, lowMidi: 36, highMidi: 96 }, // C2–C7
+  { keyCount: 76, lowMidi: 28, highMidi: 103 }, // E1–G7
+  { keyCount: 88, lowMidi: 21, highMidi: 108 }, // A0–C8
+];
+
+export const DEFAULT_KEY_COUNT = 88;
 
 export const DEFAULT_INSTRUMENT_ID = "guitar";
 
@@ -606,6 +640,44 @@ export function getChordQualityOptions(chordRootOffset, keyContext) {
     const { analyzed, inScale } = analyzeChordMixture(chordRootOffset, quality.id, keyContext);
     return { id: quality.id, label: quality.label, analyzed, inScale };
   });
+}
+
+// ---- Keyboard ----
+
+const BLACK_KEY_SEMITONES = new Set([1, 3, 6, 8, 10]);
+
+// Implements feature 008, FR-605 (AC-8.2.1, AC-8.2.2): every key of a keyboard of the
+// given size, lowest first. Unknown sizes fall back to the default 88.
+export function keyboardKeys(keyCount) {
+  const size =
+    KEYBOARD_SIZES.find((s) => s.keyCount === keyCount) ||
+    KEYBOARD_SIZES.find((s) => s.keyCount === DEFAULT_KEY_COUNT);
+  const keys = [];
+  for (let midiNote = size.lowMidi; midiNote <= size.highMidi; midiNote++) {
+    const pitchClassSemitone = mod12(midiNote);
+    keys.push({ midiNote, pitchClassSemitone, isBlack: BLACK_KEY_SEMITONES.has(pitchClassSemitone) });
+  }
+  return keys;
+}
+
+// Implements feature 008, FR-606 (AC-8.3.2): splits a keyboard into rows. One row is the
+// keyboard itself; two rows break at the C nearest the middle key (the lower C on a tie),
+// so the second row always begins an octave. 88 keys split A0–B3 / C4–C8.
+export function splitKeyboardRows(keys, rowCount) {
+  if (rowCount < 2) return [keys];
+  const middle = (keys.length - 1) / 2;
+  let splitIndex = -1;
+  keys.forEach((key, i) => {
+    if (i === 0 || key.pitchClassSemitone !== 0) return;
+    if (splitIndex === -1 || Math.abs(i - middle) < Math.abs(splitIndex - middle)) splitIndex = i;
+  });
+  if (splitIndex === -1) return [keys];
+  return [keys.slice(0, splitIndex), keys.slice(splitIndex)];
+}
+
+// Implements feature 008, AC-8.4.1: equal-temperament frequency, A4 (MIDI 69) = 440 Hz.
+export function midiToFrequency(midiNote) {
+  return 440 * 2 ** ((midiNote - 69) / 12);
 }
 
 // ---- Capo computation ----

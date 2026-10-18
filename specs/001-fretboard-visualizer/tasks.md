@@ -532,3 +532,11 @@ but never logged as tasks. Added so every plan item carries a test task (spec-tr
 - [X] T143 [US8] Test task for AC-1.8.7: `tests/styles.test.js` (AC-1.8.7/1, button in
   the real footer), `tests/audio.test.js` and `tests/main.test.js` (AC-1.8.7/2, the
   module call and the wired footer click).
+- [X] T144 [US8] Spec defect (2026-10-18, feature 008's approved spill): AC-1.8.1 and
+  FR-028 in `specs/001-fretboard-visualizer/spec.md` revised to say the real-guitar-sample
+  rule is a fret position's — a stringed instrument's. The piano (feature 008) plays
+  rhythm-master's synthesised voice by the maintainer's choice. Revised **before** the
+  implementation, per CLAUDE.md §2. **Test defect corrected (§2a)**: two assertions in
+  `tests/state.test.js` (the FR-039/FR-040 round-trip and the AC-3.1.6 re-save) pinned
+  `schemaVersion` 3; FR-039/FR-040 require the *current* version, which feature 008
+  bumps to 4, so they now expect 4 — no assertion relaxed.

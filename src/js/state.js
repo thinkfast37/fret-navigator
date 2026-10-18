@@ -5,13 +5,16 @@ import {
   ROOTS,
   CHORD_QUALITIES,
   INSTRUMENTS,
+  STRINGED_INSTRUMENTS,
   DEFAULT_INSTRUMENT_ID,
+  KEYBOARD_SIZES,
+  DEFAULT_KEY_COUNT,
   getDefaultChordQualityId,
   getDefaultChordQualityForRoot,
 } from "./theory.js";
 
 const STORAGE_KEY = "fret-navigator-settings";
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 
 // UAT round 1 section C3: all 12 canonical roots, not naturals-only.
 const VALID_ROOTS = ROOTS.map((r) => r.label);
@@ -22,12 +25,14 @@ const CAPO_LABEL_MODES = ["absolute", "relative"];
 const VIEW_MODES = ["scale", "chord"];
 const VALID_CHORD_QUALITY_IDS = CHORD_QUALITIES.map((q) => q.id);
 const VALID_INSTRUMENT_IDS = INSTRUMENTS.map((i) => i.id);
+const VALID_KEY_COUNTS = KEYBOARD_SIZES.map((s) => s.keyCount);
 
 // Feature 007, FR-507 (AC-7.4.1): each instrument keeps its own tuning, so switching
-// instruments and back restores what was there rather than resetting it.
+// instruments and back restores what was there rather than resetting it. Feature 008: only
+// stringed instruments carry a tuning; the piano has none.
 function defaultTunings() {
   return Object.fromEntries(
-    INSTRUMENTS.map((instrument) => [
+    STRINGED_INSTRUMENTS.map((instrument) => [
       instrument.id,
       { presetId: instrument.defaultTuningId, customOpenPitchClasses: null, customOpenOctaves: null },
     ]),
@@ -55,6 +60,9 @@ function defaultState() {
     capoFret: 0,
     capoLabelMode: "absolute",
     fretRange: { lowerBound: 0, upperBound: 24 },
+    // Feature 008 (FR-605): the piano's size. Kept while a stringed instrument is shown,
+    // just as the capo and fret range are kept while the piano is (FR-602).
+    keyCount: DEFAULT_KEY_COUNT,
   };
 }
 
@@ -69,14 +77,16 @@ export function getState() {
 
 // Implements feature 007, FR-507 (AC-7.4.1): the tuning the selected instrument is
 // currently showing. Every consumer reads the active tuning through here.
+// Feature 008: the piano has no tuning, so this is null while it is selected.
 export function getActiveTuning() {
-  return state.tunings[state.instrument];
+  return state.tunings[state.instrument] ?? null;
 }
 
 // Implements Story 2, FR-006: tuning change triggers full recalculation.
 // Feature 007, FR-507: the change is recorded against the ACTIVE instrument only, so the
 // other instrument's tuning survives untouched.
 export function setTuning(presetId, customOpenPitchClasses = null, customOpenOctaves = null) {
+  if (!(state.instrument in state.tunings)) return; // the piano has no tuning (feature 008)
   state.tunings = {
     ...state.tunings,
     [state.instrument]: { presetId, customOpenPitchClasses, customOpenOctaves },
@@ -175,6 +185,13 @@ export function setCapoLabelMode(mode) {
   save();
 }
 
+// Implements feature 008, FR-605 (AC-8.2.2): the piano's key count, standard sizes only.
+export function setKeyCount(keyCount) {
+  if (!VALID_KEY_COUNTS.includes(keyCount)) return;
+  state.keyCount = keyCount;
+  save();
+}
+
 // Implements Story 7, FR-025/FR-026: fret-range slider bounds
 export function setFretRange(lowerBound, upperBound) {
   let lower = Math.max(0, Math.min(24, lowerBound));
@@ -201,7 +218,7 @@ function isValidTuning(tuning, stringCount) {
 
 function isValidTunings(tunings) {
   if (typeof tunings !== "object" || tunings === null) return false;
-  for (const instrument of INSTRUMENTS) {
+  for (const instrument of STRINGED_INSTRUMENTS) {
     if (!isValidTuning(tunings[instrument.id], instrument.stringCount)) return false;
   }
   return true;
@@ -232,6 +249,7 @@ function isValidStoredState(data) {
   if (!CAPO_LABEL_MODES.includes(data.capoLabelMode)) return false;
   if (!isValidFretRange(data.fretRange)) return false;
   if (data.capoFret > 0 && data.fretRange.lowerBound !== data.capoFret) return false;
+  if (!VALID_KEY_COUNTS.includes(data.keyCount)) return false;
   return true;
 }
 
@@ -274,9 +292,17 @@ function migrateV2ToV3(data) {
   return { ...rest, schemaVersion: 3, instrument: "guitar", tunings };
 }
 
+// v3 -> v4 (feature 008, AC-8.5.2 / research R-804): the piano joins the instruments and
+// brings a key count. No earlier version had one, so it starts at the 88-key default;
+// every v3 field passes through untouched.
+function migrateV3ToV4(data) {
+  return { ...data, schemaVersion: 4, keyCount: DEFAULT_KEY_COUNT };
+}
+
 function migrate(data) {
   if (data.schemaVersion === 1) data = migrateV1ToV2(data);
   if (data.schemaVersion === 2) data = migrateV2ToV3(data);
+  if (data.schemaVersion === 3) data = migrateV3ToV4(data);
   return data;
 }
 

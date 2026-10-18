@@ -53,6 +53,15 @@
 
 - T409 before gates; T401/T402 before T410–T412; T420 after all; T421 after T420.
 
+## Follow-up
+
+- [X] T422 [US1] Spec defect (2026-10-18, feature 008's approved spill): AC-4.1.1, FR-201
+  and FR-203 in `specs/004-play-chord/spec.md` revised — the strum through the sampled
+  guitar is a stringed instrument's; on the piano the same voicing is struck at once
+  through the synthesised voice (AC-8.4.3). Revised **before** the implementation, per
+  CLAUDE.md §2. Behaviour and tests are feature 008's (`specs/008-instrument-piano/`);
+  the existing AC-4.1.1 tests are unchanged and still pass on the guitar.
+
 ## Implementation Strategy
 
 Tests → theory voicing → audio scheduling → button. Single-story MVP.

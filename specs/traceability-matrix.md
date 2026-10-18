@@ -13,15 +13,15 @@
   marked with what is true right now.
 -->
 
-**Feature**: specs/001-fretboard-visualizer/spec.md, specs/002-default-root-scale/spec.md, specs/003-chord-mode/spec.md, specs/004-play-chord/spec.md, specs/005-display-overhaul/spec.md, specs/006-key-aware-chords/spec.md, specs/007-instrument-ukulele/spec.md
-**Criteria**: 115 across 26 User Stories
+**Feature**: specs/001-fretboard-visualizer/spec.md, specs/002-default-root-scale/spec.md, specs/003-chord-mode/spec.md, specs/004-play-chord/spec.md, specs/005-display-overhaul/spec.md, specs/006-key-aware-chords/spec.md, specs/007-instrument-ukulele/spec.md, specs/008-instrument-piano/spec.md
+**Criteria**: 142 across 31 User Stories
 
-**Coverage**: 64 of 115 criteria proven (55.7%)
+**Coverage**: 91 of 142 criteria proven (64.1%)
 
 | | Criteria | Share |
 |---|---|---|
-| 🟢 Proven | 64 | 55.7% |
-| 🔴 Gap — CRITICAL | 51 | 44.3% |
+| 🟢 Proven | 91 | 64.1% |
+| 🔴 Gap — CRITICAL | 51 | 35.9% |
 
 A row is one *criterion*: an Acceptance Criterion that asserts one thing, or one Case of
 an AC that asserts several. 🖵 marks a criterion that describes something a person sees or
@@ -82,6 +82,11 @@ fail the build, and it is outstanding work — never a settled decision.
 | 🟢 US-7.2 | 6 | **6** | · | · | · | · | · |
 | 🟢 US-7.3 | 2 | **2** | · | · | · | · | · |
 | 🟢 US-7.4 | 3 | **3** | · | · | · | · | · |
+| 🟢 US-8.1 | 7 | **7** | · | · | · | · | · |
+| 🟢 US-8.2 | 8 | **8** | · | · | · | · | · |
+| 🟢 US-8.3 | 5 | **5** | · | · | · | · | · |
+| 🟢 US-8.4 | 4 | **4** | · | · | · | · | · |
+| 🟢 US-8.5 | 3 | **3** | · | · | · | · | · |
 
 ## Every criterion
 
@@ -189,7 +194,7 @@ fail the build, and it is outstanding work — never a settled decision.
 | US-7.1 | `AC-7.1.1/1` 🖵 | Selecting Guitar renders six string rows. | P-601 | T710 (1/1 done) | T701 (1/1 done) | `fretboard.test.js` | 🟢 OK |
 | US-7.1 | `AC-7.1.1/2` 🖵 | Selecting Ukulele renders four string rows. | P-601 | T710 (1/1 done) | T701 (1/1 done) | `fretboard.test.js` | 🟢 OK |
 | US-7.1 | `AC-7.1.2` 🖵 | The tuning selector offers only the selected instrument's tunings | P-602 | T711 (1/1 done) | T702 (1/1 done) | `controls.test.js` | 🟢 OK |
-| US-7.1 | `AC-7.1.3` | Switching instruments leaves the musical context untouched | P-605 | T714 (1/1 done) | T705 (1/1 done) | `state.test.js` | 🟢 OK |
+| US-7.1 | `AC-7.1.3` 🖵 | Switching instruments leaves the musical context untouched | P-605 | T714 (1/1 done) | T705 (1/1 done) | `controls.test.js`, `state.test.js` | 🟢 OK |
 | US-7.1 | `AC-7.1.4` | The instrument choice survives a reload | P-605 | T714 (1/1 done) | T705 (1/1 done) | `main-instrument.test.js` | 🟢 OK |
 | US-7.2 | `AC-7.2.1/1` | Standard (high-G) GCEA is G4 C4 E4 A4, string 4 to string 1. | P-603 | T712 (1/1 done) | T703 (1/1 done) | `theory.test.js` | 🟢 OK |
 | US-7.2 | `AC-7.2.1/2` | Low-G GCEA is G3 C4 E4 A4, string 4 to string 1. | P-603 | T712 (1/1 done) | T703 (1/1 done) | `theory.test.js` | 🟢 OK |
@@ -202,3 +207,30 @@ fail the build, and it is outstanding work — never a settled decision.
 | US-7.4 | `AC-7.4.1` | Each instrument remembers its own last tuning | P-605 | T714 (1/1 done) | T705 (1/1 done) | `state.test.js` | 🟢 OK |
 | US-7.4 | `AC-7.4.2` | Settings saved before this feature load as a guitar in their saved tuning | P-606 | T715 (1/1 done) | T706 (1/1 done) | `state.test.js` | 🟢 OK |
 | US-7.4 | `AC-7.4.3` | Saved settings whose string count contradicts their instrument fall back safely | P-606 | T715 (1/1 done) | T706 (1/1 done) | `state.test.js` | 🟢 OK |
+| US-8.1 | `AC-8.1.1/1` 🖵 | Selecting Piano draws piano keys and no fretboard | P-701 | T810 (1/1 done) | T801 (1/1 done) | `piano.test.js` | 🟢 OK |
+| US-8.1 | `AC-8.1.1/2` 🖵 | Selecting a stringed instrument after Piano draws the fretboard again | P-701 | T810 (1/1 done) | T801 (1/1 done) | `piano.test.js` | 🟢 OK |
+| US-8.1 | `AC-8.1.2/1` 🖵 | On the piano the tuning, capo, Absolute/Relative and fret-range controls are hidden and the key-count control is shown | P-702 | T811 (1/1 done) | T802 (1/1 done) | `piano.test.js` | 🟢 OK |
+| US-8.1 | `AC-8.1.2/2` 🖵 | On a stringed instrument the key-count control is hidden and the tuning, capo, Absolute/Relative and fret-range controls are shown | P-702 | T811 (1/1 done) | T802 (1/1 done) | `piano.test.js` | 🟢 OK |
+| US-8.1 | `AC-8.1.3` | Stringed-instrument settings survive a trip to the piano | P-702 | T811 (1/1 done) | T802 (1/1 done) | `piano.test.js`, `state.test.js` | 🟢 OK |
+| US-8.1 | `AC-8.1.4` 🖵 | The capo never shifts the piano's highlighting | P-703 | T812 (1/1 done) | T803 (1/1 done) | `piano.test.js` | 🟢 OK |
+| US-8.1 | `AC-8.1.5` 🖵 | The piano highlights exactly the notes the fretboard highlights | P-701 | T810 (1/1 done) | T801 (1/1 done) | `piano.test.js` | 🟢 OK |
+| US-8.2 | `AC-8.2.1` 🖵 | The piano defaults to 88 keys from A0 to C8 | P-704 | T813 (1/1 done) | T804 (1/1 done) | `piano.test.js`, `theory.test.js` | 🟢 OK |
+| US-8.2 | `AC-8.2.2/1` 🖵 | 25 keys span C3 to C5 | P-704 | T813 (1/1 done) | T804 (1/1 done) | `piano.test.js`, `theory.test.js` | 🟢 OK |
+| US-8.2 | `AC-8.2.2/2` 🖵 | 37 keys span C3 to C6 | P-704 | T813 (1/1 done) | T804 (1/1 done) | `piano.test.js`, `theory.test.js` | 🟢 OK |
+| US-8.2 | `AC-8.2.2/3` 🖵 | 49 keys span C2 to C6 | P-704 | T813 (1/1 done) | T804 (1/1 done) | `piano.test.js`, `theory.test.js` | 🟢 OK |
+| US-8.2 | `AC-8.2.2/4` 🖵 | 61 keys span C2 to C7 | P-704 | T813 (1/1 done) | T804 (1/1 done) | `piano.test.js`, `theory.test.js` | 🟢 OK |
+| US-8.2 | `AC-8.2.2/5` 🖵 | 76 keys span E1 to G7 | P-704 | T813 (1/1 done) | T804 (1/1 done) | `piano.test.js`, `theory.test.js` | 🟢 OK |
+| US-8.2 | `AC-8.2.2/6` 🖵 | 88 keys span A0 to C8 | P-704 | T813 (1/1 done) | T804 (1/1 done) | `piano.test.js`, `theory.test.js` | 🟢 OK |
+| US-8.2 | `AC-8.2.3` 🖵 | The key-count control offers only the standard sizes | P-704 | T813 (1/1 done) | T804 (1/1 done) | `piano.test.js` | 🟢 OK |
+| US-8.3 | `AC-8.3.1` 🖵 | The keyboard uses one row when every white key fits | P-705 | T814 (1/1 done) | T805 (1/1 done) | `piano.test.js` | 🟢 OK |
+| US-8.3 | `AC-8.3.2/1` 🖵 | 88 keys split into A0–B3 on the top row and C4–C8 on the bottom row | P-705 | T814 (1/1 done) | T805 (1/1 done) | `piano.test.js`, `theory.test.js` | 🟢 OK |
+| US-8.3 | `AC-8.3.2/2` 🖵 | The two rows together hold every key exactly once, in ascending order | P-705 | T814 (1/1 done) | T805 (1/1 done) | `piano.test.js`, `theory.test.js` | 🟢 OK |
+| US-8.3 | `AC-8.3.3` 🖵 | Black keys sit between their neighbouring white keys | P-705 | T814 (1/1 done) | T805 (1/1 done) | `piano.test.js` | 🟢 OK |
+| US-8.3 | `AC-8.3.4` 🖵 | The keyboard re-fits when the screen size changes | P-705 | T814 (1/1 done) | T805 (1/1 done) | `main-piano.test.js` | 🟢 OK |
+| US-8.4 | `AC-8.4.1` 🖵 | Tapping a key plays its exact pitch with the piano voice | P-706 | T815 (1/1 done) | T806 (1/1 done) | `piano.test.js`, `theory.test.js` | 🟢 OK |
+| US-8.4 | `AC-8.4.2` | The piano voice is rhythm-master's melodic voice | P-706 | T815 (1/1 done) | T806 (1/1 done) | `synth.test.js` | 🟢 OK |
+| US-8.4 | `AC-8.4.3` 🖵 | The chord Play button strikes every chord tone at once on the piano | P-706 | T815 (1/1 done) | T806 (1/1 done) | `piano.test.js` | 🟢 OK |
+| US-8.4 | `AC-8.4.4` 🖵 | Stringed instruments keep the guitar sample | P-706 | T815 (1/1 done) | T806 (1/1 done) | `piano.test.js` | 🟢 OK |
+| US-8.5 | `AC-8.5.1` | The piano and its key count survive a reload | P-707 | T816 (1/1 done) | T807 (1/1 done) | `main-piano.test.js` | 🟢 OK |
+| US-8.5 | `AC-8.5.2` | Settings saved before this feature load unchanged with 88 keys | P-707 | T816 (1/1 done) | T807 (1/1 done) | `state.test.js` | 🟢 OK |
+| US-8.5 | `AC-8.5.3` | Saved settings with an impossible key count fall back safely | P-707 | T816 (1/1 done) | T807 (1/1 done) | `state.test.js` | 🟢 OK |

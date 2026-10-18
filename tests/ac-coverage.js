@@ -31,6 +31,7 @@ const SPECS = [
   join(ROOT, 'specs/005-display-overhaul/spec.md'),
   join(ROOT, 'specs/006-key-aware-chords/spec.md'),
   join(ROOT, 'specs/007-instrument-ukulele/spec.md'),
+  join(ROOT, 'specs/008-instrument-piano/spec.md'),
 ];
 const TEST_DIRS = [join(ROOT, 'tests')];
 

@@ -81,6 +81,22 @@ board is tested in a DOM-capable suite.
 
 - [X] T720 Run all four gates; regenerate and commit the matrix.
 
+## Follow-up
+
+- [X] T721 [US1, US4] Spec defect (2026-10-18, feature 008's approved spill): AC-7.1.1,
+  AC-7.1.3 and FR-501 in `specs/007-instrument-ukulele/spec.md` revised — the string-count
+  rule and "only the string count and tuning change" hold between stringed instruments;
+  the selector now also offers Piano, which draws a keyboard and hides the stringed-only
+  controls (AC-8.1.1–AC-8.1.3). Revised **before** the implementation, per CLAUDE.md §2.
+  **Test defect corrected (§2a)**: `tests/theory.test.js`'s `AC-7.1.1 — … the instrument
+  table declares both counts` asserted `INSTRUMENTS.length === 2` and string labels on
+  every instrument; the revised AC-7.1.1 is about stringed instruments, so it now asserts
+  exactly two **stringed** instruments and checks each one's labels and default tuning —
+  no assertion relaxed.
+  **Test added**: the revised AC-7.1.3 now names controls, so `check:trace` T6 requires a
+  DOM-level test — `tests/controls.test.js` gains `AC-7.1.3 — … through the Instrument
+  control, Piano included`.
+
 ## Dependencies
 
 - T709 before the gates; each test task before its implementation task; T710 (the

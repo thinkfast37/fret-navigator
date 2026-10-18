@@ -17,7 +17,7 @@ import {
   isFretPlayable,
   rootLetterToSemitone,
   getHighlightRootSemitone,
-  INSTRUMENTS,
+  STRINGED_INSTRUMENTS,
   getInstrument,
   tuningsForInstrument,
 } from "../src/js/theory.js";
@@ -951,8 +951,9 @@ describe("INSTRUMENTS and the ukulele tuning library (feature 007)", () => {
   test("AC-7.1.1 — The instrument selector renders that instrument's string count: the instrument table declares both counts", () => {
     assert.equal(getInstrument("guitar").stringCount, 6);
     assert.equal(getInstrument("ukulele").stringCount, 4);
-    assert.equal(INSTRUMENTS.length, 2);
-    for (const instrument of INSTRUMENTS) {
+    // Feature 008 revised AC-7.1.1 to stringed instruments: the piano has no strings.
+    assert.equal(STRINGED_INSTRUMENTS.length, 2);
+    for (const instrument of STRINGED_INSTRUMENTS) {
       assert.equal(instrument.stringLabels.length, instrument.stringCount);
       assert.ok(tuningsForInstrument(instrument.id).some((t) => t.id === instrument.defaultTuningId));
     }
@@ -1004,5 +1005,79 @@ describe("INSTRUMENTS and the ukulele tuning library (feature 007)", () => {
     for (const id of ["uke-low-g", "uke-baritone"]) {
       assert.ok(noteAt(uke(id), 3, 0).midiNote < noteAt(uke(id), 2, 0).midiNote);
     }
+  });
+});
+
+import {
+  KEYBOARD_SIZES,
+  DEFAULT_KEY_COUNT,
+  keyboardKeys,
+  splitKeyboardRows,
+  midiToFrequency,
+} from "../src/js/theory.js";
+
+describe("keyboard sizes and rows (feature 008)", () => {
+  // Scientific pitch name of a MIDI note, sharps only (C4 = 60).
+  const NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+  const nameOf = (midi) => `${NAMES[midi % 12]}${Math.floor(midi / 12) - 1}`;
+  const span = (keys) => [nameOf(keys[0].midiNote), nameOf(keys[keys.length - 1].midiNote)];
+
+  test("AC-8.2.1 — The piano defaults to 88 keys from A0 to C8: the keyboard arithmetic", () => {
+    assert.equal(DEFAULT_KEY_COUNT, 88);
+    const keys = keyboardKeys(DEFAULT_KEY_COUNT);
+    assert.equal(keys.length, 88);
+    assert.deepEqual(span(keys), ["A0", "C8"]);
+    assert.equal(keys.filter((k) => !k.isBlack).length, 52);
+    assert.equal(keys.filter((k) => k.isBlack).length, 36);
+    // An unknown size falls back to the default rather than throwing.
+    assert.equal(keyboardKeys(100).length, 88);
+  });
+
+  function assertSize(keyCount, expectedSpan) {
+    const keys = keyboardKeys(keyCount);
+    assert.equal(keys.length, keyCount);
+    assert.deepEqual(span(keys), expectedSpan);
+    // Contiguous, ascending, with black keys exactly on the five accidentals.
+    keys.forEach((k, i) => {
+      if (i > 0) assert.equal(k.midiNote, keys[i - 1].midiNote + 1);
+      assert.equal(k.pitchClassSemitone, k.midiNote % 12);
+      assert.equal(k.isBlack, NAMES[k.midiNote % 12].includes("#"));
+    });
+  }
+  test("AC-8.2.2/1 — 25 keys span C3 to C5: the keyboard arithmetic", () => assertSize(25, ["C3", "C5"]));
+  test("AC-8.2.2/2 — 37 keys span C3 to C6: the keyboard arithmetic", () => assertSize(37, ["C3", "C6"]));
+  test("AC-8.2.2/3 — 49 keys span C2 to C6: the keyboard arithmetic", () => assertSize(49, ["C2", "C6"]));
+  test("AC-8.2.2/4 — 61 keys span C2 to C7: the keyboard arithmetic", () => assertSize(61, ["C2", "C7"]));
+  test("AC-8.2.2/5 — 76 keys span E1 to G7: the keyboard arithmetic", () => assertSize(76, ["E1", "G7"]));
+  test("AC-8.2.2/6 — 88 keys span A0 to C8: the keyboard arithmetic", () => assertSize(88, ["A0", "C8"]));
+
+  test("AC-8.2.2 — Each key count spans its conventional range: exactly the six standard sizes", () => {
+    assert.deepEqual(KEYBOARD_SIZES.map((s) => s.keyCount), [25, 37, 49, 61, 76, 88]);
+    for (const size of KEYBOARD_SIZES) assert.equal(size.highMidi - size.lowMidi + 1, size.keyCount);
+  });
+
+  test("AC-8.3.2/1 — 88 keys split into A0–B3 on the top row and C4–C8 on the bottom row: the split arithmetic", () => {
+    const [top, bottom] = splitKeyboardRows(keyboardKeys(88), 2);
+    assert.deepEqual(span(top), ["A0", "B3"]);
+    assert.deepEqual(span(bottom), ["C4", "C8"]);
+  });
+
+  test("AC-8.3.2/2 — The two rows together hold every key exactly once, in ascending order: every size", () => {
+    for (const { keyCount } of KEYBOARD_SIZES) {
+      const keys = keyboardKeys(keyCount);
+      const rows = splitKeyboardRows(keys, 2);
+      assert.equal(rows.length, 2, `${keyCount} keys split in two`);
+      assert.equal(rows[1][0].pitchClassSemitone, 0, `${keyCount} keys: bottom row begins on a C`);
+      assert.deepEqual(rows.flat(), keys);
+    }
+    // One row is the keyboard itself.
+    assert.deepEqual(splitKeyboardRows(keyboardKeys(61), 1), [keyboardKeys(61)]);
+  });
+
+  test("AC-8.4.1 — Tapping a key plays its exact pitch with the piano voice: equal-temperament frequency", () => {
+    assert.equal(midiToFrequency(69), 440);
+    assert.ok(Math.abs(midiToFrequency(60) - 261.6256) < 1e-3);
+    assert.ok(Math.abs(midiToFrequency(21) - 27.5) < 1e-9);
+    assert.ok(Math.abs(midiToFrequency(108) - 4186.009) < 1e-2);
   });
 });
