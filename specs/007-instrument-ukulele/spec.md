@@ -43,9 +43,13 @@ ukulele tunings, and the root, scale and capo are untouched.
 
 - **AC-7.1.1** — The instrument selector renders that instrument's string count
 
-  **Given** the Instrument control, **When** an instrument is selected, **Then** the
-  fretboard renders exactly that instrument's number of strings, string 1 at the top
+  **Given** the Instrument control, **When** a stringed instrument is selected, **Then**
+  the fretboard renders exactly that instrument's number of strings, string 1 at the top
   through string N at the bottom, over the same fret span.
+
+  *(Revised 2026-10-18, feature 008: "an instrument" → "a stringed instrument". The
+  selector now also offers Piano, which has no strings and draws a keyboard instead —
+  AC-8.1.1.)*
 
   - **Cases**:
     - **AC-7.1.1/1** — Selecting Guitar renders six string rows.
@@ -62,6 +66,11 @@ ukulele tunings, and the root, scale and capo are untouched.
   **Given** a root, scale, capo position, label mode, fret range and chord selection are
   set, **When** the instrument is switched, **Then** every one of those settings is
   unchanged and only the string count and tuning change.
+
+  *(Revised 2026-10-18, feature 008: this holds between stringed instruments. Switching
+  to or from Piano also swaps the fretboard for a keyboard and hides or shows the
+  stringed-instrument controls, while every setting listed here is still kept —
+  AC-8.1.2, AC-8.1.3.)*
 
 - **AC-7.1.4** — The instrument choice survives a reload
 
@@ -193,7 +202,8 @@ switch back to Guitar; verify DADGAD is still selected.
 
 - **FR-501**: System MUST provide an instrument selector offering Guitar (6 strings) and
   Ukulele (4 strings), and MUST render the fretboard with exactly the selected
-  instrument's number of strings over the existing fret span.
+  instrument's number of strings over the existing fret span. *(Revised 2026-10-18,
+  feature 008: the selector also offers Piano, drawn as a keyboard — FR-601.)*
 - **FR-502**: The tuning library MUST associate every tuning with an instrument, and the
   tuning selector MUST offer only the selected instrument's tunings plus Custom Tuning.
 - **FR-503**: System MUST offer the ukulele tunings Standard (high-G) G4 C4 E4 A4, Low-G

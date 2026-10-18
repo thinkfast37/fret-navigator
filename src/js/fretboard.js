@@ -3,6 +3,7 @@
 
 import * as theory from "./theory.js";
 import * as audio from "./audio.js";
+import * as keyboard from "./keyboard.js";
 
 const ALL_ROLE_IDS = ["1", "b2", "2", "b3", "3", "4", "4s5b", "5", "b6", "6", "b7", "7"];
 
@@ -89,10 +90,13 @@ export function getEffectiveRootSemitone(appState) {
 // by +capoFret only when a capo is active AND Relative label mode is
 // selected. Audio and the "Bright notes" text summary must keep using
 // getEffectiveRootSemitone (true root) instead - see FR-048.
+// Feature 008, FR-603 (AC-8.1.4): a capo only exists on a stringed instrument — on the
+// piano the highlight root is the true root, whatever capo the guitar has saved.
 export function getHighlightRootSemitone(appState) {
   const trueRoot = getEffectiveRootSemitone(appState);
   if (trueRoot === null) return null;
-  return theory.getHighlightRootSemitone(trueRoot, appState.capoFret, appState.capoLabelMode);
+  const capoFret = theory.getInstrument(appState.instrument).kind === "stringed" ? appState.capoFret : 0;
+  return theory.getHighlightRootSemitone(trueRoot, capoFret, appState.capoLabelMode);
 }
 
 // Implements feature 003, FR-103/FR-108: the selected chord's absolute
@@ -152,7 +156,9 @@ function resolveTuning(state) {
 function buildSkeleton() {
   const svg = document.getElementById("fretboard");
   svg.setAttribute("viewBox", `0 0 ${svgWidth} ${boardHeight()}`);
+  svg.setAttribute("aria-label", "Fretboard");
   svg.textContent = "";
+  delete svg.dataset.layout; // feature 008: the keyboard's layout is gone
 
   backgroundGroup = svgEl("g", { class: "fretboard-background" });
   svg.appendChild(backgroundGroup);
@@ -292,26 +298,78 @@ function effectiveKeyContext(state) {
   };
 }
 
-function updateNotes(state, layout) {
-  const tuning = resolveTuning(state);
-  const keyContext = effectiveKeyContext(state);
-
-  // Diatonic set, degree-role assignment, and chord-tone/focal membership
-  // for ON-FRETBOARD rendering all key off the HIGHLIGHT root (UAT round 2
-  // section A, FR-047) - which shifts by +capoFret only when a capo is
-  // active AND Relative label mode is selected. Audio (below, via
-  // dataset.midiNote from theory.noteAt) and the "Bright notes" text summary
-  // (controls.js) never use this value - they stay anchored to the true
-  // root (FR-048).
+// Implements feature 008, FR-604: the highlight inputs shared by the fretboard and the
+// keyboard, computed once per render.
+//
+// Diatonic set, degree-role assignment, and chord-tone/focal membership for ON-FRETBOARD
+// rendering all key off the HIGHLIGHT root (UAT round 2 section A, FR-047) - which shifts
+// by +capoFret only when a capo is active AND Relative label mode is selected. Audio (via
+// dataset.midiNote from theory.noteAt) and the "Bright notes" text summary (controls.js)
+// never use this value - they stay anchored to the true root (FR-048).
+function highlightContext(state) {
   const rootSemitone = getHighlightRootSemitone(state);
-  const diatonicSemitones =
-    rootSemitone !== null && state.scaleId
-      ? theory.getDiatonicSemitones(rootSemitone, state.scaleId)
-      : new Set();
   // Feature 003 (FR-104): Chord view partitions every note into exactly one
   // of chord-tone (full), ghost (in scale, unlabelled), or hidden.
   const isChordView = state.viewMode === "chord";
-  const chordToneSet = isChordView ? computeChordToneSet(state) : new Set();
+  return {
+    state,
+    keyContext: effectiveKeyContext(state),
+    rootSemitone,
+    diatonicSemitones:
+      rootSemitone !== null && state.scaleId ? theory.getDiatonicSemitones(rootSemitone, state.scaleId) : new Set(),
+    isChordView,
+    chordToneSet: isChordView ? computeChordToneSet(state) : new Set(),
+  };
+}
+
+// Implements feature 008, FR-604 (AC-8.1.5): everything a note shows, from its pitch
+// class alone, so a fret and a piano key of the same pitch class always agree.
+// `nameSemitone` is the pitch class to SPELL, which differs only for Relative-mode note
+// names on the fretboard.
+function describePitchClass(ctx, pitchClassSemitone, nameSemitone = pitchClassSemitone) {
+  const { state, keyContext, rootSemitone, diatonicSemitones, isChordView, chordToneSet } = ctx;
+  const isRoot = rootSemitone !== null && pitchClassSemitone === rootSemitone;
+  const isDiatonic = diatonicSemitones.has(pitchClassSemitone);
+  const semitoneFromRoot = rootSemitone !== null ? mod12(pitchClassSemitone - rootSemitone) : null;
+  const isChordTone = isChordView && chordToneSet.has(pitchClassSemitone);
+  const noteName = theory.spellPitchClass(nameSemitone, keyContext);
+
+  let label = noteName; // base layer: note name, always shown for non-diatonic notes
+  if (isDiatonic && state.labelMode === "degrees") {
+    label = theory.getDegreeLabel(semitoneFromRoot, state.scaleId);
+  } else if (isDiatonic && state.labelMode === "intervals") {
+    label = theory.getIntervalLabel(semitoneFromRoot);
+  }
+
+  return {
+    isRoot,
+    isDiatonic,
+    isChordTone,
+    isGhost: isChordView && !isChordTone && isDiatonic,
+    isChordHidden: isChordView && !isChordTone && !isDiatonic,
+    roleId: isDiatonic ? theory.getDegreeRole(semitoneFromRoot).colorRoleId : null,
+    noteName,
+    label,
+  };
+}
+
+// Implements feature 008, FR-604: the classes and label one note element carries.
+function applyNoteState(g, text, d) {
+  g.classList.toggle("is-root", d.isRoot);
+  g.classList.toggle("is-diatonic", d.isDiatonic);
+  g.classList.toggle("is-chord-tone", d.isChordTone);
+  g.classList.toggle("is-ghost", d.isGhost);
+  g.classList.toggle("chord-hidden", d.isChordHidden);
+  for (const roleId of ALL_ROLE_IDS) g.classList.remove(`role-${roleId}`);
+  if (d.roleId) g.classList.add(`role-${d.roleId}`);
+  // Ghosts render as unlabelled faint dots (AC-3.2.3); the missing label
+  // doubles as their non-color distinguisher (FR-111).
+  text.textContent = d.isGhost ? "" : d.label;
+}
+
+function updateNotes(state, layout) {
+  const tuning = resolveTuning(state);
+  const ctx = highlightContext(state);
   const isRelativeLabelMode = state.capoFret > 0 && state.capoLabelMode === "relative";
 
   for (let s = 0; s < stringCount; s++) {
@@ -330,57 +388,28 @@ function updateNotes(state, layout) {
       text.setAttribute("x", cx);
       text.setAttribute("y", cy);
 
-      const isRoot = rootSemitone !== null && pitchClassSemitone === rootSemitone;
-      const isDiatonic = diatonicSemitones.has(pitchClassSemitone);
-      const semitoneFromRoot = rootSemitone !== null ? mod12(pitchClassSemitone - rootSemitone) : null;
-      const isChordTone = isChordView && chordToneSet.has(pitchClassSemitone);
-      const isGhost = isChordView && !isChordTone && isDiatonic;
-      const isChordHidden = isChordView && !isChordTone && !isDiatonic;
-
       // Relative-mode note NAMES are a distinct computation from the
-      // diatonic/degree-role layer above: the string's own static open
+      // diatonic/degree-role layer: the string's own static open
       // pitch class + (fret - capoFret), never a capo-raised pitch.
-      let noteName;
+      let nameSemitone = pitchClassSemitone;
       if (isRelativeLabelMode) {
         const openSemitone = theory.noteAt(tuning, s, 0).pitchClassSemitone;
-        const relativeSemitone = mod12(openSemitone + theory.getRelativeLabelSemitone(f, state.capoFret));
-        noteName = theory.spellPitchClass(relativeSemitone, keyContext);
-      } else {
-        noteName = theory.spellPitchClass(pitchClassSemitone, keyContext);
+        nameSemitone = mod12(openSemitone + theory.getRelativeLabelSemitone(f, state.capoFret));
       }
-
-      let label = noteName; // base layer: note name, always shown for non-diatonic notes
-      if (isDiatonic && state.labelMode === "degrees") {
-        label = theory.getDegreeLabel(semitoneFromRoot, state.scaleId);
-      } else if (isDiatonic && state.labelMode === "intervals") {
-        label = theory.getIntervalLabel(semitoneFromRoot);
-      }
+      const d = describePitchClass(ctx, pitchClassSemitone, nameSemitone);
 
       const isVisibleInRange = f >= state.fretRange.lowerBound && f <= state.fretRange.upperBound;
 
-      g.classList.toggle("is-root", isRoot);
-      g.classList.toggle("is-diatonic", isDiatonic);
-      g.classList.toggle("is-chord-tone", isChordTone);
-      g.classList.toggle("is-ghost", isGhost);
-      g.classList.toggle("chord-hidden", isChordHidden);
+      applyNoteState(g, text, d);
       g.classList.toggle("is-muted", !isPlayable);
       g.classList.toggle("fret-hidden", !isVisibleInRange);
       // Hidden chord-view notes leave the tab order entirely (AC-3.2.7);
       // ghosts stay reachable for audio.
-      g.setAttribute("tabindex", isVisibleInRange && isPlayable && !isChordHidden ? "0" : "-1");
+      g.setAttribute("tabindex", isVisibleInRange && isPlayable && !d.isChordHidden ? "0" : "-1");
 
-      for (const roleId of ALL_ROLE_IDS) g.classList.remove(`role-${roleId}`);
-      if (isDiatonic) {
-        const role = theory.getDegreeRole(semitoneFromRoot);
-        g.classList.add(`role-${role.colorRoleId}`);
-      }
-
-      // Ghosts render as unlabelled faint dots (AC-3.2.3); the missing label
-      // doubles as their non-color distinguisher (FR-111).
-      text.textContent = isGhost ? "" : label;
       g.setAttribute(
         "aria-label",
-        `${label}${isRoot ? ", root" : ""}${isChordTone ? ", chord tone" : isDiatonic ? ", in scale" : ""}${isPlayable ? "" : ", muted"}, fret ${f === 0 ? "open" : f}, string ${s + 1}`
+        `${d.label}${d.isRoot ? ", root" : ""}${d.isChordTone ? ", chord tone" : d.isDiatonic ? ", in scale" : ""}${isPlayable ? "" : ", muted"}, fret ${f === 0 ? "open" : f}, string ${s + 1}`
       );
       g.dataset.midiNote = midiNote;
       g.dataset.pitchClassSemitone = pitchClassSemitone;
@@ -401,9 +430,20 @@ export function onAfterRender(fn) {
 
 // Implements Story 1, FR-001/FR-002/FR-003/FR-004, FR-043, FR-046: pure state -> fretboard render
 export function render(appState) {
+  // Feature 008 (FR-601, AC-8.1.1): a keyboard instrument draws the piano into the same
+  // board, with this module's highlight rules; the fretboard skeleton is rebuilt when a
+  // stringed instrument comes back.
+  const instrument = theory.getInstrument(appState.instrument);
+  if (instrument.kind === "keyboard") {
+    initialized = false;
+    const ctx = highlightContext(appState);
+    keyboard.render(appState, { describe: (pc) => describePitchClass(ctx, pc), applyNoteState });
+    for (const fn of afterRenderHooks) fn(appState);
+    return;
+  }
   // Feature 007 (AC-7.1.1): switching instrument changes how many string rows exist, so
   // the skeleton — one note element per string × fret — is rebuilt when the count moves.
-  const nextStringCount = theory.getInstrument(appState.instrument).stringCount;
+  const nextStringCount = instrument.stringCount;
   if (!initialized || nextStringCount !== stringCount) {
     stringCount = nextStringCount;
     noteElements.clear();

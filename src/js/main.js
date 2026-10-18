@@ -6,6 +6,8 @@ import * as state from "./state.js";
 import * as fretboard from "./fretboard.js";
 import * as controls from "./controls.js";
 import * as audio from "./audio.js";
+import * as keyboard from "./keyboard.js";
+import * as theory from "./theory.js";
 
 const restoredState = state.load();
 
@@ -23,4 +25,14 @@ audio.onLoadSuccess(() => {
 });
 
 // AC-1.8.7: manual backup for silent states the automatic recovery cannot see.
-document.getElementById("audio-reset")?.addEventListener("click", () => audio.resetAudio());
+// Feature 008: in piano mode the confirmation note is a piano note.
+document
+  .getElementById("audio-reset")
+  ?.addEventListener("click", () => audio.resetAudio(theory.getInstrument(state.getState().instrument).voice));
+
+// Feature 008, FR-606 (AC-8.3.4): the piano re-fits between one and two rows as the
+// window is resized, redrawing only when the fit actually changes.
+window.addEventListener("resize", () => {
+  const appState = state.getState();
+  if (keyboard.needsRefit(appState)) fretboard.render(appState);
+});

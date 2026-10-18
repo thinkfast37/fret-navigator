@@ -36,6 +36,10 @@
      (section D changed that rule's color to var(--role-1) instead -
      it never used this accent, so it's not part of this consolidation). */
   --color-root-accent: #ffd54a;
+  /* Feature 008: piano keys. */
+  --color-piano-white: #ecebe6;
+  --color-piano-black: #1b1d21;
+  --color-piano-edge: #5a5f68;
   --color-text-on-bright: var(--color-bg); /* already the same value (#14171c) */
   /* Given its own literal (never aliased to a degree-role token) - the
      error banner and the chromatic degree-role palette are semantically
@@ -556,6 +560,12 @@ footer#credits button {
   gap: 0.4rem;
 }
 
+/* Feature 008 (AC-8.1.2): instrument-specific controls are hidden with the
+   `hidden` attribute, which the display:flex above would otherwise override. */
+#controls > div[hidden] {
+  display: none;
+}
+
 /* Feature 005 layout: the chord panel flows its sub-controls horizontally
    like the rest of the control strip, instead of one tall column. */
 #controls > #chord-info {
@@ -692,4 +702,71 @@ button {
   border-radius: 4px;
   padding: 0.3rem 0.5rem;
   font-size: 0.9rem;
+}
+
+/* ---- Piano keyboard (feature 008) ----
+   The keys reuse every .note rule above, so a key and a fret of the same
+   pitch class look the same. Only what a white key's light background
+   needs is overridden: dark borders and labels where the fretboard uses
+   light ones, and markers sized to the narrower keys. */
+
+.piano-key {
+  cursor: pointer;
+}
+
+.piano-key-body {
+  stroke: var(--color-piano-edge);
+  stroke-width: 1;
+}
+
+.piano-key-white .piano-key-body {
+  fill: var(--color-piano-white);
+}
+
+.piano-key-black .piano-key-body {
+  fill: var(--color-piano-black);
+}
+
+.piano-key:focus-visible {
+  outline: none;
+}
+
+.piano-key:focus-visible .piano-key-body {
+  stroke: var(--color-root-accent);
+  stroke-width: 3;
+}
+
+.piano-key .note-label {
+  font-size: 10px;
+}
+
+.piano-key-black .note-label {
+  font-size: 7px;
+}
+
+.piano-key-white .note:not(.is-diatonic):not(.is-root):not(.is-chord-tone) .note-label {
+  fill: var(--color-bg);
+}
+
+.piano-key-white .note.is-diatonic .note-marker,
+.piano-key-white .note.is-chord-tone .note-marker {
+  stroke: var(--color-bg);
+}
+
+.piano-key-white .note.is-chord-tone .note-marker {
+  r: 13;
+}
+
+.piano-key-black .note.is-chord-tone .note-marker {
+  r: 9;
+  stroke-width: 2.5;
+}
+
+.piano-key-white .note.is-ghost .note-marker {
+  fill: var(--color-bg);
+  opacity: 0.3;
+}
+
+.piano-key-black .note.is-ghost .note-marker {
+  r: 4;
 }

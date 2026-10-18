@@ -171,6 +171,7 @@ export function initInstrumentControls() {
     // The tuning selector and the custom-tuning modal are both instrument-shaped, so
     // they are rebuilt rather than patched.
     initTuningControls();
+    syncInstrumentControls();
     rerender();
   });
 
@@ -178,20 +179,63 @@ export function initInstrumentControls() {
   container.appendChild(select);
 }
 
+// Implements feature 008, FR-602 (AC-8.1.2): the controls only a stringed instrument has
+// are hidden on the piano, and the key count only on a stringed instrument. Hidden, not
+// removed — their state is kept for when a stringed instrument comes back (AC-8.1.3).
+const STRINGED_ONLY_CONTROL_IDS = ["tuning-controls", "capo-controls", "fret-range-controls"];
+const KEYBOARD_ONLY_CONTROL_IDS = ["key-count-controls"];
+
+export function syncInstrumentControls() {
+  const isKeyboard = currentInstrument().kind === "keyboard";
+  for (const id of STRINGED_ONLY_CONTROL_IDS) {
+    const container = document.getElementById(id);
+    if (container) container.hidden = isKeyboard;
+  }
+  for (const id of KEYBOARD_ONLY_CONTROL_IDS) {
+    const container = document.getElementById(id);
+    if (container) container.hidden = !isKeyboard;
+  }
+}
+
+// Implements feature 008, FR-605 (AC-8.2.2, AC-8.2.3): the piano's key-count selector,
+// standard sizes only.
+export function initKeyCountControls() {
+  const container = document.getElementById("key-count-controls");
+  if (!container) return;
+  container.textContent = "";
+
+  const select = el("select", { id: "key-count-select", "aria-label": "Number of keys" });
+  for (const size of theory.KEYBOARD_SIZES) {
+    select.appendChild(el("option", { value: String(size.keyCount), text: `${size.keyCount} keys` }));
+  }
+  select.value = String(state.getState().keyCount);
+  select.addEventListener("change", () => {
+    state.setKeyCount(Number(select.value));
+    rerender();
+  });
+
+  container.appendChild(controlLabel("Keys"));
+  container.appendChild(select);
+}
+
 // Implements Story 2, FR-005/FR-006: tuning selector + custom-tuning modal
 export function initTuningControls() {
   const container = document.getElementById("tuning-controls");
   container.textContent = "";
+  const modalRoot = document.getElementById("custom-tuning-modal-root");
+  modalRoot.textContent = "";
 
+  // Feature 008 (FR-602): the piano has no tuning; this is rebuilt when a stringed
+  // instrument is selected again.
   const instrument = currentInstrument();
+  if (instrument.kind !== "stringed") return;
+
   const select = buildTuningSelect(instrument.id);
   const editButton = el("button", { type: "button", id: "custom-tuning-edit", text: "Edit" });
   container.appendChild(controlLabel("Tuning"));
   container.appendChild(select);
   container.appendChild(editButton);
 
-  const modalRoot = document.getElementById("custom-tuning-modal-root");
-  modalRoot.textContent = "";
   const { overlay, closeButton } = buildCustomTuningModal(instrument);
   modalRoot.appendChild(overlay);
 
@@ -676,6 +720,8 @@ export function updateChordInfo() {
   // Feature 004 (FR-201/FR-204, AC-4.1.x): strum the selected chord. Voicing
   // is computed from the TRUE root (like the summary above, never the
   // capo-shifted highlight root) and only inside this gesture handler.
+  // Feature 008 (AC-8.4.3, AC-8.4.4): the instrument decides how it sounds — strummed
+  // through the guitar sample on strings, struck at once through the synth on the piano.
   const playButton = el("button", {
     type: "button",
     id: "play-chord-button",
@@ -683,7 +729,12 @@ export function updateChordInfo() {
     "aria-label": `Play ${chordName} chord`,
   });
   playButton.addEventListener("click", () => {
-    audio.playChord(theory.computeChordVoicing(chordRootSemitone, appState.chordQualityId));
+    const instrument = currentInstrument();
+    audio.playChord(
+      theory.computeChordVoicing(chordRootSemitone, appState.chordQualityId),
+      instrument.chordStrumSeconds,
+      instrument.voice
+    );
   });
   summaryGroup.appendChild(playButton);
   container.appendChild(summaryGroup);
@@ -749,6 +800,8 @@ export function initControls() {
   initLabelModeControls();
   initFretRangeControls();
   initCapoControls();
+  initKeyCountControls();
+  syncInstrumentControls();
   fretboard.onAfterRender(updateChordInfo);
   fretboard.onAfterRender(syncFretRangeControls);
   updateChordInfo();

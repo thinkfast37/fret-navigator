@@ -493,6 +493,11 @@ I can connect the visual fretboard to actual sound.
   correct pitch (correct octave, not just pitch class) plays audibly
   using a real guitar sample, not a synthesized tone.
 
+  *(Revised 2026-10-18, feature 008: "any fret position" is a stringed instrument's —
+  guitar or ukulele. The piano has keys, not frets, and plays rhythm-master's synthesised
+  voice by the maintainer's choice; see AC-8.4.1/AC-8.4.2. This criterion is unchanged
+  for the fretboard.)*
+
 - **AC-1.8.2** — Same pitch class sounds distinct at different octaves
 
   **Given** the same pitch class at different octaves (e.g. open low E
@@ -799,7 +804,7 @@ section A)**
 - **FR-025**: System MUST provide a dual-handle fret-range slider whose left handle controls the lower visible-fret bound (labeled "N" at the nut, or the fret number if moved past fret 0) and whose right handle controls the upper visible-fret bound (labeled with the fret number), defaulting on load to left="N" and right=24 with all frets 0–24 visible.
 - **FR-026**: System MUST constrain the fret-range slider so the left handle cannot move past the right handle's position (or vice versa), always leaving at least one fret visible, and MUST hide frets outside the selected range.
 - **FR-027**: System MUST provide an explicit reset control that restores the fret-range slider to its default N–24 full view when activated. The system MUST also restore this default on first load with no previously stored settings; a plain reload with existing stored settings MUST instead restore the last-used range per FR-039.
-- **FR-028**: System MUST play, on click/tap of any fret position, the correct pitch at its correct octave using a recorded/multi-sampled real guitar tone (not a synthesized waveform).
+- **FR-028**: System MUST play, on click/tap of any fret position, the correct pitch at its correct octave using a recorded/multi-sampled real guitar tone (not a synthesized waveform). *(Revised 2026-10-18, feature 008: applies to stringed instruments; the piano's voice is FR-607.)*
 - **FR-029**: System MUST produce audibly distinct playback for the same pitch class at different octaves (e.g. open low E vs. 12th-fret high E), never collapsing them to one sample or one octave.
 - **FR-030**: System MUST fetch required audio assets once and reuse them for subsequent playback, without a live network dependency for notes already loaded, and without re-fetching per trigger.
 - **FR-031**: System MUST support rapid sequential note triggers (e.g. fast scale runs) with each note playing cleanly, without improper cutoff of the previous note or audible lag.

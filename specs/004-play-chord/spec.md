@@ -31,6 +31,10 @@ strum spacing.
   absolute pitch, in ascending order starting from the chord root, each note offset
   from the previous by a short strum delay.
 
+  *(Revised 2026-10-18, feature 008: the strum is a stringed instrument's — guitar or
+  ukulele. On the piano the same voicing is struck at once, by the maintainer's choice;
+  see AC-8.4.3.)*
+
 - **AC-4.1.2** — Extended chords voice their extensions above the octave
 
   **Given** an extended quality is selected (9, m9, Maj9, Add9, 11, 13), **When** the
@@ -67,13 +71,15 @@ strum spacing.
 ### Functional Requirements
 
 - **FR-201**: The chord panel MUST include a Play control that strums the currently
-  selected chord on activation.
+  selected chord on activation. *(Revised 2026-10-18, feature 008: strums on a stringed
+  instrument; on the piano the chord is struck at once — FR-607.)*
 - **FR-202**: The chord's sounded pitches MUST be computed in the canonical theory layer
   as an ascending MIDI voicing (root in a fixed comfortable guitar octave, extensions
   lifted above the octave); no view may re-derive the voicing.
 - **FR-203**: Playback MUST reuse the existing sampled-guitar audio path (lazy load,
   retry, error banner) and MUST derive pitches from the true scale root (never the
-  capo-shifted highlight root).
+  capo-shifted highlight root). *(Revised 2026-10-18, feature 008: on a stringed
+  instrument; the piano plays the same pitches through its synthesised voice — FR-607.)*
 - **FR-204**: Chord playback MUST occur only inside the Play control's user-gesture
   handler — never on load or on any state change (constitution Principle III).
 - **FR-205**: The Play control MUST be keyboard-activatable with an accessible name.

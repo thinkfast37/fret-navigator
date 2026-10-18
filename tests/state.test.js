@@ -218,7 +218,7 @@ describe("save/load persistence", () => {
 
     const raw = localStorage.getItem("fret-navigator-settings");
     const parsed = JSON.parse(raw);
-    assert.equal(parsed.schemaVersion, 3);
+    assert.equal(parsed.schemaVersion, 4);
     assert.equal(parsed.root, "A");
 
     const restored = state.load();
@@ -317,9 +317,9 @@ describe("save/load persistence", () => {
     assert.equal(restored.chordRootOffset, 0);
     assert.equal(restored.chordQualityId, "minor"); // aeolian tonic triad
     assert.equal(restored.viewMode, "scale");
-    // Re-saved payload is schemaVersion 3
+    // Re-saved payload is the current schemaVersion (4 since feature 008)
     state.save();
-    assert.equal(JSON.parse(localStorage.getItem("fret-navigator-settings")).schemaVersion, 3);
+    assert.equal(JSON.parse(localStorage.getItem("fret-navigator-settings")).schemaVersion, 4);
   });
 
   test("AC-3.1.6 — Saved settings from the previous focal-point system load cleanly: v2 validation rejects junk chord fields", () => {
@@ -562,5 +562,76 @@ describe("instrument selection and per-instrument tunings (feature 007)", () => 
     const { tunings, ...withoutTunings } = valid;
     localStorage.setItem("fret-navigator-settings", JSON.stringify(withoutTunings));
     assert.equal(state.load().tunings.guitar.presetId, "standard");
+  });
+});
+
+describe("piano mode state (feature 008)", () => {
+  const v3 = () => ({
+    schemaVersion: 3,
+    instrument: "ukulele",
+    tunings: {
+      guitar: { presetId: "dadgad", customOpenPitchClasses: null, customOpenOctaves: null },
+      ukulele: { presetId: "uke-canadian-d", customOpenPitchClasses: null, customOpenOctaves: null },
+    },
+    root: "A",
+    accidentalPreference: "sharp",
+    scaleId: "dorian",
+    chordRootOffset: 5,
+    chordQualityId: "major",
+    viewMode: "chord",
+    labelMode: "intervals",
+    capoFret: 2,
+    capoLabelMode: "relative",
+    fretRange: { lowerBound: 2, upperBound: 14 },
+  });
+
+  test("AC-8.1.3 — Stringed-instrument settings survive a trip to the piano: in state", () => {
+    localStorage.setItem("fret-navigator-settings", JSON.stringify(v3()));
+    const before = JSON.stringify(state.load());
+    state.setInstrument("piano");
+    assert.equal(state.getState().instrument, "piano");
+    assert.equal(state.getActiveTuning(), null, "the piano has no tuning");
+    state.setTuning("drop-d"); // ignored: nothing to retune
+    state.setInstrument("ukulele");
+    assert.equal(JSON.stringify(state.getState()), before);
+  });
+
+  test("AC-8.5.2 — Settings saved before this feature load unchanged with 88 keys", () => {
+    const saved = v3();
+    localStorage.setItem("fret-navigator-settings", JSON.stringify(saved));
+    const restored = state.load();
+    assert.equal(restored.keyCount, 88);
+    const { schemaVersion, ...rest } = saved;
+    for (const [field, value] of Object.entries(rest)) {
+      assert.deepEqual(restored[field], value, `${field} survives`);
+    }
+    // Older payloads still walk the whole chain: a v2 one arrives with 88 keys too.
+    const { instrument, tunings, ...v2 } = saved;
+    localStorage.setItem(
+      "fret-navigator-settings",
+      JSON.stringify({ ...v2, schemaVersion: 2, tuning: tunings.guitar })
+    );
+    const fromV2 = state.load();
+    assert.equal(fromV2.keyCount, 88);
+    assert.equal(fromV2.tunings.guitar.presetId, "dadgad");
+    state.save();
+    assert.equal(JSON.parse(localStorage.getItem("fret-navigator-settings")).schemaVersion, 4);
+  });
+
+  test("AC-8.5.3 — Saved settings with an impossible key count fall back safely", () => {
+    for (const keyCount of [0, 54, 88.5, "88", null, 120]) {
+      localStorage.setItem(
+        "fret-navigator-settings",
+        JSON.stringify({ ...v3(), schemaVersion: 4, instrument: "piano", keyCount })
+      );
+      const restored = state.load();
+      assert.equal(restored.instrument, "guitar", `keyCount ${JSON.stringify(keyCount)} falls back`);
+      assert.equal(restored.keyCount, 88);
+      assert.equal(restored.root, "C");
+    }
+    // The setter refuses a non-standard size outright.
+    state.setKeyCount(61);
+    state.setKeyCount(60);
+    assert.equal(state.getState().keyCount, 61);
   });
 });
