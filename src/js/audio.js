@@ -27,11 +27,6 @@ function createContext() {
   return new AudioContextCtor();
 }
 
-// A context can refuse to come back — TV browsers and iOS sometimes leave one
-// permanently stuck — and scheduling into a dead context is silence with no
-// error. So a context still stuck after the resume attempt is closed and
-// replaced (AC-1.8.6/2); the cached instrument is bound to the old context and
-// must reload against the replacement.
 function clockHasStopped() {
   if (!lastClockReading || lastClockReading.context !== audioContext) return false;
   if (audioContext.state !== "running") return false;
@@ -63,6 +58,11 @@ async function replaceContext() {
   }
 }
 
+// A context can refuse to come back — TV browsers and iOS sometimes leave one
+// permanently stuck — and scheduling into a dead context is silence with no
+// error. So a context still stuck after the resume attempt is closed and
+// replaced (AC-1.8.6/2); the cached instrument is bound to the old context and
+// must reload against the replacement.
 async function ensureRunningContext() {
   if (!audioContext) audioContext = createContext();
   if (clockHasStopped()) {
