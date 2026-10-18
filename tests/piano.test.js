@@ -1,11 +1,11 @@
 // jsdom-based tests for feature 008 (piano mode) per constitution Principle IV: the
 // Instrument control, the keyboard drawn by js/keyboard.js through fretboard.render(),
-// the key-count control, and piano playback through the real audio.js + synth.js
-// against a recording Web Audio mock.
+// the key-count control, and piano playback through the real audio.js + piano-sampler.js
+// against a recording Web Audio mock and a fetch stand-in for the recordings.
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { JSDOM } from "jsdom";
-import { RecordingAudioContext, allOscillators } from "./helpers/web-audio-mock.js";
+import { RecordingAudioContext, allOscillators, allBufferSources, sampleFetchMock } from "./helpers/web-audio-mock.js";
 
 const dom = new JSDOM(
   `<!doctype html><html><body>
@@ -30,6 +30,8 @@ globalThis.document = dom.window.document;
 globalThis.localStorage = dom.window.localStorage;
 
 dom.window.AudioContext = RecordingAudioContext;
+const recordings = sampleFetchMock();
+globalThis.fetch = recordings.fetch;
 const soundfontLoads = [];
 const samplePlays = [];
 dom.window.Soundfont = {
@@ -267,6 +269,33 @@ describe("the key count (feature 008, US2)", () => {
   });
 });
 
+describe("middle C (feature 008, US2)", () => {
+  test("AC-8.2.4 — Middle C is marked on every keyboard size", () => {
+    selectInstrument("piano");
+    for (const keyCount of [25, 37, 49, 61, 76, 88]) {
+      for (const width of [0, 300]) { // one row, and two rows on a narrow board
+        state.setKeyCount(keyCount);
+        setBoardWidth(width);
+        const marked = [...document.querySelectorAll(".piano-key.is-middle-c")];
+        assert.deepEqual(marked.map(midiOf), [60], `${keyCount} keys, width ${width}: only C4 is marked`);
+        assert.match(marked[0].getAttribute("aria-label"), /^C4, middle C/);
+
+        const captions = [...document.querySelectorAll(".middle-c-caption")];
+        assert.equal(captions.length, 1, `${keyCount} keys, width ${width}: one caption`);
+        assert.equal(captions[0].textContent, "Middle C");
+        // Beneath middle C's own key, in the same row, below the key's bottom edge.
+        const body = marked[0].querySelector(".piano-key-body");
+        const num = (el, attr) => Number(el.getAttribute(attr));
+        assert.equal(num(captions[0], "x"), num(body, "x") + num(body, "width") / 2, "centred under the key");
+        assert.ok(num(captions[0], "y") > num(body, "y") + num(body, "height"), "below the key");
+        assert.equal(captions[0].closest(".piano-row"), marked[0].closest(".piano-row"), "on middle C's row");
+      }
+    }
+    state.setKeyCount(88);
+    setBoardWidth(0);
+  });
+});
+
 describe("fitting the keyboard (feature 008, US3)", () => {
   const rows = () => [...document.querySelectorAll(".piano-row")];
   const rowMidi = (row) => [...row.querySelectorAll(".piano-key")].map(midiOf).sort((a, b) => a - b);
@@ -340,27 +369,48 @@ describe("fitting the keyboard (feature 008, US3)", () => {
 });
 
 describe("piano sound (feature 008, US4)", () => {
-  const oscillatorsSince = (n) => allOscillators().slice(n);
+  const sourcesSince = (n) => allBufferSources().slice(n);
   const near = (a, b) => Math.abs(a - b) < 0.01;
+  // The recording a buffer source plays (its URL's note) and the pitch it sounds at.
+  const NOTE_MIDI = { C: 0, Cs: 1, D: 2, Ds: 3, E: 4, F: 5, Fs: 6, G: 7, Gs: 8, A: 9, As: 10, B: 11 };
+  const recordingMidi = (source) => {
+    const [, note, octave] = source.buffer.source.match(/\/audio\/piano\/([A-G]s?)(\d)\.mp3$/);
+    return NOTE_MIDI[note] + (Number(octave) + 1) * 12;
+  };
+  const soundingHz = (source) => 440 * 2 ** ((recordingMidi(source) - 69) / 12) * source.playbackRate.value;
 
   test("AC-8.4.1 — Tapping a key plays its exact pitch with the piano voice", async () => {
     selectInstrument("piano");
     const loadsBefore = soundfontLoads.length;
     const playsBefore = samplePlays.length;
-    let before = allOscillators().length;
+    const oscillatorsBefore = allOscillators().length;
+    let before = allBufferSources().length;
 
     document.getElementById("key-60").dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
     await flush();
-    let played = oscillatorsSince(before);
-    assert.equal(played.length, 3, "one synth voice: three oscillators");
-    assert.ok(played.every((o) => near(o.frequency.events[0].value, 261.63)), "middle C");
+    let played = sourcesSince(before);
+    assert.equal(played.length, 1, "one piano note");
+    assert.equal(recordingMidi(played[0]), 60, "middle C's own recording");
+    assert.ok(near(soundingHz(played[0]), 261.63), "middle C");
 
-    before = allOscillators().length;
+    before = allBufferSources().length;
     document.getElementById("key-69").dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
     await flush();
-    played = oscillatorsSince(before);
-    assert.equal(played.length, 3);
-    assert.ok(played.every((o) => o.frequency.events[0].value === 440), "A4 from the keyboard");
+    played = sourcesSince(before);
+    assert.equal(played.length, 1);
+    assert.equal(soundingHz(played[0]), 440, "A4 from the keyboard");
+
+    // A key between recordings is re-pitched to its own pitch, in its own octave.
+    for (const [midi, hz] of [[22, 29.14], [40, 82.41], [61, 277.18], [107, 3951.07], [108, 4186.01]]) {
+      before = allBufferSources().length;
+      document.getElementById(`key-${midi}`).dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+      await flush();
+      played = sourcesSince(before);
+      assert.equal(played.length, 1);
+      assert.ok(near(soundingHz(played[0]), hz), `key ${midi} sounds at ${hz} Hz, not ${soundingHz(played[0])}`);
+    }
+
+    assert.equal(allOscillators().length, oscillatorsBefore, "no synthesised voice");
 
     assert.equal(soundfontLoads.length, loadsBefore, "the guitar sample is not loaded");
     assert.equal(samplePlays.length, playsBefore, "the guitar sample is not played");
@@ -372,13 +422,13 @@ describe("piano sound (feature 008, US4)", () => {
     state.setScaleId("ionian");
     fretboard.render(state.getState()); // chord resets to I — C major
     const playsBefore = samplePlays.length;
-    const before = allOscillators().length;
+    const before = allBufferSources().length;
 
     document.getElementById("play-chord-button").click();
     await flush();
-    const played = oscillatorsSince(before);
-    assert.equal(played.length, 9, "three notes, three oscillators each");
-    const frequencies = [...new Set(played.map((o) => Math.round(o.frequency.events[0].value * 100) / 100))];
+    const played = sourcesSince(before);
+    assert.equal(played.length, 3, "three piano notes");
+    const frequencies = played.map((s) => Math.round(soundingHz(s) * 100) / 100);
     assert.deepEqual(frequencies, [130.81, 164.81, 196]); // C3 E3 G3
     assert.equal(new Set(played.map((o) => o.startedAt)).size, 1, "every tone starts at the same instant");
     assert.equal(samplePlays.length, playsBefore, "no guitar sample");
@@ -388,7 +438,8 @@ describe("piano sound (feature 008, US4)", () => {
     for (const id of ["guitar", "ukulele"]) {
       selectInstrument("piano");
       selectInstrument(id);
-      const oscillatorsBefore = allOscillators().length;
+      const sourcesBefore = allBufferSources().length;
+      const recordingRequestsBefore = recordings.requests.length;
 
       let before = samplePlays.length;
       document.getElementById("play-chord-button").click();
@@ -401,7 +452,8 @@ describe("piano sound (feature 008, US4)", () => {
       document.getElementById("note-s0-f3").dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
       await flush();
       assert.equal(samplePlays.length, before + 1, `${id}: a fret plays the sample`);
-      assert.equal(allOscillators().length, oscillatorsBefore, `${id}: never the synth`);
+      assert.equal(allBufferSources().length, sourcesBefore, `${id}: never the piano`);
+      assert.equal(recordings.requests.length, recordingRequestsBefore, `${id}: no piano recording fetched`);
     }
     assert.ok(soundfontLoads.every((name) => name === "acoustic_guitar_steel"));
     selectInstrument("guitar");

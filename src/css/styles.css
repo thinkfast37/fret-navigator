@@ -40,6 +40,7 @@
   --color-piano-white: #ecebe6;
   --color-piano-black: #1b1d21;
   --color-piano-edge: #5a5f68;
+  --color-piano-middle-c: #c6dcf2; /* AC-8.2.4: middle C's key tint */
   --color-text-on-bright: var(--color-bg); /* already the same value (#14171c) */
   /* Given its own literal (never aliased to a degree-role token) - the
      error banner and the chromatic degree-role palette are semantically
@@ -725,6 +726,20 @@ button {
 
 .piano-key-black .piano-key-body {
   fill: var(--color-piano-black);
+}
+
+/* AC-8.2.4: middle C — a tinted key and a caption beneath it. */
+.piano-key-white.is-middle-c .piano-key-body {
+  fill: var(--color-piano-middle-c);
+}
+
+.middle-c-caption {
+  fill: var(--color-fg);
+  font-size: 10px;
+  font-weight: 600;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
 }
 
 .piano-key:focus-visible {

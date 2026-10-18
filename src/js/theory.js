@@ -67,7 +67,7 @@ export const INSTRUMENTS = [
     id: "piano",
     label: "Piano",
     kind: "keyboard",
-    voice: "synth",
+    voice: "piano",
     chordStrumSeconds: 0,
   },
 ];

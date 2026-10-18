@@ -1,12 +1,13 @@
 // jsdom-based test for js/main.js per constitution Principle IV.
 // Feature 008: a reload reopens the piano at the key count it was left on (AC-8.5.1), and
-// the window's resize listener re-fits it between one and two rows (AC-8.3.4). main.js is
+// the window's resize listener re-fits it between one and two rows (AC-8.3.4), and a piano
+// recording that fails to load raises a banner naming the piano (AC-8.4.2). main.js is
 // a side-effect bootstrap, so this lives in its own file — the reload IS the module
 // import, against seeded settings.
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { JSDOM } from "jsdom";
-import { RecordingAudioContext } from "./helpers/web-audio-mock.js";
+import { RecordingAudioContext, allBufferSources, sampleFetchMock } from "./helpers/web-audio-mock.js";
 
 const dom = new JSDOM(
   `<!doctype html><html><body>
@@ -32,6 +33,8 @@ globalThis.document = dom.window.document;
 globalThis.localStorage = dom.window.localStorage;
 dom.window.AudioContext = RecordingAudioContext;
 dom.window.Soundfont = { instrument: () => Promise.resolve({ play: () => {} }) };
+const recordings = sampleFetchMock();
+globalThis.fetch = recordings.fetch;
 
 // A one-row-wide board to start with: 29 white keys of a 49-key piano at 40px each.
 let boardWidth = 29 * 40;
@@ -109,5 +112,27 @@ describe("main.js bootstrap: piano mode (feature 008)", () => {
     dom.window.dispatchEvent(new dom.window.Event("resize"));
     assert.equal(document.getElementById("note-s0-f0"), note);
     assert.equal(rows(), 0);
+  });
+
+  test("AC-8.4.2 — The piano voice is a recorded grand piano, re-pitched to the exact note: a failed recording raises the piano's banner, and a retry clears it", async () => {
+    const flush = () => new Promise((resolve) => setTimeout(resolve, 20));
+    const banner = document.getElementById("audio-error-banner");
+    const select = document.getElementById("instrument-select");
+    select.value = "piano";
+    select.dispatchEvent(new dom.window.Event("change", { bubbles: true }));
+    const key = document.getElementById("key-60");
+    recordings.failing.add(new URL("../src/audio/piano/C4.mp3", import.meta.url).href);
+
+    key.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+    await flush();
+    assert.equal(banner.hidden, false);
+    assert.equal(banner.textContent, "Piano samples failed to load. Tap a key to retry.");
+
+    recordings.failing.clear();
+    const before = allBufferSources().length;
+    key.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+    await flush();
+    assert.equal(banner.hidden, true, "cleared once the recording loads");
+    assert.equal(allBufferSources().length, before + 1, "and middle C plays");
   });
 });

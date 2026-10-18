@@ -13,8 +13,14 @@ const BLACK_KEY_WIDTH = 16;
 const BLACK_KEY_HEIGHT = 88;
 const MARGIN = 12;
 const ROW_GAP = 24;
+// Feature 008, AC-8.2.4: room under each row for the "Middle C" caption.
+const CAPTION_BAND = 16;
 const WHITE_MARKER_RADIUS = 11;
 const BLACK_MARKER_RADIUS = 7.5;
+
+// Implements feature 008, AC-8.2.4: middle C (C4) in this app's MIDI convention, the key
+// every size includes and the one marked.
+export const MIDDLE_C_MIDI = 60;
 
 // Implements feature 008, FR-606 (AC-8.3.1, AC-8.3.2): the narrowest on-screen white key
 // still comfortable to tap (research R-803). Below it, the keyboard wraps to two rows.
@@ -65,7 +71,7 @@ function buildKeys(svg, rows) {
 
   const maxWhite = Math.max(...rows.map((row) => row.filter((k) => !k.isBlack).length));
   const width = MARGIN * 2 + maxWhite * WHITE_KEY_WIDTH;
-  const height = MARGIN * 2 + rows.length * WHITE_KEY_HEIGHT + (rows.length - 1) * ROW_GAP;
+  const height = MARGIN * 2 + rows.length * (WHITE_KEY_HEIGHT + CAPTION_BAND) + (rows.length - 1) * ROW_GAP;
   svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
 
   rows.forEach((row, rowIndex) => {
@@ -76,7 +82,7 @@ function buildKeys(svg, rows) {
     rowGroup.appendChild(blackLayer);
     svg.appendChild(rowGroup);
 
-    const top = MARGIN + rowIndex * (WHITE_KEY_HEIGHT + ROW_GAP);
+    const top = MARGIN + rowIndex * (WHITE_KEY_HEIGHT + CAPTION_BAND + ROW_GAP);
     let whiteIndex = 0;
     for (const k of row) {
       let x, w, h, cy, r;
@@ -96,8 +102,9 @@ function buildKeys(svg, rows) {
         whiteIndex++;
       }
 
+      const isMiddleC = k.midiNote === MIDDLE_C_MIDI;
       const key = svgEl("g", {
-        class: `piano-key ${k.isBlack ? "piano-key-black" : "piano-key-white"}`,
+        class: `piano-key ${k.isBlack ? "piano-key-black" : "piano-key-white"}${isMiddleC ? " is-middle-c" : ""}`,
         id: `key-${k.midiNote}`,
         "data-midi-note": k.midiNote,
         tabindex: "0",
@@ -112,6 +119,18 @@ function buildKeys(svg, rows) {
       key.appendChild(note);
       (k.isBlack ? blackLayer : whiteLayer).appendChild(key);
       keyElements.set(k.midiNote, { key, note, label });
+
+      // AC-8.2.4: captioned beneath the key, in the row's caption band.
+      if (isMiddleC) {
+        const caption = svgEl("text", {
+          class: "middle-c-caption",
+          x: x + w / 2,
+          y: top + WHITE_KEY_HEIGHT + CAPTION_BAND / 2 + 1,
+          "aria-hidden": "true",
+        });
+        caption.textContent = "Middle C";
+        rowGroup.appendChild(caption);
+      }
 
       const activate = () => onKeyActivated(k.midiNote);
       key.addEventListener("click", activate);
@@ -159,7 +178,7 @@ export function render(appState, { describe, applyNoteState }) {
     applyNoteState(note, label, d);
     key.setAttribute(
       "aria-label",
-      `${octaveName(k.midiNote, d.noteName)}${d.label !== d.noteName ? ` (${d.label})` : ""}${d.isRoot ? ", root" : ""}${d.isChordTone ? ", chord tone" : d.isDiatonic ? ", in scale" : ""}`
+      `${octaveName(k.midiNote, d.noteName)}${k.midiNote === MIDDLE_C_MIDI ? ", middle C" : ""}${d.label !== d.noteName ? ` (${d.label})` : ""}${d.isRoot ? ", root" : ""}${d.isChordTone ? ", chord tone" : d.isDiatonic ? ", in scale" : ""}`
     );
   }
 }

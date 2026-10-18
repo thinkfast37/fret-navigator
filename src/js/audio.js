@@ -3,10 +3,11 @@
 // (constitution Principle III) - never on load or on any state change.
 //
 // Feature 008, FR-607: every entry point takes a `voice` — "sample" (the guitar
-// soundfont, used by stringed instruments) or "synth" (the piano, synth.js). Both share
-// the one context and its stuck/frozen recovery (AC-1.8.6).
+// soundfont, used by stringed instruments) or "piano" (the Salamander grand piano,
+// piano-sampler.js; R-801 reversed 2026-10-18). Both share the one context and its
+// stuck/frozen recovery (AC-1.8.6).
 
-import * as synth from "./synth.js";
+import * as pianoSampler from "./piano-sampler.js";
 
 const INSTRUMENT_NAME = "acoustic_guitar_steel";
 const SOUNDFONT = "FluidR3_GM";
@@ -111,16 +112,32 @@ function loadInstrument() {
       })
       .catch((err) => {
         instrumentPromise = null; // allow a later tap to retry the load (FR-041)
-        if (loadErrorListener) loadErrorListener(err);
+        if (loadErrorListener) loadErrorListener(err, "sample");
         throw err;
       });
   }
   return instrumentPromise;
 }
 
+// Feature 008 (AC-8.4.2): the piano's recordings for these notes, decoded on `ctx`. A
+// failure raises the same non-blocking indicator as the guitar's (FR-041), and the
+// sampler drops it so the next tap retries.
+function loadPiano(ctx, midiNotes) {
+  return pianoSampler.load(ctx, midiNotes).then(
+    () => {
+      if (loadSuccessListener) loadSuccessListener();
+    },
+    (err) => {
+      if (loadErrorListener) loadErrorListener(err, "piano");
+      throw err;
+    }
+  );
+}
+
 // Implements Story 8, FR-041: registers the non-blocking sample-load-failure indicator
 // Registers a callback fired whenever the instrument fails to load, so the
-// UI layer can surface a non-blocking error indicator (FR-041).
+// UI layer can surface a non-blocking error indicator (FR-041). It receives the
+// error and the voice that failed ("sample" or "piano").
 export function onLoadError(listener) {
   loadErrorListener = listener;
 }
@@ -139,8 +156,12 @@ export function onLoadSuccess(listener) {
 // off prior notes, so rapid sequential triggers play cleanly without
 // improper cutoff (FR-031).
 export function play(midiNote, voice = "sample") {
-  if (voice === "synth") {
-    ensureRunningContext().then((ctx) => synth.playNote(ctx, midiNote, ctx.currentTime));
+  if (voice === "piano") {
+    ensureRunningContext()
+      .then((ctx) => loadPiano(ctx, [midiNote]).then(() => pianoSampler.playNote(ctx, midiNote, ctx.currentTime)))
+      .catch(() => {
+        // Load failure already surfaced via onLoadError; nothing further to do.
+      });
     return;
   }
   ensureRunningContext()
@@ -156,14 +177,21 @@ export function play(midiNote, voice = "sample") {
 // low to high, `strumSeconds` apart, through the same lazily-loaded (and
 // retryable, FR-041) instrument as single-note play(). Must be called from
 // within a user-gesture handler (constitution Principle III).
-// Feature 008 (AC-8.4.3): the piano passes a zero strum and the synth voice, so every
-// tone starts at the same instant.
+// Feature 008 (AC-8.4.3): the piano passes a zero strum and the piano voice; every
+// recording is loaded before the start time is taken, so every tone starts at the same
+// instant.
 export function playChord(midiNotes, strumSeconds = 0.05, voice = "sample") {
-  if (voice === "synth") {
-    ensureRunningContext().then((ctx) => {
-      const start = ctx.currentTime;
-      midiNotes.forEach((midiNote, i) => synth.playNote(ctx, midiNote, start + i * strumSeconds));
-    });
+  if (voice === "piano") {
+    ensureRunningContext()
+      .then((ctx) =>
+        loadPiano(ctx, midiNotes).then(() => {
+          const start = ctx.currentTime;
+          return Promise.all(midiNotes.map((midiNote, i) => pianoSampler.playNote(ctx, midiNote, start + i * strumSeconds)));
+        })
+      )
+      .catch(() => {
+        // Load failure already surfaced via onLoadError; nothing further to do.
+      });
     return;
   }
   ensureRunningContext()
@@ -188,8 +216,14 @@ const CONFIRMATION_MIDI_NOTE = 64;
 export async function resetAudio(voice = "sample") {
   await replaceContext();
   recordClockReading();
-  if (voice === "synth") {
-    synth.playNote(audioContext, CONFIRMATION_MIDI_NOTE, audioContext.currentTime);
+  if (voice === "piano") {
+    const ctx = audioContext;
+    try {
+      await loadPiano(ctx, [CONFIRMATION_MIDI_NOTE]);
+      await pianoSampler.playNote(ctx, CONFIRMATION_MIDI_NOTE, ctx.currentTime);
+    } catch {
+      // Load failure already surfaced via onLoadError; nothing further to do.
+    }
     return;
   }
   try {

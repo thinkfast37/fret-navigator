@@ -15,7 +15,10 @@ instrument only (R-804). A new `keyboard.js` draws the piano into the same `#fre
 SVG, dispatched from `fretboard.render()`, which hands it the highlight rules it shares
 with the fretboard so a key and a fret of one pitch class can never disagree (R-805). A
 new `synth.js` ports rhythm-master's melodic voice (R-801); `audio.js` routes each call
-to the sample or the synth by voice. `controls.js` hides the stringed-only controls on
+to the sample or the synth by voice. *(2026-10-18, UAT: R-801 reversed — `synth.js` is
+replaced by `piano-sampler.js`, which plays bundled Salamander Grand Piano recordings
+from `src/audio/piano/`; `audio.js` routes the "piano" voice there. `keyboard.js` marks
+middle C, AC-8.2.4.)* `controls.js` hides the stringed-only controls on
 the piano and adds the key-count selector.
 
 ## Technical Context
@@ -73,7 +76,9 @@ src/js/theory.js          # CHANGED — kind/voice/chordStrumSeconds per instrum
 src/js/state.js           # CHANGED — keyCount, setKeyCount(), tunings for stringed
                           #   instruments only, schema v3 -> v4 migration
 src/js/keyboard.js        # NEW — piano rendering, row fitting, key activation
-src/js/synth.js           # NEW — rhythm-master's melodic voice, ported
+src/js/synth.js           # NEW — rhythm-master's melodic voice, ported (removed 2026-10-18)
+src/js/piano-sampler.js   # NEW 2026-10-18 — Salamander samples, nearest-sample re-pitching
+src/audio/piano/*.mp3     # NEW 2026-10-18 — 29 Salamander Grand Piano recordings, A0–A7
 src/js/audio.js           # CHANGED — play/playChord/resetAudio take a voice
 src/js/fretboard.js       # CHANGED — dispatch to keyboard.js; shared highlight rules;
                           #   no capo shift on a keyboard
@@ -83,7 +88,8 @@ src/js/main.js            # CHANGED — resize re-fit; Reset audio confirms per 
 src/index.html            # CHANGED — #key-count-controls; piano credit line
 src/css/styles.css        # CHANGED — piano keys; [hidden] control containers
 tests/theory.test.js      # CHANGED — AC-8.2.1, AC-8.2.2, AC-8.3.2, AC-8.4.1
-tests/synth.test.js       # NEW — AC-8.4.2
+tests/synth.test.js       # NEW — AC-8.4.2 (replaced 2026-10-18 by piano-sampler.test.js)
+tests/piano-sampler.test.js  # NEW 2026-10-18 — AC-8.4.2, every key's pitch and octave
 tests/state.test.js       # CHANGED — AC-8.1.3, AC-8.5.2, AC-8.5.3
 tests/piano.test.js       # NEW — AC-8.1.x, AC-8.2.x, AC-8.3.1–AC-8.3.3, AC-8.4.1/3/4
 tests/main-piano.test.js  # NEW — AC-8.3.4, AC-8.5.1
@@ -106,7 +112,7 @@ Not applicable.
 | **P-701** | The piano in the shared board, highlighted by the fretboard's rules | AC-8.1.1, AC-8.1.5 | T810 | T801 |
 | **P-702** | Stringed-only controls hidden on the piano, their settings kept | AC-8.1.2, AC-8.1.3 | T811 | T802 |
 | **P-703** | The capo binding rule skips keyboard instruments | AC-8.1.4 | T812 | T803 |
-| **P-704** | Keyboard sizes, ranges and the key-count control | AC-8.2.1, AC-8.2.2, AC-8.2.3 | T813 | T804 |
+| **P-704** | Keyboard sizes, ranges, the key-count control and the middle C marker | AC-8.2.1, AC-8.2.2, AC-8.2.3, AC-8.2.4 | T813, T822 | T804, T821 |
 | **P-705** | One or two rows, key geometry, re-fit on resize | AC-8.3.1, AC-8.3.2, AC-8.3.3, AC-8.3.4 | T814 | T805 |
-| **P-706** | The piano voice, struck chords, stringed playback unchanged | AC-8.4.1, AC-8.4.2, AC-8.4.3, AC-8.4.4 | T815 | T806 |
+| **P-706** | The piano voice, struck chords, stringed playback unchanged | AC-8.4.1, AC-8.4.2, AC-8.4.3, AC-8.4.4 | T815, T822 | T806, T821 |
 | **P-707** | Key count persisted, schemaVersion 4 migration and fallback | AC-8.5.1, AC-8.5.2, AC-8.5.3 | T816 | T807 |
