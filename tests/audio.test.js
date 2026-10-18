@@ -323,4 +323,17 @@ describe("audio.js (Story 8, FR-028/FR-029/FR-030/FR-031/FR-032/FR-041)", () => 
     assert.equal(reloaded.instrumentCalls[0].ctx, audioContextInstances[before]);
     assert.deepEqual(reloaded.playCalls, [59]);
   });
+
+  test("AC-1.8.7/3 — When the replacement's clock still is not running, a message says to quit and reopen the app: resetAudio reports whether the replacement's clock runs", async () => {
+    installSoundfontMock();
+    const stuck = audio.resetAudio();
+    audioContextInstances[audioContextInstances.length - 1].currentTime = 0; // never moves
+    assert.equal(await stuck, false);
+
+    const fine = audio.resetAudio();
+    const fresh = audioContextInstances[audioContextInstances.length - 1];
+    fresh.currentTime = 0;
+    setTimeout(() => (fresh.currentTime = 0.1), 100);
+    assert.equal(await fine, true);
+  });
 });

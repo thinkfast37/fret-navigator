@@ -551,3 +551,15 @@ but never logged as tasks. Added so every plan item carries a test task (spec-tr
   hung one is replaced instead of blocking forever. Failing tests written first in
   `tests/audio.test.js` (a never-settling `close()` on the clock-stopped tap and on Reset,
   and a never-settling `resume()`). No spec change.
+- [X] T146 [US8] Spec + implementation (2026-10-18, AC-1.8.7/3, P-012): Reset audio
+  checks its own result. On the Mac Safari web app (Rhythm Master or Logic Pro open
+  alongside) sound can die below the page — reload and Reset stay silent, only ⌘Q
+  recovers it. AC-1.8.7 gains Case /3 (revised before the code). `src/js/audio.js` —
+  `resetAudio()` resolves whether the replacement's clock is running 300 ms after the
+  press; the confirmation note no longer delays that check. `src/js/main.js` — when it
+  is not, `#audio-error-banner` says to quit and reopen the app; a Reset that works
+  clears the banner.
+- [X] T147 [US8] Test task for AC-1.8.7/3: `tests/main.test.js` (DOM: the banner's quit
+  message on a stuck clock, cleared by a Reset that works) and `tests/audio.test.js`
+  (`resetAudio()` resolves false for a frozen clock, true for a moving one). Written
+  failing first.

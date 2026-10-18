@@ -566,6 +566,16 @@ I can connect the visual fretboard to actual sound.
   - **Cases**:
     - **AC-1.8.7/1** — A Reset audio button sits in the footer beside the credit line
     - **AC-1.8.7/2** — Pressing it replaces the context, reloads the instrument, and plays a confirmation note
+    - **AC-1.8.7/3** — When the replacement's clock still is not running, a message says to quit and reopen the app
+
+  *(Revised 2026-10-18: added Case /3. On the Mac Safari web app — with
+  Rhythm Master open alongside, or Logic Pro — sound can die below the page:
+  reload and Reset audio both stay silent and only quitting the app (⌘Q)
+  brings it back, because only that restarts Safari's audio for the app. No
+  page code can do that, so Reset now checks its own result: if, shortly after
+  the press, the replacement context is not running with its clock moving,
+  the alert banner tells the player to quit and reopen the app rather than
+  leaving them to guess. A Reset that does bring sound back clears the banner.)*
 
 ---
 
