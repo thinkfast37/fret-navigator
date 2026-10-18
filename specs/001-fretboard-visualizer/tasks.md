@@ -540,3 +540,14 @@ but never logged as tasks. Added so every plan item carries a test task (spec-tr
   `tests/state.test.js` (the FR-039/FR-040 round-trip and the AC-3.1.6 re-save) pinned
   `schemaVersion` 3; FR-039/FR-040 require the *current* version, which feature 008
   bumps to 4, so they now expect 4 — no assertion relaxed.
+- [X] T145 [US8] Bug (2026-10-18, AC-1.8.6/2, AC-1.8.6/3, AC-1.8.7/2, P-011/P-012): on the
+  Mac Safari web app, fret taps and Reset audio both stayed silent. `replaceContext()` in
+  `src/js/audio.js` awaited the old context's `close()` before creating the new one: a
+  frozen context's `close()` need not ever settle, so no replacement was ever made, and
+  even when it did settle the new context was created after an await — outside the
+  gesture, where Safari will not start it (constitution Principle III). Now the old
+  context is closed without waiting, and the new one is created and resumed
+  synchronously inside the tap or press; every `resume()` wait is bounded at 500 ms so a
+  hung one is replaced instead of blocking forever. Failing tests written first in
+  `tests/audio.test.js` (a never-settling `close()` on the clock-stopped tap and on Reset,
+  and a never-settling `resume()`). No spec change.

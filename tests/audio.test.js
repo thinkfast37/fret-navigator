@@ -258,4 +258,69 @@ describe("audio.js (Story 8, FR-028/FR-029/FR-030/FR-031/FR-032/FR-041)", () => 
     assert.equal(reloaded.instrumentCalls[0].ctx, audioContextInstances[before]);
     assert.equal(reloaded.playCalls.length, 1);
   });
+
+  // Bug (2026-10-18, T145): on the Mac Safari web app beside Logic Pro, taps and Reset
+  // audio both stayed silent. A frozen context's close() need not ever settle, and
+  // replacement waited on it before creating the new context — so no new context was
+  // ever made, and even when close() did settle, the new one was created outside the
+  // tap, where Safari will not start it (constitution Principle III).
+  const neverSettles = () => new Promise(() => {});
+
+  test("AC-1.8.6/3 — A context that reports running but whose clock has stopped is replaced, and the instrument reloads on the replacement: a close() that never settles still yields a new context, created inside the tap", async () => {
+    const frozen = audioContextInstances[audioContextInstances.length - 1];
+    frozen.state = "running";
+    frozen.currentTime = 40;
+    let closeCalled = false;
+    frozen.close = () => {
+      closeCalled = true;
+      return neverSettles();
+    };
+    audio.play(55); // records the clock reading
+    await flush();
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    const before = audioContextInstances.length;
+    const reloaded = installSoundfontMock();
+    audio.play(57);
+    // Synchronously, still inside the tap: the replacement exists and was asked to start.
+    assert.equal(audioContextInstances.length, before + 1, "new context created inside the tap");
+    assert.ok(audioContextInstances[before].resumeCallCount >= 1, "and resumed inside the tap");
+    assert.equal(closeCalled, true);
+
+    await flush();
+    assert.equal(reloaded.instrumentCalls[0].ctx, audioContextInstances[before]);
+    assert.deepEqual(reloaded.playCalls, [57]);
+  });
+
+  test("AC-1.8.7/2 — Pressing it replaces the context, reloads the instrument, and plays a confirmation note: a close() that never settles does not stop it, and the new context starts inside the press", async () => {
+    const old = audioContextInstances[audioContextInstances.length - 1];
+    old.close = neverSettles;
+    const before = audioContextInstances.length;
+    const reloaded = installSoundfontMock();
+
+    audio.resetAudio();
+    assert.equal(audioContextInstances.length, before + 1, "new context created inside the press");
+    assert.ok(audioContextInstances[before].resumeCallCount >= 1, "and resumed inside the press");
+
+    await flush();
+    assert.equal(reloaded.instrumentCalls.length, 1);
+    assert.equal(reloaded.instrumentCalls[0].ctx, audioContextInstances[before]);
+    assert.deepEqual(reloaded.playCalls, [64]);
+  });
+
+  test("AC-1.8.6/2 — A context that stays stuck after resume is replaced, and the instrument reloads on the replacement: a resume() that never settles is replaced rather than waited on forever", async () => {
+    const stuck = audioContextInstances[audioContextInstances.length - 1];
+    stuck.state = "suspended";
+    stuck.resume = neverSettles;
+    stuck.close = neverSettles;
+    const before = audioContextInstances.length;
+    const reloaded = installSoundfontMock();
+
+    audio.play(59);
+    await new Promise((resolve) => setTimeout(resolve, 700));
+
+    assert.equal(audioContextInstances.length, before + 1);
+    assert.equal(reloaded.instrumentCalls[0].ctx, audioContextInstances[before]);
+    assert.deepEqual(reloaded.playCalls, [59]);
+  });
 });
