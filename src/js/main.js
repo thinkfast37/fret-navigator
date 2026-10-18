@@ -21,3 +21,6 @@ audio.onLoadError(() => {
 audio.onLoadSuccess(() => {
   document.getElementById("audio-error-banner").hidden = true;
 });
+
+// AC-1.8.7: manual backup for silent states the automatic recovery cannot see.
+document.getElementById("audio-reset")?.addEventListener("click", () => audio.resetAudio());

@@ -19,6 +19,7 @@ const dom = new JSDOM(
     <div id="custom-tuning-modal-root"></div>
     <svg id="fretboard"></svg>
     <div id="audio-error-banner" hidden></div>
+    <footer id="credits"><p>credit</p><button id="audio-reset" type="button">Reset audio</button></footer>
   </body></html>`,
   { url: "http://localhost/" }
 );
@@ -162,6 +163,45 @@ describe("main.js bootstrap (Story 1, FR-039/FR-040/FR-041)", () => {
     assert.equal(audioContextInstances.length, 2);
     assert.equal(audioContextInstances[1].state, "running");
     // The instrument reloaded against the replacement and the tap sounded.
+    assert.equal(playedNotes.length, before + 1);
+  });
+
+  test("AC-1.8.6/3 — A context that reports running but whose clock has stopped is replaced, and the instrument reloads on the replacement: a fret tap replaces a frozen context and still sounds", async () => {
+    const frozen = audioContextInstances[audioContextInstances.length - 1];
+    frozen.state = "running";
+    frozen.currentTime = 3; // never advances
+    frozen.close = () => {
+      frozen.state = "closed";
+      return Promise.resolve();
+    };
+    const contexts = audioContextInstances.length;
+
+    tapFret(); // records the clock reading
+    await flush();
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    const before = playedNotes.length;
+    tapFret();
+    await flush();
+
+    assert.equal(frozen.state, "closed");
+    assert.equal(audioContextInstances.length, contexts + 1);
+    assert.equal(playedNotes.length, before + 1);
+  });
+
+  test("AC-1.8.7/2 — Pressing it replaces the context, reloads the instrument, and plays a confirmation note: the footer button is wired", async () => {
+    const old = audioContextInstances[audioContextInstances.length - 1];
+    old.close = () => {
+      old.state = "closed";
+      return Promise.resolve();
+    };
+    const contexts = audioContextInstances.length;
+    const before = playedNotes.length;
+
+    document.getElementById("audio-reset").dispatchEvent(new dom.window.Event("click", { bubbles: true }));
+    await flush();
+
+    assert.equal(old.state, "closed");
+    assert.equal(audioContextInstances.length, contexts + 1);
     assert.equal(playedNotes.length, before + 1);
   });
 });

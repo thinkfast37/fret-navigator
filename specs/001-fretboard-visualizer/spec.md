@@ -539,6 +539,28 @@ I can connect the visual fretboard to actual sound.
   - **Cases**:
     - **AC-1.8.6/1** — A suspended or interrupted context is resumed, and the resume awaited, before the note plays
     - **AC-1.8.6/2** — A context that stays stuck after resume is replaced, and the instrument reloads on the replacement
+    - **AC-1.8.6/3** — A context that reports running but whose clock has stopped is replaced, and the instrument reloads on the replacement
+
+  *(Revised 2026-10-18: added Case /3. On macOS, a Safari web app left open
+  alongside Logic Pro went silent and stayed silent across reloads — only
+  quitting the app (⌘Q) recovered it. The context reported `running`, so
+  Cases /1–/2 never fired. A context whose `currentTime` has not advanced
+  since the previous tap, though at least 250 ms of wall time has passed,
+  is treated as dead and replaced on that tap. The first silent tap is what
+  reveals the frozen clock; the following tap sounds.)*
+
+- **AC-1.8.7** — A Reset audio button rebuilds playback on demand
+
+  *(Added 2026-10-18, as the manual backup to AC-1.8.6/3 for silent states
+  the clock check cannot see. Gesture-only, per constitution Principle III.)*
+
+  **Given** notes have stopped sounding, **When** I press "Reset audio" in
+  the footer, **Then** the audio context is closed and replaced, the
+  instrument reloads on the replacement, and a confirmation note plays.
+
+  - **Cases**:
+    - **AC-1.8.7/1** — A Reset audio button sits in the footer beside the credit line
+    - **AC-1.8.7/2** — Pressing it replaces the context, reloads the instrument, and plays a confirmation note
 
 ---
 

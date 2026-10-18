@@ -7,6 +7,7 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { JSDOM } from "jsdom";
 import { fileURLToPath } from "node:url";
 
 const cssPath = fileURLToPath(new URL("../src/css/styles.css", import.meta.url));
@@ -72,6 +73,17 @@ describe("Buy Me a Coffee link (UAT round 2 section F, FR-053)", () => {
     const footerMatch = html.match(/<footer id="credits">([\s\S]*?)<\/footer>/);
     assert.ok(footerMatch);
     assert.match(footerMatch[1], /buymeacoffee\.com\/stevetakadimi/);
+  });
+});
+
+describe("Reset audio button (AC-1.8.7)", () => {
+  test("AC-1.8.7/1 — A Reset audio button sits in the footer beside the credit line", () => {
+    const htmlPath = fileURLToPath(new URL("../src/index.html", import.meta.url));
+    const doc = new JSDOM(readFileSync(htmlPath, "utf8")).window.document;
+    const button = doc.querySelector("footer#credits button#audio-reset");
+    assert.ok(button, "expected #audio-reset inside footer#credits");
+    assert.equal(button.getAttribute("type"), "button");
+    assert.match(button.textContent, /Reset audio/);
   });
 });
 
