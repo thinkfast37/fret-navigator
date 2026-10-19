@@ -218,7 +218,7 @@ describe("save/load persistence", () => {
 
     const raw = localStorage.getItem("fret-navigator-settings");
     const parsed = JSON.parse(raw);
-    assert.equal(parsed.schemaVersion, 4);
+    assert.equal(parsed.schemaVersion, 5);
     assert.equal(parsed.root, "A");
 
     const restored = state.load();
@@ -319,7 +319,7 @@ describe("save/load persistence", () => {
     assert.equal(restored.viewMode, "scale");
     // Re-saved payload is the current schemaVersion (4 since feature 008)
     state.save();
-    assert.equal(JSON.parse(localStorage.getItem("fret-navigator-settings")).schemaVersion, 4);
+    assert.equal(JSON.parse(localStorage.getItem("fret-navigator-settings")).schemaVersion, 5);
   });
 
   test("AC-3.1.6 — Saved settings from the previous focal-point system load cleanly: v2 validation rejects junk chord fields", () => {
@@ -615,7 +615,7 @@ describe("piano mode state (feature 008)", () => {
     assert.equal(fromV2.keyCount, 88);
     assert.equal(fromV2.tunings.guitar.presetId, "dadgad");
     state.save();
-    assert.equal(JSON.parse(localStorage.getItem("fret-navigator-settings")).schemaVersion, 4);
+    assert.equal(JSON.parse(localStorage.getItem("fret-navigator-settings")).schemaVersion, 5);
   });
 
   test("AC-8.5.3 — Saved settings with an impossible key count fall back safely", () => {
@@ -633,5 +633,71 @@ describe("piano mode state (feature 008)", () => {
     state.setKeyCount(61);
     state.setKeyCount(60);
     assert.equal(state.getState().keyCount, 61);
+  });
+});
+
+describe("piano key colours state (feature 009)", () => {
+  const v4 = () => ({
+    schemaVersion: 4,
+    instrument: "piano",
+    tunings: {
+      guitar: { presetId: "dadgad", customOpenPitchClasses: null, customOpenOctaves: null },
+      ukulele: { presetId: "uke-canadian-d", customOpenPitchClasses: null, customOpenOctaves: null },
+    },
+    root: "A",
+    accidentalPreference: "sharp",
+    scaleId: "dorian",
+    chordRootOffset: 5,
+    chordQualityId: "major",
+    viewMode: "chord",
+    labelMode: "intervals",
+    capoFret: 2,
+    capoLabelMode: "relative",
+    fretRange: { lowerBound: 2, upperBound: 14 },
+    keyCount: 49,
+  });
+
+  test("AC-9.2.3 — Key colours start on", () => {
+    localStorage.removeItem("fret-navigator-settings");
+    assert.equal(state.load().keyHue, true);
+    state.setKeyHue(false);
+    assert.equal(state.getState().keyHue, false);
+    state.setKeyHue("off"); // not a choice the toggle offers
+    assert.equal(state.getState().keyHue, false, "only true or false is accepted");
+    assert.equal(JSON.parse(localStorage.getItem("fret-navigator-settings")).keyHue, false, "saved");
+    state.setKeyHue(true);
+  });
+
+  test("AC-9.3.2 — Settings saved before this feature load unchanged with key colours on", () => {
+    const saved = v4();
+    localStorage.setItem("fret-navigator-settings", JSON.stringify(saved));
+    const restored = state.load();
+    assert.equal(restored.keyHue, true);
+    const { schemaVersion, ...rest } = saved;
+    for (const [field, value] of Object.entries(rest)) {
+      assert.deepEqual(restored[field], value, `${field} survives`);
+    }
+    state.save();
+    assert.equal(JSON.parse(localStorage.getItem("fret-navigator-settings")).schemaVersion, 5);
+
+    // A v3 payload walks the whole chain: 88 keys and key colours on.
+    const { keyCount, ...v3 } = saved;
+    localStorage.setItem("fret-navigator-settings", JSON.stringify({ ...v3, schemaVersion: 3 }));
+    const fromV3 = state.load();
+    assert.equal(fromV3.keyCount, 88);
+    assert.equal(fromV3.keyHue, true);
+    assert.equal(fromV3.scaleId, "dorian");
+  });
+
+  test("AC-9.3.3 — A saved key colours value that is neither on nor off falls back safely", () => {
+    for (const keyHue of ["on", 1, null, undefined]) {
+      localStorage.setItem("fret-navigator-settings", JSON.stringify({ ...v4(), schemaVersion: 5, keyHue }));
+      const restored = state.load();
+      assert.equal(restored.keyHue, true, `${JSON.stringify(keyHue)} falls back`);
+      assert.equal(restored.instrument, "guitar", "to the defaults, as for any corrupt setting");
+    }
+    // A valid v5 payload loads as saved.
+    localStorage.setItem("fret-navigator-settings", JSON.stringify({ ...v4(), schemaVersion: 5, keyHue: false }));
+    assert.equal(state.load().keyHue, false);
   });
 });

@@ -132,6 +132,19 @@ added. Landing mode: Auto.
   `src/index.html`: the Salamander credit line. Research R-801 amended.
 - [X] T823 Run all four gates; regenerate and commit the matrix.
 
+## Phase 9: UAT round 2, 2026-10-18 — middle C by its tip
+
+The "Middle C" caption came out clipped and unreadable; the maintainer asked for "just a
+visual indicator — the tip of middle C can be a colour like black". AC-8.2.4 revised.
+Shipped with feature 009 (key colours). Landing mode: Auto.
+
+- [X] T824 [US2] In `tests/piano.test.js`: `AC-8.2.4 — Middle C is marked on every
+  keyboard size` asserts the black tip on C4 alone, no caption, on every size in one row
+  and two, with key colours on and off.
+- [X] T825 [US2] In `src/js/keyboard.js`: the caption and its band removed, a tip band
+  drawn on C4 beneath its marker. In `src/css/styles.css`: `--color-piano-middle-c-tip`
+  replaces the pale-blue tint token.
+
 ## Dependencies
 
 - T809 before the gates; each test task before its implementation task; T810 before every

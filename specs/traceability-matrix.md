@@ -13,15 +13,15 @@
   marked with what is true right now.
 -->
 
-**Feature**: specs/001-fretboard-visualizer/spec.md, specs/002-default-root-scale/spec.md, specs/003-chord-mode/spec.md, specs/004-play-chord/spec.md, specs/005-display-overhaul/spec.md, specs/006-key-aware-chords/spec.md, specs/007-instrument-ukulele/spec.md, specs/008-instrument-piano/spec.md
-**Criteria**: 144 across 31 User Stories
+**Feature**: specs/001-fretboard-visualizer/spec.md, specs/002-default-root-scale/spec.md, specs/003-chord-mode/spec.md, specs/004-play-chord/spec.md, specs/005-display-overhaul/spec.md, specs/006-key-aware-chords/spec.md, specs/007-instrument-ukulele/spec.md, specs/008-instrument-piano/spec.md, specs/009-piano-key-hue/spec.md
+**Criteria**: 156 across 34 User Stories
 
-**Coverage**: 93 of 144 criteria proven (64.6%)
+**Coverage**: 105 of 156 criteria proven (67.3%)
 
 | | Criteria | Share |
 |---|---|---|
-| 🟢 Proven | 93 | 64.6% |
-| 🔴 Gap — CRITICAL | 51 | 35.4% |
+| 🟢 Proven | 105 | 67.3% |
+| 🔴 Gap — CRITICAL | 51 | 32.7% |
 
 A row is one *criterion*: an Acceptance Criterion that asserts one thing, or one Case of
 an AC that asserts several. 🖵 marks a criterion that describes something a person sees or
@@ -87,6 +87,9 @@ fail the build, and it is outstanding work — never a settled decision.
 | 🟢 US-8.3 | 5 | **5** | · | · | · | · | · |
 | 🟢 US-8.4 | 4 | **4** | · | · | · | · | · |
 | 🟢 US-8.5 | 3 | **3** | · | · | · | · | · |
+| 🟢 US-9.1 | 6 | **6** | · | · | · | · | · |
+| 🟢 US-9.2 | 3 | **3** | · | · | · | · | · |
+| 🟢 US-9.3 | 3 | **3** | · | · | · | · | · |
 
 ## Every criterion
 
@@ -215,15 +218,15 @@ fail the build, and it is outstanding work — never a settled decision.
 | US-8.1 | `AC-8.1.3` | Stringed-instrument settings survive a trip to the piano | P-702 | T811 (1/1 done) | T802 (1/1 done) | `piano.test.js`, `state.test.js` | 🟢 OK |
 | US-8.1 | `AC-8.1.4` 🖵 | The capo never shifts the piano's highlighting | P-703 | T812 (1/1 done) | T803 (1/1 done) | `piano.test.js` | 🟢 OK |
 | US-8.1 | `AC-8.1.5` 🖵 | The piano highlights exactly the notes the fretboard highlights | P-701 | T810 (1/1 done) | T801 (1/1 done) | `piano.test.js` | 🟢 OK |
-| US-8.2 | `AC-8.2.1` 🖵 | The piano defaults to 88 keys from A0 to C8 | P-704 | T813, T822 (2/2 done) | T804, T821 (2/2 done) | `piano.test.js`, `theory.test.js` | 🟢 OK |
-| US-8.2 | `AC-8.2.2/1` 🖵 | 25 keys span C3 to C5 | P-704 | T813, T822 (2/2 done) | T804, T821 (2/2 done) | `piano.test.js`, `theory.test.js` | 🟢 OK |
-| US-8.2 | `AC-8.2.2/2` 🖵 | 37 keys span C3 to C6 | P-704 | T813, T822 (2/2 done) | T804, T821 (2/2 done) | `piano.test.js`, `theory.test.js` | 🟢 OK |
-| US-8.2 | `AC-8.2.2/3` 🖵 | 49 keys span C2 to C6 | P-704 | T813, T822 (2/2 done) | T804, T821 (2/2 done) | `piano.test.js`, `theory.test.js` | 🟢 OK |
-| US-8.2 | `AC-8.2.2/4` 🖵 | 61 keys span C2 to C7 | P-704 | T813, T822 (2/2 done) | T804, T821 (2/2 done) | `piano.test.js`, `theory.test.js` | 🟢 OK |
-| US-8.2 | `AC-8.2.2/5` 🖵 | 76 keys span E1 to G7 | P-704 | T813, T822 (2/2 done) | T804, T821 (2/2 done) | `piano.test.js`, `theory.test.js` | 🟢 OK |
-| US-8.2 | `AC-8.2.2/6` 🖵 | 88 keys span A0 to C8 | P-704 | T813, T822 (2/2 done) | T804, T821 (2/2 done) | `piano.test.js`, `theory.test.js` | 🟢 OK |
-| US-8.2 | `AC-8.2.3` 🖵 | The key-count control offers only the standard sizes | P-704 | T813, T822 (2/2 done) | T804, T821 (2/2 done) | `piano.test.js` | 🟢 OK |
-| US-8.2 | `AC-8.2.4` 🖵 | Middle C is marked on every keyboard size | P-704 | T813, T822 (2/2 done) | T804, T821 (2/2 done) | `piano.test.js` | 🟢 OK |
+| US-8.2 | `AC-8.2.1` 🖵 | The piano defaults to 88 keys from A0 to C8 | P-704 | T813, T822, T825 (3/3 done) | T804, T821, T824 (3/3 done) | `piano.test.js`, `theory.test.js` | 🟢 OK |
+| US-8.2 | `AC-8.2.2/1` 🖵 | 25 keys span C3 to C5 | P-704 | T813, T822, T825 (3/3 done) | T804, T821, T824 (3/3 done) | `piano.test.js`, `theory.test.js` | 🟢 OK |
+| US-8.2 | `AC-8.2.2/2` 🖵 | 37 keys span C3 to C6 | P-704 | T813, T822, T825 (3/3 done) | T804, T821, T824 (3/3 done) | `piano.test.js`, `theory.test.js` | 🟢 OK |
+| US-8.2 | `AC-8.2.2/3` 🖵 | 49 keys span C2 to C6 | P-704 | T813, T822, T825 (3/3 done) | T804, T821, T824 (3/3 done) | `piano.test.js`, `theory.test.js` | 🟢 OK |
+| US-8.2 | `AC-8.2.2/4` 🖵 | 61 keys span C2 to C7 | P-704 | T813, T822, T825 (3/3 done) | T804, T821, T824 (3/3 done) | `piano.test.js`, `theory.test.js` | 🟢 OK |
+| US-8.2 | `AC-8.2.2/5` 🖵 | 76 keys span E1 to G7 | P-704 | T813, T822, T825 (3/3 done) | T804, T821, T824 (3/3 done) | `piano.test.js`, `theory.test.js` | 🟢 OK |
+| US-8.2 | `AC-8.2.2/6` 🖵 | 88 keys span A0 to C8 | P-704 | T813, T822, T825 (3/3 done) | T804, T821, T824 (3/3 done) | `piano.test.js`, `theory.test.js` | 🟢 OK |
+| US-8.2 | `AC-8.2.3` 🖵 | The key-count control offers only the standard sizes | P-704 | T813, T822, T825 (3/3 done) | T804, T821, T824 (3/3 done) | `piano.test.js` | 🟢 OK |
+| US-8.2 | `AC-8.2.4` 🖵 | Middle C is marked on every keyboard size | P-704 | T813, T822, T825 (3/3 done) | T804, T821, T824 (3/3 done) | `piano.test.js` | 🟢 OK |
 | US-8.3 | `AC-8.3.1` 🖵 | The keyboard uses one row when every white key fits | P-705 | T814 (1/1 done) | T805 (1/1 done) | `piano.test.js` | 🟢 OK |
 | US-8.3 | `AC-8.3.2/1` 🖵 | 88 keys split into A0–B3 on the top row and C4–C8 on the bottom row | P-705 | T814 (1/1 done) | T805 (1/1 done) | `piano.test.js`, `theory.test.js` | 🟢 OK |
 | US-8.3 | `AC-8.3.2/2` 🖵 | The two rows together hold every key exactly once, in ascending order | P-705 | T814 (1/1 done) | T805 (1/1 done) | `piano.test.js`, `theory.test.js` | 🟢 OK |
@@ -236,3 +239,15 @@ fail the build, and it is outstanding work — never a settled decision.
 | US-8.5 | `AC-8.5.1` | The piano and its key count survive a reload | P-707 | T816 (1/1 done) | T807 (1/1 done) | `main-piano.test.js` | 🟢 OK |
 | US-8.5 | `AC-8.5.2` | Settings saved before this feature load unchanged with 88 keys | P-707 | T816 (1/1 done) | T807 (1/1 done) | `state.test.js` | 🟢 OK |
 | US-8.5 | `AC-8.5.3` | Saved settings with an impossible key count fall back safely | P-707 | T816 (1/1 done) | T807 (1/1 done) | `state.test.js` | 🟢 OK |
+| US-9.1 | `AC-9.1.1` | A scale note's key takes its marker's colour | P-801 | T904 (1/1 done) | T901 (1/1 done) | `piano.test.js` | 🟢 OK |
+| US-9.1 | `AC-9.1.2` | White keys take a light tint and black keys a deep shade | P-801 | T904 (1/1 done) | T901 (1/1 done) | `styles.test.js` | 🟢 OK |
+| US-9.1 | `AC-9.1.3` | Keys outside the scale stay plain | P-801 | T904 (1/1 done) | T901 (1/1 done) | `piano.test.js` | 🟢 OK |
+| US-9.1 | `AC-9.1.4/1` 🖵 | Chord tones carry the full tint in Chord view | P-801 | T904 (1/1 done) | T901 (1/1 done) | `piano.test.js` | 🟢 OK |
+| US-9.1 | `AC-9.1.4/2` 🖵 | Ghost scale notes carry a fainter tint in Chord view | P-801 | T904 (1/1 done) | T901 (1/1 done) | `piano.test.js` | 🟢 OK |
+| US-9.1 | `AC-9.1.4/3` 🖵 | Keys whose notes Chord view hides stay plain | P-801 | T904 (1/1 done) | T901 (1/1 done) | `piano.test.js` | 🟢 OK |
+| US-9.2 | `AC-9.2.1` 🖵 | A Key colours toggle appears only on the piano | P-802 | T905 (1/1 done) | T902 (1/1 done) | `piano.test.js` | 🟢 OK |
+| US-9.2 | `AC-9.2.2` | Turning key colours off restores plain keys | P-802 | T905 (1/1 done) | T902 (1/1 done) | `piano.test.js` | 🟢 OK |
+| US-9.2 | `AC-9.2.3` 🖵 | Key colours start on | P-802 | T905 (1/1 done) | T902 (1/1 done) | `piano.test.js`, `state.test.js` | 🟢 OK |
+| US-9.3 | `AC-9.3.1` | The key colours choice survives a reload | P-803 | T906 (1/1 done) | T903 (1/1 done) | `main-piano.test.js` | 🟢 OK |
+| US-9.3 | `AC-9.3.2` | Settings saved before this feature load unchanged with key colours on | P-803 | T906 (1/1 done) | T903 (1/1 done) | `state.test.js` | 🟢 OK |
+| US-9.3 | `AC-9.3.3` | A saved key colours value that is neither on nor off falls back safely | P-803 | T906 (1/1 done) | T903 (1/1 done) | `state.test.js` | 🟢 OK |

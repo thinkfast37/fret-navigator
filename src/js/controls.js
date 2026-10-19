@@ -183,7 +183,7 @@ export function initInstrumentControls() {
 // are hidden on the piano, and the key count only on a stringed instrument. Hidden, not
 // removed — their state is kept for when a stringed instrument comes back (AC-8.1.3).
 const STRINGED_ONLY_CONTROL_IDS = ["tuning-controls", "capo-controls", "fret-range-controls"];
-const KEYBOARD_ONLY_CONTROL_IDS = ["key-count-controls"];
+const KEYBOARD_ONLY_CONTROL_IDS = ["key-count-controls", "key-hue-controls"];
 
 export function syncInstrumentControls() {
   const isKeyboard = currentInstrument().kind === "keyboard";
@@ -216,6 +216,44 @@ export function initKeyCountControls() {
 
   container.appendChild(controlLabel("Keys"));
   container.appendChild(select);
+}
+
+// Implements feature 009, FR-703 (AC-9.2.1, AC-9.2.2): the piano's "Key colours" On/Off
+// toggle. Its container is keyboard-only, so it is hidden on a stringed instrument.
+const KEY_HUE_MODES = [
+  { value: true, label: "On" },
+  { value: false, label: "Off" },
+];
+
+export function initKeyHueControls() {
+  const container = document.getElementById("key-hue-controls");
+  if (!container) return;
+  container.textContent = "";
+  container.appendChild(controlLabel("Key colours"));
+
+  const row = el("div", { class: "key-hue-buttons", role: "group", "aria-label": "Key colours" });
+  for (const mode of KEY_HUE_MODES) {
+    const button = el("button", {
+      type: "button",
+      "data-key-hue": String(mode.value),
+      text: mode.label,
+      "aria-pressed": String(state.getState().keyHue === mode.value),
+    });
+    button.addEventListener("click", () => {
+      state.setKeyHue(mode.value);
+      syncKeyHueButtons();
+      rerender();
+    });
+    row.appendChild(button);
+  }
+  container.appendChild(row);
+}
+
+function syncKeyHueButtons() {
+  const current = String(state.getState().keyHue);
+  for (const button of document.querySelectorAll(".key-hue-buttons button")) {
+    button.setAttribute("aria-pressed", String(button.dataset.keyHue === current));
+  }
 }
 
 // Implements Story 2, FR-005/FR-006: tuning selector + custom-tuning modal
@@ -801,6 +839,7 @@ export function initControls() {
   initFretRangeControls();
   initCapoControls();
   initKeyCountControls();
+  initKeyHueControls();
   syncInstrumentControls();
   fretboard.onAfterRender(updateChordInfo);
   fretboard.onAfterRender(syncFretRangeControls);

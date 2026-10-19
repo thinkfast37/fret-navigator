@@ -39,6 +39,11 @@
       "spec": "specs/008-instrument-piano/spec.md",
       "plan": "specs/008-instrument-piano/plan.md",
       "tasks": "specs/008-instrument-piano/tasks.md"
+    },
+    {
+      "spec": "specs/009-piano-key-hue/spec.md",
+      "plan": "specs/009-piano-key-hue/plan.md",
+      "tasks": "specs/009-piano-key-hue/tasks.md"
     }
   ],
   "matrix": "specs/traceability-matrix.md",

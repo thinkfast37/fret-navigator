@@ -112,7 +112,7 @@ Not applicable.
 | **P-701** | The piano in the shared board, highlighted by the fretboard's rules | AC-8.1.1, AC-8.1.5 | T810 | T801 |
 | **P-702** | Stringed-only controls hidden on the piano, their settings kept | AC-8.1.2, AC-8.1.3 | T811 | T802 |
 | **P-703** | The capo binding rule skips keyboard instruments | AC-8.1.4 | T812 | T803 |
-| **P-704** | Keyboard sizes, ranges, the key-count control and the middle C marker | AC-8.2.1, AC-8.2.2, AC-8.2.3, AC-8.2.4 | T813, T822 | T804, T821 |
+| **P-704** | Keyboard sizes, ranges, the key-count control and the middle C marker | AC-8.2.1, AC-8.2.2, AC-8.2.3, AC-8.2.4 | T813, T822, T825 | T804, T821, T824 |
 | **P-705** | One or two rows, key geometry, re-fit on resize | AC-8.3.1, AC-8.3.2, AC-8.3.3, AC-8.3.4 | T814 | T805 |
 | **P-706** | The piano voice, struck chords, stringed playback unchanged | AC-8.4.1, AC-8.4.2, AC-8.4.3, AC-8.4.4 | T815, T822 | T806, T821 |
 | **P-707** | Key count persisted, schemaVersion 4 migration and fallback | AC-8.5.1, AC-8.5.2, AC-8.5.3 | T816 | T807 |

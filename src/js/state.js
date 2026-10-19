@@ -14,7 +14,7 @@ import {
 } from "./theory.js";
 
 const STORAGE_KEY = "fret-navigator-settings";
-const SCHEMA_VERSION = 4;
+const SCHEMA_VERSION = 5;
 
 // UAT round 1 section C3: all 12 canonical roots, not naturals-only.
 const VALID_ROOTS = ROOTS.map((r) => r.label);
@@ -63,6 +63,9 @@ function defaultState() {
     // Feature 008 (FR-605): the piano's size. Kept while a stringed instrument is shown,
     // just as the capo and fret range are kept while the piano is (FR-602).
     keyCount: DEFAULT_KEY_COUNT,
+    // Feature 009 (FR-705, R-902): piano keys tinted by their notes' colours. One per app
+    // — only the piano has keys — and kept while a stringed instrument is shown.
+    keyHue: true,
   };
 }
 
@@ -192,6 +195,13 @@ export function setKeyCount(keyCount) {
   save();
 }
 
+// Implements feature 009, FR-703 (AC-9.2.2): the Key colours toggle.
+export function setKeyHue(keyHue) {
+  if (typeof keyHue !== "boolean") return;
+  state.keyHue = keyHue;
+  save();
+}
+
 // Implements Story 7, FR-025/FR-026: fret-range slider bounds
 export function setFretRange(lowerBound, upperBound) {
   let lower = Math.max(0, Math.min(24, lowerBound));
@@ -250,6 +260,7 @@ function isValidStoredState(data) {
   if (!isValidFretRange(data.fretRange)) return false;
   if (data.capoFret > 0 && data.fretRange.lowerBound !== data.capoFret) return false;
   if (!VALID_KEY_COUNTS.includes(data.keyCount)) return false;
+  if (typeof data.keyHue !== "boolean") return false;
   return true;
 }
 
@@ -299,10 +310,17 @@ function migrateV3ToV4(data) {
   return { ...data, schemaVersion: 4, keyCount: DEFAULT_KEY_COUNT };
 }
 
+// v4 -> v5 (feature 009, AC-9.3.2 / research R-902): piano key colours arrive, on by
+// default as for a first visit; every v4 field passes through untouched.
+function migrateV4ToV5(data) {
+  return { ...data, schemaVersion: 5, keyHue: true };
+}
+
 function migrate(data) {
   if (data.schemaVersion === 1) data = migrateV1ToV2(data);
   if (data.schemaVersion === 2) data = migrateV2ToV3(data);
   if (data.schemaVersion === 3) data = migrateV3ToV4(data);
+  if (data.schemaVersion === 4) data = migrateV4ToV5(data);
   return data;
 }
 
