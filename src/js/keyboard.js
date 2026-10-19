@@ -13,8 +13,8 @@ const BLACK_KEY_WIDTH = 16;
 const BLACK_KEY_HEIGHT = 88;
 const MARGIN = 12;
 const ROW_GAP = 24;
-// Feature 008, AC-8.2.4: room under each row for the "Middle C" caption.
-const CAPTION_BAND = 16;
+// Feature 008, AC-8.2.4 (revised, R-903): the black band across middle C's tip.
+const MIDDLE_C_TIP_HEIGHT = 6;
 const WHITE_MARKER_RADIUS = 11;
 const BLACK_MARKER_RADIUS = 7.5;
 
@@ -71,7 +71,7 @@ function buildKeys(svg, rows) {
 
   const maxWhite = Math.max(...rows.map((row) => row.filter((k) => !k.isBlack).length));
   const width = MARGIN * 2 + maxWhite * WHITE_KEY_WIDTH;
-  const height = MARGIN * 2 + rows.length * (WHITE_KEY_HEIGHT + CAPTION_BAND) + (rows.length - 1) * ROW_GAP;
+  const height = MARGIN * 2 + rows.length * WHITE_KEY_HEIGHT + (rows.length - 1) * ROW_GAP;
   svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
 
   rows.forEach((row, rowIndex) => {
@@ -82,7 +82,7 @@ function buildKeys(svg, rows) {
     rowGroup.appendChild(blackLayer);
     svg.appendChild(rowGroup);
 
-    const top = MARGIN + rowIndex * (WHITE_KEY_HEIGHT + CAPTION_BAND + ROW_GAP);
+    const top = MARGIN + rowIndex * (WHITE_KEY_HEIGHT + ROW_GAP);
     let whiteIndex = 0;
     for (const k of row) {
       let x, w, h, cy, r;
@@ -111,6 +111,19 @@ function buildKeys(svg, rows) {
         role: "button",
       });
       key.appendChild(svgEl("rect", { class: "piano-key-body", x, y: top, width: w, height: h, rx: 3 }));
+      // AC-8.2.4: middle C's tip, drawn before the note so the marker sits over it.
+      if (isMiddleC) {
+        key.appendChild(
+          svgEl("rect", {
+            class: "middle-c-tip",
+            x: x + 1,
+            y: top + h - MIDDLE_C_TIP_HEIGHT - 1,
+            width: w - 2,
+            height: MIDDLE_C_TIP_HEIGHT,
+            rx: 2,
+          })
+        );
+      }
       const note = svgEl("g", { class: "note" });
       const marker = svgEl("circle", { class: "note-marker", cx: x + w / 2, cy, r });
       const label = svgEl("text", { class: "note-label", x: x + w / 2, y: cy });
@@ -119,18 +132,6 @@ function buildKeys(svg, rows) {
       key.appendChild(note);
       (k.isBlack ? blackLayer : whiteLayer).appendChild(key);
       keyElements.set(k.midiNote, { key, note, label });
-
-      // AC-8.2.4: captioned beneath the key, in the row's caption band.
-      if (isMiddleC) {
-        const caption = svgEl("text", {
-          class: "middle-c-caption",
-          x: x + w / 2,
-          y: top + WHITE_KEY_HEIGHT + CAPTION_BAND / 2 + 1,
-          "aria-hidden": "true",
-        });
-        caption.textContent = "Middle C";
-        rowGroup.appendChild(caption);
-      }
 
       const activate = () => onKeyActivated(k.midiNote);
       key.addEventListener("click", activate);
@@ -152,6 +153,22 @@ function octaveName(midiNote, name) {
   if (name[0] === "B" && pitchClass < 2) octave -= 1;
   if (name[0] === "C" && pitchClass > 9) octave += 1;
   return `${name}${octave}`;
+}
+
+// Implements feature 009, FR-701/FR-702 (AC-9.1.1, AC-9.1.3, AC-9.1.4): how a key is
+// tinted, read from the same description its marker is drawn from — full for a scale
+// note or chord tone, faint for a ghost, none for a note with no degree-role colour
+// (outside the scale, hidden in Chord view, or key colours off). styles.css mixes the
+// colour (research R-901).
+function applyKeyHue(key, d, keyHue) {
+  const hue = keyHue && d.roleId && !d.isChordHidden ? (d.isGhost ? "faint" : "full") : null;
+  if (hue) {
+    key.dataset.hue = hue;
+    key.dataset.hueRole = d.roleId;
+  } else {
+    delete key.dataset.hue;
+    delete key.dataset.hueRole;
+  }
 }
 
 // Implements feature 008, FR-601/FR-604/FR-606 (AC-8.1.1, AC-8.1.5, AC-8.3.x): draws the
@@ -176,6 +193,7 @@ export function render(appState, { describe, applyNoteState }) {
     const { key, note, label } = keyElements.get(k.midiNote);
     const d = describe(k.pitchClassSemitone);
     applyNoteState(note, label, d);
+    applyKeyHue(key, d, appState.keyHue);
     key.setAttribute(
       "aria-label",
       `${octaveName(k.midiNote, d.noteName)}${k.midiNote === MIDDLE_C_MIDI ? ", middle C" : ""}${d.label !== d.noteName ? ` (${d.label})` : ""}${d.isRoot ? ", root" : ""}${d.isChordTone ? ", chord tone" : d.isDiatonic ? ", in scale" : ""}`

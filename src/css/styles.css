@@ -40,7 +40,13 @@
   --color-piano-white: #ecebe6;
   --color-piano-black: #1b1d21;
   --color-piano-edge: #5a5f68;
-  --color-piano-middle-c: #c6dcf2; /* AC-8.2.4: middle C's key tint */
+  --color-piano-middle-c-tip: #000000; /* AC-8.2.4: the band across middle C's tip */
+  /* Feature 009 (R-901): how strongly a key takes its note's role colour - the share
+     of the role colour mixed into the plain key colour. Tune by taste. */
+  --piano-hue-white: 42%;
+  --piano-hue-black: 58%;
+  --piano-hue-white-faint: 18%;
+  --piano-hue-black-faint: 30%;
   --color-text-on-bright: var(--color-bg); /* already the same value (#14171c) */
   /* Given its own literal (never aliased to a degree-role token) - the
      error banner and the chromatic degree-role palette are semantically
@@ -676,12 +682,14 @@ footer#credits button {
   font-weight: 700;
 }
 
-.label-mode-buttons {
+.label-mode-buttons,
+.key-hue-buttons {
   display: flex;
   gap: 0.3rem;
 }
 
-.label-mode-buttons button[aria-pressed="true"] {
+.label-mode-buttons button[aria-pressed="true"],
+.key-hue-buttons button[aria-pressed="true"] {
   background: var(--color-fg);
   color: var(--color-text-on-bright);
   font-weight: 700;
@@ -728,18 +736,41 @@ button {
   fill: var(--color-piano-black);
 }
 
-/* AC-8.2.4: middle C — a tinted key and a caption beneath it. */
-.piano-key-white.is-middle-c .piano-key-body {
-  fill: var(--color-piano-middle-c);
+/* AC-8.2.4 (revised): middle C — a black band across its tip. */
+.middle-c-tip {
+  fill: var(--color-piano-middle-c-tip);
 }
 
-.middle-c-caption {
-  fill: var(--color-fg);
-  font-size: 10px;
-  font-weight: 600;
-  text-anchor: middle;
-  dominant-baseline: middle;
-  pointer-events: none;
+/* Feature 009 (FR-701/FR-702, R-901): a key whose note has a degree-role colour
+   takes a mix of it - light on white keys, deep on black keys, fainter for a
+   Chord view ghost. Keys without data-hue keep the plain fills above. */
+.piano-key[data-hue-role="1"] { --key-hue: var(--role-1); }
+.piano-key[data-hue-role="b2"] { --key-hue: var(--role-b2); }
+.piano-key[data-hue-role="2"] { --key-hue: var(--role-2); }
+.piano-key[data-hue-role="b3"] { --key-hue: var(--role-b3); }
+.piano-key[data-hue-role="3"] { --key-hue: var(--role-3); }
+.piano-key[data-hue-role="4"] { --key-hue: var(--role-4); }
+.piano-key[data-hue-role="4s5b"] { --key-hue: var(--role-4s5b); }
+.piano-key[data-hue-role="5"] { --key-hue: var(--role-5); }
+.piano-key[data-hue-role="b6"] { --key-hue: var(--role-b6); }
+.piano-key[data-hue-role="6"] { --key-hue: var(--role-6); }
+.piano-key[data-hue-role="b7"] { --key-hue: var(--role-b7); }
+.piano-key[data-hue-role="7"] { --key-hue: var(--role-7); }
+
+.piano-key-white[data-hue="full"] .piano-key-body {
+  fill: color-mix(in srgb, var(--key-hue) var(--piano-hue-white), var(--color-piano-white));
+}
+
+.piano-key-black[data-hue="full"] .piano-key-body {
+  fill: color-mix(in srgb, var(--key-hue) var(--piano-hue-black), var(--color-piano-black));
+}
+
+.piano-key-white[data-hue="faint"] .piano-key-body {
+  fill: color-mix(in srgb, var(--key-hue) var(--piano-hue-white-faint), var(--color-piano-white));
+}
+
+.piano-key-black[data-hue="faint"] .piano-key-body {
+  fill: color-mix(in srgb, var(--key-hue) var(--piano-hue-black-faint), var(--color-piano-black));
 }
 
 .piano-key:focus-visible {

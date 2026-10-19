@@ -234,3 +234,57 @@ describe("fret-range slider motion (feature 006)", () => {
     assert.match(reduced[1], /transition:\s*none/);
   });
 });
+
+// ---- Feature 009: piano key colours (T901, P-801) ----
+
+describe("piano key colours (feature 009, R-901)", () => {
+  // color-mix(in srgb, A p%, B): a straight per-channel mix of the sRGB values.
+  function mix(hexA, percent, hexB) {
+    const ch = (hex, i) => parseInt(hex.slice(i, i + 2), 16);
+    const out = [1, 3, 5].map((i) => Math.round((ch(hexA, i) * percent + ch(hexB, i) * (100 - percent)) / 100));
+    return `#${out.map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+  }
+  function token(name) {
+    const m = rootBlock().match(new RegExp(`--${name}:\\s*([^;]+);`));
+    assert.ok(m, `expected --${name} in :root`);
+    return m[1].trim();
+  }
+  const percent = (name) => Number(token(name).replace("%", ""));
+
+  test("AC-9.1.2 — White keys take a light tint and black keys a deep shade", () => {
+    const white = token("color-piano-white");
+    const black = token("color-piano-black");
+    const strengths = {
+      whiteFull: percent("piano-hue-white"),
+      blackFull: percent("piano-hue-black"),
+      whiteFaint: percent("piano-hue-white-faint"),
+      blackFaint: percent("piano-hue-black-faint"),
+    };
+    for (const [name, value] of Object.entries(strengths)) assert.ok(value > 0 && value < 100, `${name} is a share`);
+    assert.ok(strengths.whiteFaint < strengths.whiteFull && strengths.blackFaint < strengths.blackFull, "ghosts are fainter");
+
+    // Every tinted white key is lighter than every tinted black key, for every role.
+    const whiteTints = ROLE_IDS_005.flatMap((id) => [mix(roleToken(id), strengths.whiteFull, white), mix(roleToken(id), strengths.whiteFaint, white)]);
+    const blackTints = ROLE_IDS_005.flatMap((id) => [mix(roleToken(id), strengths.blackFull, black), mix(roleToken(id), strengths.blackFaint, black)]);
+    const darkestWhite = Math.min(...whiteTints.map(relativeLuminance));
+    const lightestBlack = Math.max(...blackTints.map(relativeLuminance));
+    assert.ok(darkestWhite > lightestBlack * 2, `white tints (≥ ${darkestWhite.toFixed(3)}) stay well above black (≤ ${lightestBlack.toFixed(3)})`);
+
+    // Each role maps to its own token, and each fill mixes towards its key's plain colour.
+    for (const id of ROLE_IDS_005) {
+      assert.match(css, new RegExp(`\\.piano-key\\[data-hue-role="${id}"\\]\\s*\\{\\s*--key-hue:\\s*var\\(--role-${id}\\);`));
+    }
+    const fills = [
+      ["white", "full", "piano-hue-white", "color-piano-white"],
+      ["black", "full", "piano-hue-black", "color-piano-black"],
+      ["white", "faint", "piano-hue-white-faint", "color-piano-white"],
+      ["black", "faint", "piano-hue-black-faint", "color-piano-black"],
+    ];
+    for (const [keyColour, hue, strength, plain] of fills) {
+      const rule = new RegExp(
+        `\\.piano-key-${keyColour}\\[data-hue="${hue}"\\] \\.piano-key-body\\s*\\{\\s*fill:\\s*color-mix\\(in srgb, var\\(--key-hue\\) var\\(--${strength}\\), var\\(--${plain}\\)\\);`
+      );
+      assert.match(css, rule, `${keyColour} ${hue}`);
+    }
+  });
+});

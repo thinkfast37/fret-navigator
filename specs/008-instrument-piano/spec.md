@@ -134,10 +134,14 @@ the default.
 - **AC-8.2.4** — Middle C is marked on every keyboard size
 
   **Given** the piano at any key count, **When** it is drawn, **Then** middle C (C4, MIDI
-  60, 261.63 Hz) and only middle C is visibly marked — its key tinted and captioned
-  "Middle C" beneath it — whichever row it falls on.
+  60, 261.63 Hz) and only middle C is visibly marked — a black band across the tip of its
+  key, with no caption — whichever row it falls on, with key colours on or off.
 
   *(Added 2026-10-18, UAT: the maintainer could not tell where middle C was.)*
+  *(Revised 2026-10-18, UAT round 2: was "its key tinted and captioned 'Middle C' beneath
+  it". The caption came out clipped and unreadable, and the maintainer asked for "just a
+  visual indicator — the tip of middle C can be a colour like black"; the pale-blue tint
+  is dropped too, since feature 009 tints keys by their notes.)*
 
 ---
 

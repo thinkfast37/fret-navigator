@@ -19,6 +19,7 @@ const dom = new JSDOM(
       <div id="label-mode-controls"></div>
       <div id="fret-range-controls"></div>
       <div id="key-count-controls" hidden></div>
+      <div id="key-hue-controls" hidden></div>
       <div id="capo-controls"></div>
       <div id="chord-info"></div>
     </section>
@@ -134,5 +135,21 @@ describe("main.js bootstrap: piano mode (feature 008)", () => {
     await flush();
     assert.equal(banner.hidden, true, "cleared once the recording loads");
     assert.equal(allBufferSources().length, before + 1, "and middle C plays");
+  });
+
+  test("AC-9.3.1 — The key colours choice survives a reload", async () => {
+    const select = document.getElementById("instrument-select");
+    select.value = "piano";
+    select.dispatchEvent(new dom.window.Event("change", { bubbles: true }));
+    const off = document.querySelectorAll(".key-hue-buttons button")[1];
+    off.click();
+    assert.equal(JSON.parse(localStorage.getItem("fret-navigator-settings")).keyHue, false, "saved");
+
+    // The reload: a fresh bootstrap over the same saved settings.
+    for (const id of ["key-hue-controls", "key-count-controls", "instrument-controls"]) document.getElementById(id).textContent = "";
+    await import("../src/js/main.js?reload");
+    const buttons = [...document.querySelectorAll(".key-hue-buttons button")];
+    assert.deepEqual(buttons.map((b) => b.getAttribute("aria-pressed")), ["false", "true"], "reopens with Off pressed");
+    assert.equal(document.querySelectorAll(".piano-key[data-hue]").length, 0, "and plain keys");
   });
 });

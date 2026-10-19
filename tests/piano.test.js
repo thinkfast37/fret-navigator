@@ -17,6 +17,7 @@ const dom = new JSDOM(
       <div id="label-mode-controls"></div>
       <div id="fret-range-controls"></div>
       <div id="key-count-controls" hidden></div>
+      <div id="key-hue-controls" hidden></div>
       <div id="capo-controls"></div>
       <div id="chord-info"></div>
     </section>
@@ -272,27 +273,173 @@ describe("the key count (feature 008, US2)", () => {
 describe("middle C (feature 008, US2)", () => {
   test("AC-8.2.4 — Middle C is marked on every keyboard size", () => {
     selectInstrument("piano");
-    for (const keyCount of [25, 37, 49, 61, 76, 88]) {
-      for (const width of [0, 300]) { // one row, and two rows on a narrow board
-        state.setKeyCount(keyCount);
-        setBoardWidth(width);
-        const marked = [...document.querySelectorAll(".piano-key.is-middle-c")];
-        assert.deepEqual(marked.map(midiOf), [60], `${keyCount} keys, width ${width}: only C4 is marked`);
-        assert.match(marked[0].getAttribute("aria-label"), /^C4, middle C/);
+    for (const keyHue of [true, false]) {
+      state.setKeyHue(keyHue);
+      for (const keyCount of [25, 37, 49, 61, 76, 88]) {
+        for (const width of [0, 300]) { // one row, and two rows on a narrow board
+          state.setKeyCount(keyCount);
+          setBoardWidth(width);
+          const where = `${keyCount} keys, width ${width}, key colours ${keyHue ? "on" : "off"}`;
+          const tips = [...document.querySelectorAll(".middle-c-tip")];
+          assert.equal(tips.length, 1, `${where}: one tip`);
+          const key = tips[0].closest(".piano-key");
+          assert.equal(midiOf(key), 60, `${where}: on C4`);
+          assert.deepEqual([...document.querySelectorAll(".piano-key.is-middle-c")].map(midiOf), [60]);
+          assert.match(key.getAttribute("aria-label"), /^C4, middle C/);
 
-        const captions = [...document.querySelectorAll(".middle-c-caption")];
-        assert.equal(captions.length, 1, `${keyCount} keys, width ${width}: one caption`);
-        assert.equal(captions[0].textContent, "Middle C");
-        // Beneath middle C's own key, in the same row, below the key's bottom edge.
-        const body = marked[0].querySelector(".piano-key-body");
-        const num = (el, attr) => Number(el.getAttribute(attr));
-        assert.equal(num(captions[0], "x"), num(body, "x") + num(body, "width") / 2, "centred under the key");
-        assert.ok(num(captions[0], "y") > num(body, "y") + num(body, "height"), "below the key");
-        assert.equal(captions[0].closest(".piano-row"), marked[0].closest(".piano-row"), "on middle C's row");
+          // Across the bottom of the key, inside it, and under the marker.
+          const body = key.querySelector(".piano-key-body");
+          const num = (el, attr) => Number(el.getAttribute(attr));
+          const bottom = num(body, "y") + num(body, "height");
+          assert.ok(num(tips[0], "y") + num(tips[0], "height") <= bottom, `${where}: inside the key`);
+          assert.ok(num(tips[0], "y") > num(body, "y") + num(body, "height") / 2, `${where}: at the tip`);
+          assert.ok(num(tips[0], "x") >= num(body, "x") && num(tips[0], "width") <= num(body, "width"));
+          const children = [...key.children];
+          assert.ok(children.indexOf(tips[0]) < children.indexOf(key.querySelector(".note")), `${where}: drawn under the marker`);
+
+          assert.equal(document.querySelectorAll(".middle-c-caption").length, 0, `${where}: no caption`);
+        }
       }
     }
+    state.setKeyHue(true);
     state.setKeyCount(88);
     setBoardWidth(0);
+  });
+});
+
+describe("piano key colours (feature 009)", () => {
+  const roleOf = (key) => [...key.querySelector(".note").classList].find((c) => c.startsWith("role-"))?.slice(5) ?? null;
+  const show = ({ root = "C", scaleId = "ionian", viewMode = "scale" } = {}) => {
+    selectInstrument("piano");
+    state.setKeyHue(true);
+    state.setRoot(root);
+    state.setScaleId(scaleId);
+    state.setViewMode(viewMode);
+    fretboard.render(state.getState());
+  };
+  const reset = () => {
+    state.setRoot("C");
+    state.setScaleId("ionian");
+    state.setViewMode("scale");
+    fretboard.render(state.getState());
+  };
+
+  test("AC-9.1.1 — A scale note's key takes its marker's colour", () => {
+    for (const [root, scaleId] of [["C", "ionian"], ["D", "dorian"], ["Eb", "aeolian"]]) {
+      show({ root, scaleId });
+      let tinted = 0;
+      for (const key of pianoKeys()) {
+        const role = roleOf(key);
+        if (!role) continue;
+        tinted++;
+        assert.equal(key.dataset.hue, "full", `${root} ${scaleId}: key ${midiOf(key)} is tinted`);
+        assert.equal(key.dataset.hueRole, role, `${root} ${scaleId}: key ${midiOf(key)} takes its marker's role ${role}`);
+      }
+      assert.ok(tinted > 0);
+    }
+    // The root's keys carry the root's colour.
+    show({ root: "D", scaleId: "dorian" });
+    for (const key of pianoKeys().filter((k) => midiOf(k) % 12 === 2)) assert.equal(key.dataset.hueRole, "1");
+    reset();
+  });
+
+  test("AC-9.1.3 — Keys outside the scale stay plain", () => {
+    show();
+    const tinted = pianoKeys().filter((k) => k.dataset.hue);
+    const plain = pianoKeys().filter((k) => !k.dataset.hue);
+    assert.equal(tinted.length, 52, "C Ionian: all 52 white keys");
+    assert.ok(tinted.every((k) => k.classList.contains("piano-key-white")));
+    assert.equal(plain.length, 36, "and none of the 36 black keys");
+    assert.ok(plain.every((k) => k.classList.contains("piano-key-black") && !("hueRole" in k.dataset)));
+
+    // A non-diatonic key is plain whatever the scale.
+    show({ root: "D", scaleId: "dorian" });
+    for (const key of pianoKeys()) {
+      if (!key.querySelector(".note").classList.contains("is-diatonic")) assert.equal(key.dataset.hue, undefined, `key ${midiOf(key)}`);
+    }
+    reset();
+  });
+
+  test("AC-9.1.4/1 — Chord tones carry the full tint in Chord view", () => {
+    show({ viewMode: "chord" }); // C Ionian, chord I — C major
+    const pcs = (hue) => [...new Set(pianoKeys().filter((k) => k.dataset.hue === hue).map((k) => midiOf(k) % 12))].sort((a, b) => a - b);
+    assert.deepEqual(pcs("full"), [0, 4, 7], "C, E and G");
+    for (const key of pianoKeys().filter((k) => k.dataset.hue === "full")) assert.equal(key.dataset.hueRole, roleOf(key));
+
+    // A chord tone outside the scale has no role colour, so its key stays plain.
+    state.setChordQualityId("minor"); // C minor: Eb is not in C Ionian
+    fretboard.render(state.getState());
+    const eb = pianoKeys().find((k) => midiOf(k) === 63);
+    assert.ok(eb.querySelector(".note").classList.contains("is-chord-tone"));
+    assert.equal(eb.dataset.hue, undefined);
+    state.setChordQualityId("major");
+    reset();
+  });
+
+  test("AC-9.1.4/2 — Ghost scale notes carry a fainter tint in Chord view", () => {
+    show({ viewMode: "chord" });
+    const ghosts = pianoKeys().filter((k) => k.querySelector(".note").classList.contains("is-ghost"));
+    assert.deepEqual([...new Set(ghosts.map((k) => midiOf(k) % 12))].sort((a, b) => a - b), [2, 5, 9, 11], "D, F, A and B");
+    for (const key of ghosts) {
+      assert.equal(key.dataset.hue, "faint", `key ${midiOf(key)}`);
+      assert.equal(key.dataset.hueRole, roleOf(key));
+    }
+    reset();
+  });
+
+  test("AC-9.1.4/3 — Keys whose notes Chord view hides stay plain", () => {
+    show({ viewMode: "chord" });
+    const hidden = pianoKeys().filter((k) => k.querySelector(".note").classList.contains("chord-hidden"));
+    assert.equal(hidden.length, 36, "the black keys, outside C Ionian");
+    assert.ok(hidden.every((k) => k.dataset.hue === undefined && k.dataset.hueRole === undefined));
+    reset();
+  });
+
+  test("AC-9.2.3 — Key colours start on: a first visit shows tinted keys and On pressed", () => {
+    localStorage.removeItem("fret-navigator-settings");
+    state.load(); // a first visit: no saved settings
+    controls.initKeyHueControls();
+    selectInstrument("piano");
+    const buttons = [...document.querySelectorAll(".key-hue-buttons button")];
+    assert.deepEqual(buttons.map((b) => [b.textContent, b.getAttribute("aria-pressed")]), [["On", "true"], ["Off", "false"]]);
+    assert.equal(pianoKeys().filter((k) => k.dataset.hue === "full").length, 52, "C Ionian's white keys are tinted");
+    selectInstrument("guitar");
+  });
+
+  test("AC-9.2.1 — A Key colours toggle appears only on the piano", () => {
+    selectInstrument("piano");
+    assert.equal(isHidden("key-hue-controls"), false);
+    const group = document.querySelector("#key-hue-controls .key-hue-buttons");
+    assert.equal(group.getAttribute("aria-label"), "Key colours");
+    assert.match(document.getElementById("key-hue-controls").textContent, /Key colours/);
+    const buttons = [...group.querySelectorAll("button")];
+    assert.deepEqual(buttons.map((b) => b.textContent), ["On", "Off"]);
+    assert.deepEqual(buttons.map((b) => b.getAttribute("aria-pressed")), ["true", "false"], "the current choice is pressed");
+
+    for (const id of ["guitar", "ukulele"]) {
+      selectInstrument(id);
+      assert.equal(isHidden("key-hue-controls"), true, `hidden on ${id}`);
+    }
+    selectInstrument("guitar");
+  });
+
+  test("AC-9.2.2 — Turning key colours off restores plain keys", () => {
+    show();
+    const [on, off] = document.querySelectorAll(".key-hue-buttons button");
+    const looks = () => pianoKeys().map((k) => `${k.querySelector(".note").getAttribute("class")}|${k.querySelector(".note-label").textContent}`);
+    const before = looks();
+
+    off.click();
+    assert.equal(state.getState().keyHue, false);
+    assert.equal(pianoKeys().filter((k) => k.dataset.hue || k.dataset.hueRole).length, 0, "no key is tinted");
+    assert.deepEqual([on, off].map((b) => b.getAttribute("aria-pressed")), ["false", "true"]);
+    assert.deepEqual(looks(), before, "markers and labels unchanged");
+    assert.equal(document.querySelectorAll(".middle-c-tip").length, 1, "middle C's tip unchanged");
+
+    on.click();
+    assert.equal(pianoKeys().filter((k) => k.dataset.hue === "full").length, 52, "the tints return");
+    assert.deepEqual([on, off].map((b) => b.getAttribute("aria-pressed")), ["true", "false"]);
+    selectInstrument("guitar");
   });
 });
 
